@@ -128,6 +128,17 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .email-contact p{color:#bbb;font-size:0.82rem;margin-bottom:10px}
 .email-contact a{display:inline-block;background:var(--yellow);color:var(--black);font-weight:700;font-size:0.85rem;padding:11px 22px;border-radius:50px;text-decoration:none}
 
+/* RESEÑAS */
+.resena-box{background:linear-gradient(135deg,rgba(0,200,83,0.07),rgba(0,200,83,0.02));border:1px solid rgba(0,200,83,0.2);border-radius:18px;padding:24px;margin-top:24px;text-align:center}
+.resena-box h3{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:#00C853;margin-bottom:8px}
+.resena-box p{color:#bbb;font-size:0.85rem;line-height:1.6;margin-bottom:16px}
+.stars-row{display:flex;justify-content:center;gap:8px;margin-bottom:4px}
+.star{font-size:2rem;color:#333;cursor:pointer;transition:color 0.2s,transform 0.15s}
+.star:hover,.star.active{color:#FFD000;transform:scale(1.2)}
+.btn-resena{background:#00C853;color:#fff;font-weight:700;font-size:0.9rem;padding:12px 28px;border-radius:50px;border:none;cursor:pointer;transition:transform 0.2s;margin-top:12px}
+.btn-resena:hover{transform:scale(1.04)}
+.btn-resena:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
 /* ANIMATIONS */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeUp 0.5s ease both}
@@ -323,6 +334,22 @@ Bachillerato en Ciencias — Instituto Central — 2018" style="min-height:90px"
     <div class="result-actions fade-in">
       <button class="btn-copy" onclick="copiarCV()">📋 Copiar CV completo</button>
       <button class="btn-new" onclick="nuevoCV()">🔄 Crear otro CV</button>
+    </div>
+
+    <!-- RESEÑA -->
+    <div class="resena-box fade-in" id="resenaBox">
+      <h3>⭐ ¿Cómo quedó tu CV?</h3>
+      <p>Tu opinión ayuda a otros profesionales de Latam a tomar la decisión</p>
+      <div class="stars-row" id="starsRow">
+        <span class="star" data-val="1" onclick="setStars(1)">★</span>
+        <span class="star" data-val="2" onclick="setStars(2)">★</span>
+        <span class="star" data-val="3" onclick="setStars(3)">★</span>
+        <span class="star" data-val="4" onclick="setStars(4)">★</span>
+        <span class="star" data-val="5" onclick="setStars(5)">★</span>
+      </div>
+      <textarea id="resenaComentario" placeholder="Ej: El CV quedó muy profesional, mucho mejor de lo que esperaba para el precio. Lo envié a 3 empresas y ya me llamaron..." style="width:100%;background:#0f0f0f;border:1.5px solid #222;color:#fff;font-family:'Inter',sans-serif;font-size:0.88rem;padding:12px 14px;border-radius:12px;outline:none;resize:vertical;min-height:80px;margin-top:10px"></textarea>
+      <button class="btn-resena" onclick="enviarResena()" id="btnResena">✉️ Enviar mi reseña</button>
+      <div id="resenaConfirm" style="display:none;text-align:center;color:#00C853;font-size:0.9rem;margin-top:10px;font-weight:600">✅ ¡Gracias por tu reseña! La publicaremos pronto.</div>
     </div>
 
     <!-- UPSELL -->
@@ -666,6 +693,68 @@ function nuevoCV() {
 function mostrarEmail() {
   document.getElementById('emailContact').style.display = 'block';
   document.getElementById('emailContact').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+// ── RESEÑAS
+let resenaEstrellas = 5;
+setStars(5); // 5 estrellas por defecto
+
+function setStars(val) {
+  resenaEstrellas = val;
+  document.querySelectorAll('.star').forEach(s => {
+    s.classList.toggle('active', parseInt(s.dataset.val) <= val);
+  });
+}
+
+async function enviarResena() {
+  const comentario = document.getElementById('resenaComentario').value.trim();
+  if (!comentario) {
+    document.getElementById('resenaComentario').style.borderColor = '#ff4444';
+    setTimeout(() => document.getElementById('resenaComentario').style.borderColor = '#222', 2000);
+    return;
+  }
+
+  const btn = document.getElementById('btnResena');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const nombre = document.getElementById('f_nombre').value.trim();
+    const pais   = document.getElementById('f_pais').value.trim();
+    const puesto = document.getElementById('f_puesto').value.trim();
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/resenas`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        nombre,
+        pais:      pais || 'Latinoamérica',
+        puesto,
+        estrellas: resenaEstrellas,
+        comentario,
+        aprobada:  false
+      })
+    });
+
+    if (res.ok) {
+      document.getElementById('resenaConfirm').style.display = 'block';
+      document.getElementById('resenaComentario').style.display = 'none';
+      btn.style.display = 'none';
+      document.querySelectorAll('.star').forEach(s => s.style.pointerEvents = 'none');
+    } else {
+      btn.disabled = false;
+      btn.textContent = '✉️ Enviar mi reseña';
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✉️ Enviar mi reseña';
+    console.error('Error enviando reseña:', e);
+  }
 }
 </script>
 </body>

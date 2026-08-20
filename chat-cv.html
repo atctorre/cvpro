@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crear mi CV | CVPro</title>
+<meta name="description" content="Crea tu CV profesional con IA en minutos. Solo responde 21 preguntas y descarga tu CV listo para conseguir entrevistas.">
+<meta property="og:title" content="Crear CV con IA | CVPro">
+<meta property="og:description" content="21 preguntas guiadas. IA corrige y mejora tu CV. 10 plantillas profesionales. Descarga en PDF.">
+<meta property="og:image" content="https://atctorre.github.io/cvpro/og-image.png">
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--black:#0a0a0a;--yellow:#FFD000;--white:#fff;--gray:#1a1a1a;--gl:#888;--green:#00C853}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--white);display:flex;flex-direction:column}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5%;background:rgba(10,10,10,0.97);border-bottom:1px solid #1f1f1f;flex-shrink:0;z-index:100}
+.nav-logo{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;color:var(--yellow);text-decoration:none}
+.nav-logo span{color:var(--white)}
+.nav-info{display:flex;align-items:center;gap:14px}
+.nav-step{font-size:0.75rem;color:var(--gl)}
+.nav-step strong{color:var(--yellow);font-size:0.9rem}
+.nav-reset{font-size:0.72rem;color:#555;cursor:pointer;text-decoration:underline}
+.nav-reset:hover{color:var(--gl)}
+
+.progress-bar-chat{height:3px;background:#1a1a1a;flex-shrink:0}
+.progress-fill-chat{height:100%;background:linear-gradient(90deg,var(--yellow),#ff9900);transition:width 0.6s ease;width:0%}
+
+/* ── LAYOUT DOS COLUMNAS ── */
+.main-layout{flex:1;display:flex;overflow:hidden}
+
+/* COLUMNA CHAT */
+.chat-col{width:50%;display:flex;flex-direction:column;border-right:1px solid #1a1a1a}
+.chat-wrap{flex:1;display:flex;flex-direction:column;padding:0 16px;overflow:hidden}
+.chat-messages{flex:1;overflow-y:auto;padding:20px 0 8px;display:flex;flex-direction:column;gap:14px}
+.chat-messages::-webkit-scrollbar{width:3px}
+.chat-messages::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:4px}
+
+/* COLUMNA PREVIEW */
+.preview-col{width:50%;display:flex;flex-direction:column;background:#f5f5f5;overflow:hidden}
+.preview-header{padding:12px 16px;background:#fff;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.preview-title{font-size:0.75rem;font-weight:700;color:#333;letter-spacing:0.5px;text-transform:uppercase}
+.preview-badge{font-size:0.65rem;background:#e8f5e9;color:#2e7d32;padding:3px 8px;border-radius:50px;font-weight:600;display:flex;align-items:center;gap:4px}
+.preview-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:#4CAF50;animation:pulse2 1.5s infinite}
+@keyframes pulse2{0%,100%{opacity:1}50%{opacity:0.4}}
+.preview-scroll{flex:1;overflow-y:auto;padding:16px;display:flex;justify-content:center}
+.preview-scroll::-webkit-scrollbar{width:3px}
+.preview-scroll::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px}
+
+/* CV PREVIEW CARD */
+.cv-preview-card{background:#fff;width:100%;max-width:500px;box-shadow:0 4px 20px rgba(0,0,0,0.15);border-radius:4px;overflow:hidden;font-family:'Inter',sans-serif;font-size:0.7rem;transition:all 0.3s}
+.cv-prev-header{background:#0d1b2a;padding:18px 20px;display:flex;gap:14px;align-items:center}
+.cv-prev-photo{width:54px;height:54px;border-radius:50%;border:2px solid #FFD000;background:#1b3a5c;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#FFD000;flex-shrink:0;font-weight:800;overflow:hidden}
+.cv-prev-photo img{width:100%;height:100%;object-fit:cover}
+.cv-prev-name{font-size:0.95rem;font-weight:700;color:#fff;line-height:1.2}
+.cv-prev-role{color:#FFD000;font-size:0.62rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin:3px 0 8px}
+.cv-prev-contact{display:flex;flex-wrap:wrap;gap:6px}
+.cv-prev-ci{font-size:0.6rem;color:#ccc}
+.cv-prev-body{display:grid;grid-template-columns:130px 1fr}
+.cv-prev-sb{background:#f0f4f8;padding:14px 12px}
+.cv-prev-mn{padding:14px 14px}
+.cv-prev-st{font-size:0.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1b2a;border-bottom:1.5px solid #FFD000;padding-bottom:3px;margin-bottom:8px}
+.cv-prev-item{margin-bottom:7px;padding-left:8px;border-left:2px solid #FFD000}
+.cv-prev-jt{font-size:0.65rem;font-weight:700;color:#0d1b2a}
+.cv-prev-jm{font-size:0.58rem;color:#888;margin:1px 0 4px}
+.cv-prev-bl{font-size:0.6rem;color:#555;line-height:1.5;margin-bottom:2px;padding-left:7px;position:relative}
+.cv-prev-bl::before{content:'▸';position:absolute;left:0;color:#0d1b2a;font-size:0.5rem}
+.cv-prev-sk{margin-bottom:6px}
+.cv-prev-sn{font-size:0.6rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-prev-sb2{height:3px;background:#ddd;border-radius:2px}
+.cv-prev-sf{height:100%;background:linear-gradient(90deg,#0d1b2a,#FFD000);border-radius:2px;transition:width 0.5s ease}
+.cv-prev-lang{display:flex;justify-content:space-between;font-size:0.6rem;margin-bottom:4px}
+
+/* PLACEHOLDER preview */
+.preview-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#bbb;text-align:center;padding:30px;gap:12px}
+.preview-placeholder .ph-icon{font-size:3rem;opacity:0.4}
+.preview-placeholder p{font-size:0.8rem;line-height:1.6;opacity:0.7}
+
+/* MOBILE: ocultar preview */
+@media(max-width:768px){
+  .preview-col{display:none}
+  .chat-col{width:100%;border:none}
+}
+
+/* MENSAJES */
+.msg{display:flex;gap:10px;animation:slideUp 0.35s ease both}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.msg.ai{align-items:flex-start}
+.msg.user{align-items:flex-start;flex-direction:row-reverse}
+.ai-avatar{width:34px;height:34px;border-radius:50%;background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:0.95rem;flex-shrink:0;margin-top:2px;font-weight:800;color:#000}
+.msg-bubble{max-width:82%;padding:13px 17px;border-radius:18px;font-size:0.88rem;line-height:1.65}
+.msg.ai .msg-bubble{background:#161616;border:1px solid #252525;border-top-left-radius:4px;color:#e8e8e8}
+.msg.user .msg-bubble{background:var(--yellow);color:#000;border-top-right-radius:4px;font-weight:600}
+.msg-meta{font-size:0.68rem;color:#555;margin-top:4px;padding:0 4px}
+
+/* TYPING */
+.typing-wrap{display:flex;gap:10px;align-items:flex-start}
+.typing{display:flex;gap:5px;padding:13px 17px;background:#161616;border:1px solid #252525;border-radius:18px;border-top-left-radius:4px;width:fit-content}
+.typing span{width:6px;height:6px;border-radius:50%;background:#444;animation:bounce 1.2s infinite}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-7px)}}
+
+/* QUICK OPTS */
+.quick-opts{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;max-width:82%}
+.qopt{background:transparent;border:1px solid #2a2a2a;color:#ccc;font-size:0.78rem;padding:6px 13px;border-radius:50px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif}
+.qopt:hover{border-color:var(--yellow);color:var(--yellow);background:rgba(255,208,0,0.05)}
+
+/* STEP INDICATOR */
+.step-badge{display:inline-flex;align-items:center;gap:5px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:50px;padding:4px 10px;font-size:0.68rem;color:#555;margin-bottom:6px}
+.step-badge span{color:var(--yellow);font-weight:700}
+
+/* INPUT */
+.chat-input-wrap{padding:12px 0 20px;flex-shrink:0}
+.input-hint{font-size:0.72rem;color:#444;margin-bottom:7px;padding-left:4px;min-height:16px;transition:color 0.2s}
+.chat-input-box{display:flex;gap:8px;background:#161616;border:1.5px solid #252525;border-radius:50px;padding:7px 7px 7px 18px;transition:border-color 0.2s}
+.chat-input-box:focus-within{border-color:var(--yellow)}
+.chat-input{flex:1;background:transparent;border:none;color:var(--white);font-family:'Inter',sans-serif;font-size:0.9rem;outline:none;padding:6px 0;resize:none;height:34px;overflow:hidden}
+.chat-input::placeholder{color:#3a3a3a}
+.chat-send{width:38px;height:38px;border-radius:50%;background:var(--yellow);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.2s,opacity 0.2s}
+.chat-send:hover:not(:disabled){transform:scale(1.08)}
+.chat-send:disabled{opacity:0.35;cursor:not-allowed}
+.chat-send svg{width:16px;height:16px}
+
+/* ── CHIPS ── */
+.chips-wrap{margin-top:8px;max-width:82%}
+.chips-titulo{font-size:0.68rem;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px}
+.chips-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.chip{background:#161616;border:1.5px solid #2a2a2a;color:#aaa;font-size:0.78rem;padding:7px 13px;border-radius:50px;cursor:pointer;transition:all 0.18s;font-family:'Inter',sans-serif;user-select:none}
+.chip:hover{border-color:rgba(255,208,0,0.4);color:#ddd}
+.chip.selected{background:rgba(255,208,0,0.1);border-color:var(--yellow);color:var(--yellow);font-weight:600}
+.chips-confirm{display:flex;gap:8px;margin-top:8px;align-items:center}
+.btn-chips-ok{background:var(--yellow);color:#000;font-weight:700;font-size:0.8rem;padding:9px 20px;border-radius:50px;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:transform 0.2s}
+.btn-chips-ok:hover{transform:scale(1.03)}
+.chips-count{font-size:0.72rem;color:#555}
+.tiempo-wrap{display:flex;align-items:center;gap:8px;font-size:0.72rem;color:var(--gl)}
+.tiempo-wrap span{color:var(--yellow);font-weight:600}
+
+/* EDITAR RESPUESTA */
+.msg-edit-btn{background:none;border:none;color:#333;font-size:0.65rem;cursor:pointer;padding:3px 7px;border-radius:4px;transition:all 0.2s;margin-top:4px;font-family:'Inter',sans-serif}
+.msg-edit-btn:hover{color:var(--yellow);background:rgba(255,208,0,0.08)}
+.edit-bubble{background:#1a1000;border:1px solid rgba(255,208,0,0.2)!important}
+
+/* AYUDA CONTEXTUAL */
+.ctx-help{background:#111;border:1px solid #1e1e1e;border-radius:12px;padding:12px 14px;margin-top:6px;max-width:82%}
+.ctx-help-title{font-size:0.65rem;font-weight:700;color:#555;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px}
+.ctx-example{font-size:0.75rem;color:#888;line-height:1.5;padding:6px 10px;background:#0d0d0d;border-radius:6px;border-left:2px solid rgba(255,208,0,0.2);margin-bottom:4px}
+.ctx-example:last-child{margin-bottom:0}
+.ctx-example strong{color:#aaa}
+
+.rev-section{margin-bottom:12px}
+
+@media(max-width:768px){
+  nav{padding:10px 4%}
+  .nav-step{font-size:0.68rem}
+  .nav-reset{font-size:0.68rem}
+  .tiempo-wrap{display:none}
+  .chat-wrap{padding:0 10px}
+  .msg-bubble{max-width:90%;font-size:0.84rem;padding:11px 14px}
+  .chat-input-box{padding:6px 6px 6px 14px}
+  .chat-input{font-size:0.85rem}
+  .quick-opts{gap:6px}
+  .qopt{font-size:0.74rem;padding:5px 10px}
+  .ctx-help{max-width:95%}
+  .ctx-example{font-size:0.72rem}
+  .onb-body{padding:24px 20px 18px}
+  .onb-title{font-size:1.3rem}
+  .rev-section{margin-bottom:10px}
+  .rev-input{font-size:0.8rem;padding:8px 10px}
+  .btn-rev-ok{font-size:0.84rem;padding:12px}
+  .result-card{padding:16px}
+  .cv-preview{font-size:0.72rem;max-height:180px}
+  .btn-action{font-size:0.78rem;padding:10px}
+}
+@media(max-width:480px){
+  .msg-bubble{max-width:95%;font-size:0.82rem}
+  .ai-avatar{width:28px;height:28px;font-size:0.75rem}
+  .onb-title{font-size:1.15rem}
+}
+.rev-label{font-size:0.7rem;font-weight:600;color:#888;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px}
+.rev-input{width:100%;background:#0d0d0d;border:1px solid #2a2a2a;color:#fff;font-family:'Inter',sans-serif;font-size:0.82rem;padding:9px 12px;border-radius:8px;outline:none;transition:border-color 0.2s}
+.rev-input:focus{border-color:var(--yellow)}
+.rev-textarea{min-height:70px;resize:vertical;line-height:1.5}
+.rev-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn-rev-ok{flex:2;background:var(--yellow);color:#000;font-weight:800;font-size:0.88rem;padding:13px;border-radius:50px;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:transform 0.2s}
+.btn-rev-ok:hover:not(:disabled){transform:scale(1.02)}
+.btn-rev-ok:disabled{opacity:0.5;cursor:not-allowed}
+.btn-rev-skip{flex:1;background:transparent;color:#666;font-size:0.8rem;padding:13px;border-radius:50px;border:1px solid #2a2a2a;cursor:pointer;font-family:'Inter',sans-serif}
+.btn-rev-skip:hover:not(:disabled){border-color:#444;color:#888}
+.btn-rev-skip:disabled{opacity:0.5;cursor:not-allowed}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-card{background:#111;border:1px solid #222;border-radius:18px;padding:20px;width:100%}
+.result-card h3{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.cv-preview-wrap{position:relative;border-radius:10px;overflow:hidden}
+.cv-preview{background:#0d0d0d;border:1px solid #1f1f1f;border-radius:10px;padding:16px;font-size:0.75rem;line-height:1.7;color:#ccc;white-space:pre-wrap;max-height:240px;overflow-y:auto;font-family:'Courier New',monospace}
+.cv-preview.blurred{filter:blur(5px);user-select:none;pointer-events:none}
+.unlock-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);text-align:center;padding:20px;border-radius:10px}
+.unlock-overlay h4{font-family:'Syne',sans-serif;color:var(--yellow);font-size:1rem;margin-bottom:6px}
+.unlock-overlay p{color:#aaa;font-size:0.78rem;margin-bottom:14px;line-height:1.5}
+.btn-unlock{background:var(--yellow);color:#000;font-weight:800;padding:12px 28px;border:none;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Inter',sans-serif;transition:transform 0.2s}
+.btn-unlock:hover{transform:scale(1.04)}
+.result-actions{display:none;gap:9px;margin-top:13px;flex-wrap:wrap}
+.result-actions.visible{display:flex}
+.btn-action{flex:1;font-weight:700;font-size:0.82rem;padding:11px;border-radius:50px;border:none;cursor:pointer;min-width:110px;font-family:'Inter',sans-serif;transition:transform 0.2s}
+.btn-action:hover{transform:scale(1.03)}
+.btn-copy{background:var(--yellow);color:#000}
+.btn-plantilla{background:#1e1e1e;color:var(--white);border:1px solid #333}
+.btn-plantilla:hover{border-color:var(--yellow);color:var(--yellow)}
+.btn-nuevo{background:transparent;color:#666;border:1px solid #222;font-size:0.75rem}
+
+/* ── SELECTOR IDIOMA ── */
+.lang-selector{position:fixed;inset:0;z-index:2000;background:var(--black);display:flex;align-items:center;justify-content:center;padding:20px;animation:obFadeIn 0.4s ease}
+.lang-card{background:#111;border:1px solid #1e1e1e;border-radius:24px;padding:40px 32px;max-width:420px;width:100%;text-align:center}
+.lang-logo{font-family:'Syne',sans-serif;font-size:2rem;font-weight:900;color:var(--yellow);margin-bottom:24px}
+.lang-logo span{color:var(--white)}
+.lang-question{font-size:1rem;font-weight:600;color:var(--white);line-height:1.6;margin-bottom:28px}
+.lang-question span{font-size:0.82rem;color:var(--gl);font-weight:300}
+.lang-options{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.lang-opt{background:#1a1a1a;border:2px solid #2a2a2a;border-radius:16px;padding:24px 16px;cursor:pointer;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:'Inter',sans-serif;text-decoration:none}
+.lang-opt:hover{border-color:var(--yellow);background:#1a1500;transform:translateY(-3px)}
+.lang-opt .flag{font-size:3rem;line-height:1}
+.lang-opt strong{color:var(--white);font-size:1rem;font-weight:700}
+.lang-opt small{color:var(--gl);font-size:0.72rem}
+.lang-selector.hide{animation:obFadeIn 0.3s ease reverse;pointer-events:none}
+.onb-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.93);display:flex;align-items:center;justify-content:center;padding:20px;animation:obFadeIn 0.4s ease}
+@keyframes obFadeIn{from{opacity:0}to{opacity:1}}
+.onb-card{background:#111;border:1px solid #1e1e1e;border-radius:24px;max-width:440px;width:100%;overflow:hidden}
+.onb-bar{height:3px;background:#1a1a1a}
+.onb-fill{height:100%;background:linear-gradient(90deg,var(--yellow),#ff9900);transition:width 0.5s ease}
+.onb-body{padding:32px 28px 24px}
+.onb-icon{font-size:2.8rem;display:block;margin-bottom:14px;animation:obBounce 0.7s ease}
+@keyframes obBounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-10px)}}
+.onb-step-label{font-size:0.65rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--yellow);opacity:0.7;margin-bottom:8px}
+.onb-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;line-height:1.15;margin-bottom:10px;letter-spacing:-0.5px}
+.onb-title em{color:var(--yellow);font-style:normal}
+.onb-desc{color:#777;font-size:0.84rem;line-height:1.7;font-weight:300;margin-bottom:20px}
+.onb-list{display:flex;flex-direction:column;gap:9px;margin-bottom:24px}
+.onb-item{display:flex;align-items:center;gap:11px;font-size:0.8rem;color:#bbb}
+.onb-item-ic{width:30px;height:30px;border-radius:8px;background:rgba(255,208,0,0.08);border:1px solid rgba(255,208,0,0.12);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0}
+.onb-actions{display:flex;gap:8px;align-items:center}
+.btn-onb{flex:1;background:var(--yellow);color:#000;font-weight:800;font-size:0.88rem;padding:13px;border-radius:50px;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:transform 0.2s}
+.btn-onb:hover{transform:scale(1.02)}
+.btn-onb-skip{background:transparent;color:#444;font-size:0.75rem;padding:13px 12px;border:none;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:color 0.2s}
+.btn-onb-skip:hover{color:#666}
+.onb-dots{display:flex;gap:5px;justify-content:center;padding:0 28px 20px}
+.onb-dot{width:6px;height:6px;border-radius:50%;background:#222;transition:all 0.3s}
+.onb-dot.act{background:var(--yellow);width:18px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- SELECTOR DE IDIOMA -->
+<div class="lang-selector" id="langSelector">
+  <div class="lang-card">
+    <div class="lang-logo">CV<span>Pro</span></div>
+    <p class="lang-question">¿En qué idioma quieres tu CV?<br><span>What language do you want your CV in?</span></p>
+    <div class="lang-options">
+      <a class="lang-opt" href="chat-cv.html?lang=es">
+        <span class="flag">🇪🇸</span>
+        <strong>Español</strong>
+        <small>CV en español</small>
+      </a>
+      <a class="lang-opt" href="chat-cv.html?lang=en">
+        <span class="flag">🇺🇸</span>
+        <strong>English</strong>
+        <small>CV in English</small>
+      </a>
+    </div>
+  </div>
+</div>
+<div class="onb-overlay" id="onbOverlay" style="display:none">
+  <div class="onb-card">
+    <div class="onb-bar"><div class="onb-fill" id="onbFill"></div></div>
+    <div class="onb-body" id="onbBody"></div>
+    <div class="onb-dots" id="onbDots"></div>
+  </div>
+</div>
+
+<nav>
+  <a href="cv299-landing.html" class="nav-logo">CV<span>Pro</span></a>
+  <div class="nav-info">
+    <div class="tiempo-wrap">⏱ ~<span id="tiempoRestante">10</span> min</div>
+    <span class="nav-step">Pregunta <strong id="stepNum">1</strong> de 20</span>
+    <span class="nav-reset" onclick="reiniciar()">Reiniciar</span>
+  </div>
+</nav>
+<div class="progress-bar-chat"><div class="progress-fill-chat" id="progressFill"></div></div>
+
+<div class="main-layout">
+  <!-- COLUMNA CHAT -->
+  <div class="chat-col">
+    <div class="chat-wrap">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-wrap">
+        <div class="input-hint" id="inputHint"></div>
+        <div class="chat-input-box">
+          <textarea class="chat-input" id="chatInput" placeholder="Escribe tu respuesta..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviar()}"
+            oninput="autoResize(this)"></textarea>
+          <button class="chat-send" id="sendBtn" onclick="enviar()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLUMNA PREVIEW -->
+  <div class="preview-col">
+    <div class="preview-header">
+      <span class="preview-title">Vista previa de tu CV</span>
+      <span class="preview-badge">En vivo</span>
+    </div>
+    <div class="preview-scroll">
+      <div id="cvPreviewLive">
+        <div class="preview-placeholder">
+          <div class="ph-icon">📄</div>
+          <p>Tu CV aparecerá aquí mientras respondes las preguntas</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+let datos = {};
+let paso = 0;
+let cvGenerado = '';
+let historial = [];
+let enviando = false;
+
+// ── 16 PREGUNTAS GUIADAS ──
+const PASOS = [
+  {
+    key: 'nombre',
+    preg: () => `¡Hola! Soy tu asistente personal de CVPro 👋\n\nEn los próximos minutos voy a hacerte 20 preguntas para crear tu CV profesional. Cuanta más información me des, mejor quedará.\n\nEmpecemos — ¿Cuál es tu nombre completo?`,
+    hint: 'Escribe tu nombre y apellidos',
+    placeholder: 'Ej: Adolfo Miguel Alvarez Reyes'
+  },
+  {
+    key: 'puesto',
+    preg: (d) => `Perfecto, ${d.nombre.split(' ')[0]} 👍\n\n¿A qué puesto de trabajo estás aplicando actualmente?`,
+    hint: 'Sé específico — eso mejora el CV',
+    placeholder: 'Ej: Piloto de Helicóptero, Contador Senior, Desarrollador React...',
+    opts: ['Piloto de Aviación','Desarrollador Web','Contador','Vendedor','Enfermero/a','Ingeniero','Administrador','Docente','Diseñador Gráfico','Otro']
+  },
+  {
+    key: 'pais',
+    preg: () => `¿De qué país eres y en qué país estás buscando trabajo?`,
+    hint: 'Si es diferente, menciona ambos',
+    placeholder: 'Ej: El Salvador / también aplico en Guatemala',
+    opts: ['El Salvador','México','Colombia','Chile','Argentina','Perú','Costa Rica','Guatemala','Honduras','Panamá','Ecuador','Otro']
+  },
+  {
+    key: 'email_tel',
+    preg: () => `¿Cuál es tu email y teléfono profesional?\n\nEstos aparecerán en tu CV para que los empleadores te contacten.`,
+    hint: 'Email y teléfono separados por coma o espacio',
+    placeholder: 'Ej: adolfo@gmail.com, +503 7777-7777'
+  },
+  {
+    key: 'linkedin',
+    preg: () => `¿Tienes perfil de LinkedIn o alguna página web/portafolio?\n\nSi no tienes, escribe "no tengo" y seguimos 😊`,
+    hint: 'Opcional pero recomendado para profesionales',
+    placeholder: 'Ej: linkedin.com/in/adolfo-alvarez o "no tengo"'
+  },
+  {
+    key: 'resumen_personal',
+    preg: (d) => `Ahora cuéntame sobre ti, ${d.nombre.split(' ')[0]} 😊\n\n¿Cuántos años de experiencia tienes y qué te hace especial como profesional?`,
+    hint: 'Selecciona lo que aplique o escribe tu propia descripción',
+    placeholder: 'Ej: Tengo 8 años como piloto militar, participé en misiones en Mali y Haití...',
+    chips: {
+      titulo: '⚡ Selecciona los que apliquen (puedes elegir varios)',
+      multi: true,
+      opciones: [
+        '1-2 años de experiencia','3-5 años de experiencia','6-10 años de experiencia','Más de 10 años de experiencia',
+        'Trabajo bajo presión','Lideré equipos','Trabajo independiente','Experiencia internacional',
+        'Recién graduado','Cambio de carrera','Experiencia militar','Trabajo con clientes'
+      ]
+    }
+  },
+  {
+    key: 'exp1',
+    preg: () => `¿En qué empresa o institución trabajas o trabajaste más recientemente?\n\nEscribe el nombre, tu cargo y cuánto tiempo estuviste.`,
+    hint: 'Empresa — Cargo — Período',
+    placeholder: 'Ej: Fuerza Aérea — Piloto Aviador — 2018 a 2026'
+  },
+  {
+    key: 'logros1',
+    preg: (d) => `Muy bien. En ${d.exp1?.split(/[—\-]/)[0]?.trim() || 'ese trabajo'}, ¿qué hacías día a día y qué lograste?\n\nSelecciona lo que aplique o escribe los tuyos 👇`,
+    hint: 'Elige los que apliquen + agrega los tuyos abajo',
+    placeholder: 'Describe tus logros reales: piloté X horas, lideré X personas, aumenté ventas X%...',
+    chips: {
+      titulo: '🏆 Selecciona como punto de partida y agrega detalles abajo',
+      multi: true,
+      opciones: [
+        'Lideré un equipo','Cumplí metas y cuotas','Atendí clientes','Manejé presupuesto',
+        'Entrené o capacité personal','Implementé procesos nuevos','Reduje costos','Aumenté ventas o ingresos',
+        'Gestioné proyectos','Operé equipos o maquinaria','Elaboré reportes e informes','Coordiné con otras áreas',
+        'Trabajé bajo presión','Resolví problemas técnicos','Supervisé operaciones','Viajé por trabajo'
+      ]
+    }
+  },
+  {
+    key: 'exp2',
+    preg: () => `¿Tuviste algún trabajo anterior relevante?`,
+    hint: 'Trabajo anterior o elige una opción rápida',
+    placeholder: 'Ej: Empresa XYZ — Cargo — 2015 a 2018',
+    opts: ['No, solo ese trabajo','Sí, tengo otro trabajo para agregar','Trabajo freelance / independiente','Voluntariado relevante']
+  },
+  {
+    key: 'logros2',
+    preg: (d) => {
+      if (d.exp2?.toLowerCase().match(/^no|solo ese/)) return `Entendido. ¿Hiciste algún proyecto personal, freelance o voluntariado relevante?\n\nSi no, selecciona "Ninguno".`;
+      return `¿Qué hacías y lograste en ese trabajo anterior? Selecciona lo que aplique 👇`;
+    },
+    hint: 'Elige los que apliquen o escribe los tuyos',
+    placeholder: 'Describe tus logros reales en ese trabajo...',
+    chips: {
+      titulo: '🏆 Selecciona como guía y agrega tus logros reales abajo',
+      multi: true,
+      opciones: [
+        'Atendí clientes','Gestioné proyectos','Lideré equipo','Cumplí metas',
+        'Entrené personal','Administré recursos','Elaboré reportes','Resolví problemas',
+        'Coordiné equipos','Ninguno — saltar esta sección'
+      ]
+    }
+  },
+  {
+    key: 'estudios',
+    preg: () => `¿Cuál es tu nivel de estudios más alto?`,
+    hint: 'Selecciona tu nivel y agrega el nombre de tu título abajo',
+    placeholder: 'Ej: Ingeniería de Sistemas — Universidad Nacional — 2019',
+    chips: {
+      titulo: '🎓 Selecciona tu nivel de estudios',
+      multi: false,
+      opciones: [
+        'Bachillerato / Preparatoria','Técnico o Tecnólogo','Universitario / Licenciatura',
+        'Ingeniería','Maestría / Posgrado','Doctorado','Formación militar','Cursos y certificaciones'
+      ]
+    }
+  },
+  {
+    key: 'certificaciones',
+    preg: () => `¿Tienes certificaciones, licencias o cursos adicionales?\n\nSi no tienes, selecciona "No tengo" y seguimos.`,
+    hint: 'Selecciona los que apliquen o escribe los tuyos',
+    placeholder: 'Ej: Licencia de piloto, PMP, AWS, Excel avanzado...',
+    chips: {
+      titulo: '📜 ¿Cuáles tienes?',
+      multi: true,
+      opciones: [
+        'Licencia profesional','Certificación técnica','Curso en línea (Coursera, Udemy)','Certificación de idioma (TOEFL, IELTS)',
+        'Certificación en seguridad','Certificación en salud','Curso militar','Premio o reconocimiento laboral',
+        'No tengo certificaciones'
+      ]
+    }
+  },
+  {
+    key: 'habilidades_tecnicas',
+    preg: (d) => `¿Cuáles son tus herramientas y habilidades técnicas más importantes?\n\nSelecciona las que uses en tu trabajo de ${d.puesto || 'tu área'} 👇`,
+    hint: 'Elige las que uses + agrega las tuyas abajo',
+    placeholder: 'Escribe tus habilidades específicas: Vuelo IFR/VFR, Bell 412, UH-1H, Excel...',
+    chips: {
+      titulo: '🛠️ Selecciona como inspiración y agrega las tuyas',
+      multi: true,
+      opciones: [
+        'Microsoft Office (Word, Excel, PowerPoint)','Excel Avanzado / Tablas dinámicas','SAP / ERP','CRM (Salesforce, HubSpot)',
+        'Software de diseño (Photoshop, Illustrator)','Programación (Python, JavaScript, etc.)','Bases de datos (SQL, MySQL)',
+        'Equipos industriales o maquinaria','Instrumentos médicos','Equipos de aviación / navegación',
+        'Redes y telecomunicaciones','Contabilidad y finanzas','Manejo de vehículos / maquinaria pesada',
+        'Idiomas técnicos','Adobe Creative Suite','AutoCAD / Diseño técnico'
+      ]
+    }
+  },
+  {
+    key: 'habilidades_blandas',
+    preg: () => `¿Cuáles son tus fortalezas como persona y profesional?\n\nElige las que mejor te describan 👇`,
+    hint: 'Puedes elegir varios — estos van en tu CV',
+    placeholder: 'Agrega tus propias fortalezas si no están en la lista...',
+    chips: {
+      titulo: '💪 Selecciona las que mejor te describan',
+      multi: true,
+      opciones: [
+        'Liderazgo natural','Trabajo en equipo','Comunicación clara','Resolución de problemas',
+        'Adaptabilidad al cambio','Disciplina y puntualidad','Orientación al cliente','Pensamiento analítico',
+        'Creatividad e innovación','Trabajo bajo presión','Aprendizaje rápido','Organización y planificación',
+        'Empático y colaborativo','Proactivo e iniciativa','Negociación','Mentoría de equipos'
+      ]
+    }
+  },
+  {
+    key: 'idiomas_nivel',
+    preg: () => `¿Qué idiomas hablas y cuál es tu nivel en cada uno?`,
+    hint: 'Idioma + nivel: básico, intermedio, avanzado o nativo',
+    placeholder: 'Ej: Español nativo, Inglés intermedio (B2), Portugués básico',
+    opts: ['Solo español nativo','Español + inglés básico','Español + inglés intermedio','Español + inglés avanzado','Español + otro idioma']
+  },
+  {
+    key: 'disponibilidad',
+    preg: () => `¿Cuándo puedes empezar a trabajar y cuál es tu modalidad preferida?`,
+    hint: 'Disponibilidad inmediata o en X semanas/meses',
+    placeholder: 'Ej: Disponible inmediatamente, prefiero trabajo presencial...',
+    opts: ['Disponible inmediatamente — presencial','Disponible inmediatamente — remoto','Disponible inmediatamente — híbrido','Disponible en 2 semanas','Disponible en 1 mes','Disponible en 3 meses']
+  },
+  {
+    key: 'movilidad',
+    preg: () => `¿Estás dispuesto a viajar o reubicarte por trabajo?\n\nEsto es importante para muchos empleadores.`,
+    hint: 'Tu flexibilidad geográfica',
+    placeholder: 'Ej: Disponible para viajar, sin disponibilidad de reubicación...',
+    opts: ['Sí, disponible para viajar y reubicarme','Disponible para viajar pero no reubicarme','Solo trabajo local, sin viajes','Disponible para viajar ocasionalmente']
+  },
+  {
+    key: 'proyectos',
+    preg: () => `¿Tienes proyectos personales, publicaciones, portafolio o participación en asociaciones profesionales?\n\nEsto diferencia tu CV del resto. Si no tienes, escribe "ninguno".`,
+    hint: 'Proyectos, publicaciones, asociaciones o comunidades',
+    placeholder: 'Ej: Blog técnico en Medium, proyectos en GitHub, miembro de la Asociación de Pilotos...'
+  },
+  {
+    key: 'tipo_empresa',
+    preg: (d) => `¿Qué tipo de empresa o sector te interesa más para este próximo paso, ${d.nombre.split(' ')[0]}?\n\nEsto me ayuda a enfocar mejor tu CV.`,
+    hint: 'Tipo de empresa ideal para ti',
+    placeholder: 'Ej: Aerolíneas comerciales, empresa privada mediana, sector gobierno...',
+    opts: ['Aerolínea o aviación comercial','Empresa multinacional','Startup o empresa tech','Sector gobierno o público','Empresa familiar o mediana','Consultoría o servicios profesionales','Sector salud','Educación','Cualquier sector']
+  },
+  {
+    key: 'info_extra',
+    preg: (d) => `¡Última pregunta, ${d.nombre.split(' ')[0]}! 🎉\n\n¿Hay algo más que quieras incluir en tu CV?\n• Licencia de conducir (tipo)\n• Vehículo propio\n• Referencias disponibles\n• Premios o reconocimientos\n• Trabajo voluntario\n\nSi no tienes nada más, escribe "nada más".`,
+    hint: 'Cualquier detalle extra que sume a tu perfil',
+    placeholder: 'Ej: Licencia de conducir tipo B, vehículo propio, referencias disponibles...',
+    multiline: true
+  }
+];
+
+// ── COMENTARIOS INTELIGENTES ──
+const COMENTARIOS = {
+  nombre: null,
+  puesto: (v) => `¡${v}! Ese sector tiene muy buena demanda en Latinoamérica 💪 Voy a enfocar tu CV para ese perfil.`,
+  pais: (v) => `Perfecto. Adaptaré el lenguaje y formato al mercado laboral de ${v.split('/')[0].trim()} 🌎`,
+  email_tel: () => `Anotado. Tu información de contacto quedará bien visible en el CV ✅`,
+  linkedin: (v) => v.toLowerCase().includes('no') ? `Sin problema, muchos profesionales no lo tienen aún 👍` : `¡Excelente! Tener LinkedIn aumenta mucho las posibilidades de ser contactado por reclutadores 📊`,
+  resumen_personal: () => `Muy bien. Voy a tomar eso y convertirlo en un resumen profesional impactante que llame la atención del reclutador 🎯`,
+  exp1: (v) => `Entendido. ${v.includes('militar')||v.includes('Militar')||v.includes('Fuerza')||v.includes('fuerza') ? 'La experiencia militar es muy valorada por su disciplina y liderazgo 🎖️' : 'Excelente trayectoria profesional 👍'}`,
+  logros1: () => `¡Perfecto! Esos logros van a destacar mucho. La IA va a redactarlos de forma impactante para los reclutadores ⚡`,
+  exp2: (v) => v.toLowerCase().includes('solo')||v.toLowerCase().includes('no') ? `De acuerdo. Con tu experiencia principal es más que suficiente para un CV sólido 💼` : `Excelente, tener variedad de experiencias fortalece mucho el CV 📈`,
+  logros2: () => `Muy bien. Cada detalle que me das ayuda a construir un CV más completo y convincente 🏆`,
+  estudios: () => `Perfecto. Tu formación académica quedará bien estructurada y visible 🎓`,
+  certificaciones: (v) => v.toLowerCase().includes('ninguno') ? `No hay problema, tu experiencia habla por sí sola 💪` : `¡Esas certificaciones agregan mucho valor a tu perfil! Los reclutadores las buscan activamente 🏅`,
+  habilidades_tecnicas: () => `Excelentes habilidades técnicas. Las voy a organizar estratégicamente según su relevancia para el puesto 🛠️`,
+  habilidades_blandas: () => `Las habilidades blandas son cada vez más valoradas. Las incluiré de forma natural en el CV ✨`,
+  idiomas_nivel: (v) => v.toLowerCase().includes('inglés') ? `¡El inglés es un diferenciador enorme en el mercado laboral! Lo destacaré bien 🌐` : `Perfecto. Los idiomas quedarán listados de forma clara 📝`,
+  disponibilidad: (v) => v.toLowerCase().includes('inmediata') ? `¡Disponibilidad inmediata es un punto muy a favor! Los empleadores lo valoran mucho ⚡` : `Perfecto. Lo incluiré claramente en tu CV para que los empleadores sepan cuándo puedes incorporarte 📅`,
+  movilidad: (v) => v.toLowerCase().includes('sí') || v.toLowerCase().includes('si') ? `¡Excelente! La disposición a viajar abre muchas más puertas laborales 🌍` : `Entendido. Lo dejaremos claro para que apliques a posiciones que encajen con tu situación 👍`,
+  proyectos: (v) => v.toLowerCase().includes('ninguno') ? `No hay problema, muchos profesionales no tienen portafolio y consiguen trabajo igual 💪` : `¡Perfecto! Esos proyectos y participaciones van a diferenciarte enormemente de otros candidatos 🚀`,
+  tipo_empresa: (v) => `Muy bien. Voy a enfocar el lenguaje y los logros de tu CV para que resuene con ese tipo de empresa 🎯`,
+  info_extra: null
+};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ── VISTA PREVIA EN TIEMPO REAL ──
+function actualizarPreview() {
+  const el = document.getElementById('cvPreviewLive');
+  if (!el) return;
+
+  const d = datos;
+  const nombre = d.nombre || '';
+  const puesto = d.puesto || '';
+  const pais = d.pais || '';
+  const ct = d.email_tel || '';
+  const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+  const email = emailM ? emailM[0] : '';
+
+  // Sin datos aún
+  if (!nombre && !puesto) {
+    el.innerHTML = `<div class="preview-placeholder"><div class="ph-icon">📄</div><p>Tu CV aparecerá aquí mientras respondes las preguntas</p></div>`;
+    return;
+  }
+
+  const ini = nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+
+  // Habilidades
+  const habsArr = (d.habilidades_tecnicas||'').split(',').map((h,i)=>({nombre:h.trim(),nivel:Math.max(55,88-i*8)})).filter(h=>h.nombre&&h.nombre.length>1).slice(0,5);
+
+  // Idiomas
+  const idiomasArr = (d.idiomas_nivel||'').split(',').map(id=>{
+    const p = id.trim().split(/\s+/);
+    return {nombre:p[0],nivel:p.slice(1).join(' ')||'Nativo'};
+  }).filter(i=>i.nombre&&i.nombre.length>1);
+
+  // Experiencia
+  const exp1parts = (d.exp1||'').split(/[—\-|]/).map(s=>s.trim());
+  const logros1 = (d.logros1||'').split('\n').filter(Boolean).slice(0,3);
+
+  el.innerHTML = `
+  <div class="cv-preview-card">
+    <div class="cv-prev-header">
+      <div class="cv-prev-photo">${ini||'?'}</div>
+      <div>
+        <div class="cv-prev-name">${nombre||'Tu nombre'}</div>
+        <div class="cv-prev-role">${puesto||'Tu puesto'}</div>
+        <div class="cv-prev-contact">
+          ${email?`<span class="cv-prev-ci">✉ ${email}</span>`:''}
+          ${pais?`<span class="cv-prev-ci">📍 ${pais}</span>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="cv-prev-body">
+      <div class="cv-prev-sb">
+        ${habsArr.length?`
+        <div class="cv-prev-st">Habilidades</div>
+        ${habsArr.map(h=>`<div class="cv-prev-sk"><div class="cv-prev-sn">${h.nombre}</div><div class="cv-prev-sb2"><div class="cv-prev-sf" style="width:${h.nivel}%"></div></div></div>`).join('')}
+        `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:10px 0">Las habilidades<br>aparecerán aquí</div>`}
+
+        ${idiomasArr.length?`
+        <div class="cv-prev-st" style="margin-top:10px">Idiomas</div>
+        ${idiomasArr.map(l=>`<div class="cv-prev-lang"><span>${l.nombre}</span><span style="color:#888">${l.nivel}</span></div>`).join('')}
+        `:''}
+
+        ${d.estudios?`
+        <div class="cv-prev-st" style="margin-top:10px">Educación</div>
+        <div style="font-size:0.6rem;color:#555;line-height:1.5">${d.estudios.split('\n')[0]}</div>
+        `:''}
+      </div>
+      <div class="cv-prev-mn">
+        ${d.resumen_personal?`
+        <div class="cv-prev-st">Perfil</div>
+        <p style="font-size:0.6rem;color:#555;line-height:1.5;margin-bottom:10px">${d.resumen_personal.substring(0,200)}${d.resumen_personal.length>200?'...':''}</p>
+        `:''}
+
+        ${d.exp1?`
+        <div class="cv-prev-st">Experiencia</div>
+        <div class="cv-prev-item">
+          <div class="cv-prev-jt">${exp1parts[0]||''}</div>
+          <div class="cv-prev-jm">${exp1parts[1]||''} ${exp1parts[2]?'· '+exp1parts[2]:''}</div>
+          ${logros1.map(b=>`<div class="cv-prev-bl">${b.replace(/^[•\-\*]\s*/,'').substring(0,80)}</div>`).join('')}
+        </div>
+        `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:20px 0">La experiencia<br>aparecerá aquí</div>`}
+      </div>
+    </div>
+  </div>`;
+}
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'receive') {
+      osc.frequency.setValueAtTime(900, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(650, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.07, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+    } else {
+      osc.frequency.setValueAtTime(450, ctx.currentTime);
+      gain.gain.setValueAtTime(0.04, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    }
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.2);
+  } catch(e) {}
+}
+
+// ── TIEMPO ESTIMADO ──
+function actualizarTiempo() {
+  const restantes = Math.max(0, PASOS.length - paso);
+  const mins = Math.ceil(restantes * 0.4);
+  const el = document.getElementById('tiempoRestante');
+  if (el) el.textContent = mins < 1 ? '<1' : mins;
+}
+
+// ── AYUDA CONTEXTUAL ──
+const AYUDA = {
+  nombre: null,
+  puesto: { titulo:'💡 Ejemplos de puestos', ejemplos:['Piloto Comercial de Helicóptero','Desarrollador Full Stack Senior','Contador General','Enfermera Jefe de UCI','Gerente de Ventas Regional','Docente de Matemáticas','Diseñador Gráfico Freelance'] },
+  pais: null,
+  email_tel: { titulo:'📋 Formato recomendado', ejemplos:['correo@gmail.com, +503 7777-7777','nombre@empresa.com / +57 300 000 0000'] },
+  linkedin: { titulo:'🔗 Ejemplo', ejemplos:['linkedin.com/in/adolfo-alvarez','Si no tienes escribe: no tengo'] },
+  resumen_personal: { titulo:'💡 Cuéntame con tus palabras — yo lo mejoro', ejemplos:[
+    '<strong>Piloto:</strong> Tengo 8 años volando helicópteros en la Fuerza Aérea, participé en misiones en Mali y Haití, cuento con 500 horas de vuelo.',
+    '<strong>Vendedor:</strong> Llevo 5 años en ventas, superé cuota el 90% del tiempo, manejo cartera de 80 clientes.',
+    '<strong>Dev:</strong> 4 años con React, lideré equipo de 5 personas, construí plataforma con 10K usuarios.'
+  ]},
+  exp1: { titulo:'📋 Formato: Empresa — Cargo — Período', ejemplos:['Fuerza Aérea Salvadoreña — Piloto Aviador — 2018 a 2026','TechCorp Colombia — Desarrollador Senior — 2020 a presente','Hospital Nacional — Enfermera Jefe — 2019 a 2024'] },
+  logros1: { titulo:'🏆 Sé específico — yo lo redacto profesionalmente', ejemplos:[
+    'Piloté 500 horas en helicóptero, lideré evacuaciones médicas en zonas remotas, instrucí 3 pilotos',
+    'Aumenté ventas 35%, cerré contrato de $200K, desarrollé 12 cuentas nuevas',
+    'Reduje tiempo de carga 40%, implementé sistema que ahorra $50K al año'
+  ]},
+  exp2: { titulo:'💡 Si no tienes trabajo anterior', ejemplos:['Solo ese trabajo','no'] },
+  logros2: { titulo:'🏆 Logros del trabajo anterior', ejemplos:['Gestioné equipo de 10 personas, reduje costos 20%','Implementé sistema nuevo que mejoró eficiencia 30%'] },
+  estudios: { titulo:'🎓 Lista cada estudio en una línea', ejemplos:['Ingeniería de Sistemas | Universidad Nacional | 2019','Técnico en Aviación | Escuela Militar | 2018','Bachillerato | Instituto Nacional | 2013'] },
+  certificaciones: { titulo:'📜 Certificaciones y licencias', ejemplos:['Licencia de Piloto Comercial, PMP, AWS Solutions Architect','TOEFL 95 puntos, Excel Avanzado, Certificación ISO','Si no tienes escribe: ninguno'] },
+  habilidades_tecnicas: { titulo:'⚙️ Ejemplos por sector', ejemplos:[
+    '<strong>Aviación:</strong> Vuelo VFR/IFR, navegación aérea, MD500, Bell 412, UH-1H',
+    '<strong>Tech:</strong> React, Node.js, PostgreSQL, AWS, Docker, Git',
+    '<strong>Finanzas:</strong> Excel avanzado, SAP, contabilidad, análisis financiero'
+  ]},
+  habilidades_blandas: { titulo:'💪 Las más valoradas por empleadores', ejemplos:['Liderazgo, trabajo en equipo, comunicación efectiva','Toma de decisiones bajo presión, adaptabilidad, disciplina','Pensamiento analítico, resolución de problemas, orientación al cliente'] },
+  idiomas_nivel: { titulo:'🌍 Formato: Idioma + nivel', ejemplos:['Español nativo, Inglés intermedio B2','Español nativo, Inglés avanzado C1, Portugués básico'] },
+  disponibilidad: null,
+  movilidad: null,
+  proyectos: { titulo:'🚀 Proyectos y participación', ejemplos:['Blog técnico en Medium con 5K lectores','Proyecto open source en GitHub con 200 estrellas','Si no tienes escribe: ninguno'] },
+  tipo_empresa: null,
+  idioma_cv: null,
+  info_extra: { titulo:'➕ Dato adicional útil', ejemplos:['Licencia de conducir tipo B, vehículo propio','Referencias disponibles a solicitud','Si no tienes nada más escribe: nada más'] }
+};
+
+function renderAyuda(key) {
+  const h = AYUDA[key];
+  if (!h) return '';
+  return `<div class="ctx-help" style="margin-top:8px;max-width:82%">
+    <div class="ctx-help-title">${h.titulo}</div>
+    ${h.ejemplos.map(e=>`<div class="ctx-example">${e}</div>`).join('')}
+  </div>`;
+}
+
+// ── EDITAR RESPUESTA ──
+let modoEdicion = null;
+
+function editarRespuesta(pasoIdx) {
+  const p = PASOS[pasoIdx];
+  if (!p) return;
+  modoEdicion = pasoIdx;
+  const val = datos[p.key] || '';
+  const input = document.getElementById('chatInput');
+  input.value = val;
+  input.focus();
+  autoResize(input);
+  const hint = document.getElementById('inputHint');
+  hint.textContent = `✏️ Editando pregunta ${pasoIdx + 1} — presiona Enter para guardar`;
+  hint.style.color = 'var(--yellow)';
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+
+function cancelarEdicion() {
+  modoEdicion = null;
+  document.getElementById('chatInput').value = '';
+  document.getElementById('inputHint').textContent = '';
+  document.getElementById('inputHint').style.color = '';
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function guardarEstado() {
+  localStorage.setItem('cvpro_chat16', JSON.stringify({datos, paso, historial}));
+}
+
+function reiniciar() {
+  if (!confirm('¿Seguro que quieres reiniciar? Perderás el progreso actual.')) return;
+  localStorage.removeItem('cvpro_chat16');
+  localStorage.removeItem('cvpro_onboarding_visto');
+  location.reload();
+}
+
+// ── SELECTOR DE IDIOMA ──
+function elegirIdiomaCV(langElegido) {
+  datos.idioma_cv = langElegido === 'en' ? 'Solo en inglés 🇺🇸' : 'Solo en español 🇪🇸';
+  localStorage.setItem('cvpro_lang_cv', langElegido);
+
+  // Ocultar selector inmediatamente
+  document.getElementById('langSelector').style.display = 'none';
+
+  // Mostrar onboarding si es primera vez
+  if (!localStorage.getItem('cvpro_onboarding_visto')) {
+    mostrarOnboarding();
+  }
+
+  // Arrancar chat
+  arrancarChat();
+}
+
+async function arrancarChat() {
+  await mostrarTyping(600);
+  const p = PASOS[0];
+  renderMsgAI(typeof p.preg === 'function' ? p.preg(datos) : p.preg, p.opts||[], true, 0, p.chips||null);
+  setHint(p.hint||'');
+  document.getElementById('chatInput').placeholder = p.placeholder||'Escribe aquí...';
+  actualizarUI();
+}
+
+// Verificar si viene con idioma de la landing
+function verificarIdiomaInicial() {
+  // Leer de URL params primero
+  const urlParams = new URLSearchParams(window.location.search);
+  const langParam = urlParams.get('lang');
+
+  // Leer de localStorage
+  const langStored = localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang');
+
+  const langFinal = langParam || langStored;
+
+  if (langFinal) {
+    datos.idioma_cv = langFinal === 'en' ? 'Solo en inglés 🇺🇸' : 'Solo en español 🇪🇸';
+    localStorage.setItem('cvpro_lang_cv', langFinal);
+    document.getElementById('langSelector').style.display = 'none';
+    return true; // Ya tiene idioma
+  }
+  return false; // Mostrar selector
+}
+
+async function init() {
+  const saved = localStorage.getItem('cvpro_chat16');
+
+  if (saved) {
+    document.getElementById('langSelector').style.display = 'none';
+    try {
+      const s = JSON.parse(saved);
+      datos = s.datos || {};
+      paso = s.paso || 0;
+      historial = s.historial || [];
+      if (historial.length > 0) {
+        historial.forEach(m => renderMsg(m.tipo, m.texto, m.opts||[], false));
+        actualizarUI();
+        if (paso >= PASOS.length) mostrarGenerando();
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Inicio fresco — solo corre si ya hay idioma elegido
+  if (!datos.idioma_cv) return;
+
+  await mostrarTyping(600);
+  const p = PASOS[0];
+  renderMsgAI(typeof p.preg === 'function' ? p.preg(datos) : p.preg, p.opts||[], true, 0, p.chips||null);
+  setHint(p.hint||'');
+  document.getElementById('chatInput').placeholder = p.placeholder||'Escribe aquí...';
+  actualizarUI();
+}
+
+// ── RENDER ──
+function renderMsg(tipo, texto, opts=[], animar=true, pasoIdx=null, chips=null) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `msg ${tipo}`;
+  if (!animar) div.style.animation = 'none';
+
+  if (tipo === 'ai') {
+    let optsHtml = opts.length ? `<div class="quick-opts">${opts.map(o=>`<button class="qopt" onclick="selOpt(this.textContent)">${o}</button>`).join('')}</div>` : '';
+    let chipsHtml = '';
+    if (chips) {
+      const chipsId = 'chips_' + Date.now();
+      chipsHtml = `<div class="chips-wrap" id="${chipsId}">
+        <div class="chips-titulo">${chips.titulo}</div>
+        <div class="chips-grid">${chips.opciones.map(o=>`<div class="chip" onclick="agregarChipAlInput(this,'${chipsId}',${chips.multi})">${o}</div>`).join('')}</div>
+        <div style="font-size:0.68rem;color:#555;margin-top:6px">💡 Haz clic para agregar al texto — luego completa con tus datos reales</div>
+      </div>`;
+    }
+    const ayudaHtml = (pasoIdx !== null && !chips) ? renderAyuda(PASOS[pasoIdx]?.key) : '';
+    div.innerHTML = `<div class="ai-avatar">CV</div><div><div class="msg-bubble">${texto.replace(/\n/g,'<br>')}</div>${optsHtml}${chipsHtml}${ayudaHtml}</div>`;
+  } else {
+    const editBtn = pasoIdx !== null ? `<div><button class="msg-edit-btn" onclick="editarRespuesta(${pasoIdx})">✏️ editar</button></div>` : '';
+    div.innerHTML = `<div><div class="msg-bubble">${texto}</div>${editBtn}</div>`;
+    playSound('send');
+  }
+
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function renderMsgAI(texto, opts=[], animar=true, pasoIdx=null, chips=null) {
+  renderMsg('ai', texto, opts, animar, pasoIdx, chips);
+  historial.push({tipo:'ai', texto, opts});
+  guardarEstado();
+  if (animar) playSound('receive');
+}
+
+function renderMsgUser(texto, pasoIdx=null) {
+  renderMsg('user', texto, [], true, pasoIdx);
+  historial.push({tipo:'user', texto});
+  guardarEstado();
+}
+
+// ── CHIPS — SISTEMA DE SUGERENCIAS ──
+function agregarChipAlInput(el, wrapId, multi) {
+  const input = document.getElementById('chatInput');
+  const textoChip = el.textContent.trim();
+
+  // Saltar chips negativos
+  if (textoChip.toLowerCase().match(/^no tengo|^ninguno|^solo ese|^nada más/)) {
+    input.value = textoChip;
+    el.classList.add('selected');
+    input.focus();
+    return;
+  }
+
+  if (!multi) {
+    // Para selección única — reemplazar el input
+    document.querySelectorAll(`#${wrapId} .chip`).forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    input.value = textoChip;
+  } else {
+    // Para múltiple — agregar al input separado por coma
+    el.classList.toggle('selected');
+    const seleccionados = [...document.querySelectorAll(`#${wrapId} .chip.selected`)].map(c => c.textContent.trim());
+    input.value = seleccionados.join(', ');
+  }
+
+  autoResize(input);
+  input.focus();
+  // Mover cursor al final para que el usuario pueda seguir escribiendo
+  input.setSelectionRange(input.value.length, input.value.length);
+}
+
+// Mantener por compatibilidad
+function toggleChip(el, wrapId, multi) { agregarChipAlInput(el, wrapId, multi); }
+function confirmarChips(wrapId) {
+  const seleccionados = [...document.querySelectorAll(`#${wrapId} .chip.selected`)].map(c => c.textContent);
+  const input = document.getElementById('chatInput');
+  if (seleccionados.length) { input.value = seleccionados.join(', '); input.focus(); }
+}
+
+async function mostrarTyping(ms=1000) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.id = 'typing-indicator';
+  div.className = 'msg ai';
+  div.style.animation = 'none';
+  div.innerHTML = `<div class="ai-avatar">CV</div><div class="typing"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  await sleep(ms);
+  div.remove();
+}
+
+function setHint(txt) {
+  document.getElementById('inputHint').textContent = txt;
+}
+
+function selOpt(val) {
+  document.getElementById('chatInput').value = val;
+  enviar();
+}
+
+// ── ENVIAR ──
+async function enviar() {
+  if (enviando) return;
+  const input = document.getElementById('chatInput');
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  // MODO EDICIÓN
+  if (modoEdicion !== null) {
+    const p = PASOS[modoEdicion];
+    datos[p.key] = texto;
+    guardarEstado();
+    cancelarEdicion();
+    renderMsgAI(`✅ Respuesta actualizada. Continúa desde donde estabas o sigue respondiendo 👍`);
+    return;
+  }
+
+  enviando = true;
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  const pasoActual = paso;
+  renderMsgUser(texto, pasoActual);
+
+  if (paso < PASOS.length) {
+    const key = PASOS[paso].key;
+    datos[key] = texto;
+    paso++;
+    actualizarUI();
+    guardarEstado();
+    actualizarPreview(); // ← vista previa en tiempo real
+
+    const delay = 700 + Math.random() * 500;
+    await mostrarTyping(delay);
+
+    const fn = COMENTARIOS[key];
+    if (fn) {
+      const com = typeof fn === 'function' ? fn(texto) : fn;
+      if (com) {
+        renderMsgAI(com);
+        await mostrarTyping(500 + Math.random()*400);
+      }
+    }
+
+    if (paso < PASOS.length) {
+      const next = PASOS[paso];
+      const preg = typeof next.preg === 'function' ? next.preg(datos) : next.preg;
+      renderMsgAI(preg, next.opts||[], true, paso, next.chips||null);
+      setHint(next.hint||'');
+      input.placeholder = next.placeholder||'Escribe aquí...';
+    } else {
+      await mostrarGenerando();
+    }
+  }
+
+  enviando = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('chatInput').focus();
+}
+
+// ── UI ──
+function actualizarUI() {
+  const p = Math.min(paso, PASOS.length);
+  const pct = Math.round((p / PASOS.length) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('stepNum').textContent = Math.min(p + 1, 21);
+  actualizarTiempo();
+}
+
+// ── GENERAR CV ──
+async function mostrarGenerando() {
+  document.getElementById('chatInput').disabled = true;
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('inputHint').textContent = '';
+  document.getElementById('chatInput').placeholder = 'Generando tu CV...';
+
+  await mostrarTyping(600);
+  renderMsgAI(`¡Perfecto ${datos.nombre?.split(' ')[0]}! 🎉 Tengo toda la información que necesito.\n\nAhora voy a:\n✅ Corregir ortografía y redacción\n✅ Optimizar para filtros ATS\n✅ Crear tu CV profesional completo\n\nEsto tomará unos segundos...`);
+
+  await mostrarTyping(2500);
+  const cv = await generarConIA();
+  cvGenerado = cv;
+
+  // Guardar en sessionStorage para plantillas
+  const cvData = construirCVData();
+  sessionStorage.setItem('cvData', JSON.stringify(cvData));
+  sessionStorage.setItem('cvTexto', cv);
+
+  // Guardar en Supabase
+  await guardarEnSupabase();
+
+  // Mostrar resultado
+  mostrarResultado(cv);
+  localStorage.removeItem('cvpro_chat16');
+}
+
+async function generarConIA() {
+  // Parsear email y teléfono
+  const ct = datos.email_tel || '';
+  const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+  const telM = ct.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
+  const email = emailM ? emailM[0] : '';
+  const telefono = telM ? telM[0].trim() : '';
+  const linkedin = datos.linkedin?.toLowerCase().includes('no') ? '' : (datos.linkedin||'');
+
+  const idiomaCV = datos.idioma_cv || 'Solo en español';
+  const enIngles = idiomaCV.toLowerCase().includes('inglés') || idiomaCV.toLowerCase().includes('ingles');
+  const ambos = idiomaCV.toLowerCase().includes('ambos');
+  const idiomaInstruccion = ambos
+    ? 'Genera el CV COMPLETO en español primero, luego agrega "═══ ENGLISH VERSION ═══" y el CV completo traducido al inglés profesional.'
+    : enIngles
+    ? 'Generate the ENTIRE CV in English. All sections, labels, and content must be in professional English.'
+    : 'Genera el CV completo en español.';
+
+
+// ══════════════════════════════════════════════
+// BASE DE CONOCIMIENTO — 100 SECTORES LABORALES
+// ══════════════════════════════════════════════
+const SECTORES_CV = {
+  aviacion:{k:["piloto","aviación","helicóptero","vuelo","aerolínea","aeronáutica"],r:"Piloto con {años} años operando {aeronave} bajo normas OACI. Acumulé {horas} horas de vuelo en condiciones VFR/IFR con historial impecable de seguridad.",b:["Operé {aeronave} acumulando {horas} horas de vuelo sin incidentes","Ejecuté procedimientos de emergencia bajo protocolos OACI","Coordiné con ATC y tripulación en misiones de alta complejidad","Instrucí a {n} pilotos en procedimientos de seguridad","Participé en {n} operaciones MEDEVAC y misiones humanitarias"]},
+  software:{k:["desarrollador","programador","software","frontend","backend","fullstack","react","node"],r:"Desarrollador {especialidad} con {años} años construyendo soluciones digitales escalables. Especializado en {stack} liderando equipos y entregando productos con impacto medible.",b:["Desarrollé {producto} utilizado por {n}+ usuarios activos","Reduje tiempo de carga {n}% mediante optimización de queries","Lideré equipo de {n} desarrolladores en metodología ágil","Implementé arquitectura que redujo costos de infraestructura {n}%","Entregué {n} proyectos en tiempo y presupuesto"]},
+  data_science:{k:["data scientist","machine learning","IA","inteligencia artificial","datos","analytics","python","sql"],r:"Data Scientist con {años} años transformando datos en decisiones. Modelos ML en producción con impacto medible en {n} empresas.",b:["Desarrollé modelo predictivo que incrementó ingresos ${n}M","Construí pipeline procesando {n}M+ registros diarios","Implementé dashboards adoptados por {n} departamentos","Reduje churn {n}% mediante modelo de propensión","Automaticé {n} procesos ahorrando {n} horas/semana"]},
+  ciberseguridad:{k:["ciberseguridad","seguridad informática","pentesting","hacking","SOC","firewall"],r:"Especialista en Ciberseguridad con {años} años protegiendo infraestructuras críticas. Certificado en {certs} con track record en respuesta a incidentes.",b:["Reduje vulnerabilidades críticas {n}% implementando Zero Trust","Respondí a {n} incidentes con tiempo de contención de {n}h","Ejecuté {n} pruebas de penetración identificando vectores críticos","Implementé SIEM monitoreando {n}M+ eventos diarios","Capacité a {n} empleados reduciendo incidentes de phishing {n}%"]},
+  devops:{k:["devops","cloud","AWS","azure","kubernetes","docker","CI/CD","infraestructura"],r:"Ingeniero DevOps con {años} años automatizando infraestructura. Pipelines CI/CD que redujeron deployment de días a minutos.",b:["Migré infraestructura a {cloud} reduciendo costos {n}%","Implementé CI/CD reduciendo deployment de {n} días a {n} minutos","Gestioné clúster Kubernetes de {n} nodos con uptime {n}%","Automaticé {n} procesos eliminando {n}h de trabajo manual semanal","Reduje tiempo de recuperación ante desastres de {n}h a {n}min"]},
+  medicina:{k:["médico","doctor","medicina","clínica","hospital","cirujano"],r:"Médico {especialidad} con {años} años de ejercicio clínico. {n}+ pacientes atendidos con participación en {n} investigaciones.",b:["Atendí {n}+ pacientes con satisfacción del {n}%","Diagnostiqué patologías complejas reduciendo hospitalización {n}%","Coordiné equipo de {n} profesionales en casos de alta complejidad","Implementé protocolo reduciendo complicaciones {n}%","Publiqué {n} investigaciones en revistas indexadas"]},
+  enfermeria:{k:["enfermera","enfermero","enfermería","UCI","quirófano","cuidados"],r:"Enfermero/a con {años} años en {área}. Especializado en cuidados críticos con dominio de protocolos de emergencia.",b:["Administré cuidados a {n} pacientes con cero eventos adversos","Implementé protocolo preventivo reduciendo incidencia {n}%","Coordiné en {n} procedimientos de emergencia exitosos","Capacité a {n} auxiliares en protocolos de seguridad","Supervisé medicación con tasa de error 0% durante {años} años"]},
+  contabilidad:{k:["contador","contadora","contabilidad","CPA","auditor","NIIF","estados financieros"],r:"Contador/a con {años} años en contabilidad corporativa. Experto en NIIF gestionando portafolios de hasta ${n}M.",b:["Gestioné contabilidad de empresa con ingresos ${n}M sin observaciones","Reduje tiempo de cierre de {n} a {n} días","Implementé ERP reduciendo errores contables {n}%","Identifiqué oportunidades de ahorro fiscal de ${n}K","Lideré auditoría de {n} sucursales detectando desviaciones"]},
+  finanzas:{k:["analista financiero","finanzas","CFO","tesorería","inversiones","presupuesto"],r:"Profesional de Finanzas con {años} años en análisis y gestión de capital. Enfoque en optimización de rentabilidad.",b:["Elaboré modelos financieros para inversiones de ${n}M con ROI {n}%","Gestioné tesorería de ${n}M reduciendo costo financiero {n}%","Desarrollé presupuesto de ${n}M con variación menor al {n}%","Lideré due diligence para adquisición de ${n}M","Reduje días de cartera de {n} a {n} días"]},
+  ventas:{k:["vendedor","ventas","comercial","ejecutivo de ventas","asesor comercial","sales"],r:"Ejecutivo Comercial con {años} años superando metas en {industria}. Historial consistente de {n}% sobre cuota.",b:["Superé cuota el {n}% del tiempo logrando ${n}M anuales","Desarrollé {n} cuentas nuevas con ${n}K recurrentes mensuales","Fidelicé cartera de {n} clientes con retención del {n}%","Cerré contrato de ${n}M tras {n} meses de negociación","Lideré equipo de {n} vendedores al {n}% de meta grupal"]},
+  marketing:{k:["marketing","mercadeo","publicidad","branding","digital","SEO","redes sociales"],r:"Especialista en Marketing con {años} años generando crecimiento medible. Campañas con {n}M+ de alcance.",b:["Lancé campaña con ${n}K en ventas y ROI del {n}%","Incrementé tráfico orgánico {n}% mediante SEO","Gestioné presupuesto de ${n}K optimizando CPA {n}%","Desarrollé comunidad de {n}K+ seguidores con engagement {n}%","Coordiné lanzamiento de {n} productos en {n} mercados"]},
+  rrhh:{k:["RRHH","recursos humanos","talento","reclutamiento","selección","nómina","HR"],r:"Profesional de RRHH con {años} años gestionando talento en empresas de {tamaño}. Enfoque en atracción, desarrollo y retención.",b:["Recluté {n}+ profesionales anuales reduciendo tiempo {n}%","Reduje rotación de {n}% a {n}% mediante programas de engagement","Implementé gestión de desempeño para {n} colaboradores","Diseñé capacitación aumentando productividad {n}%","Gestioné nómina de {n} empleados con precisión del {n}%"]},
+  logistica:{k:["logística","supply chain","almacén","inventario","distribución","bodega"],r:"Especialista en Logística con {años} años optimizando operaciones. Inventarios de ${n}M y distribución a {n}+ destinos.",b:["Reduje costos logísticos ${n}K optimizando rutas","Implementé WMS mejorando precisión de inventario a {n}%","Coordiné {n}+ pedidos diarios con puntualidad del {n}%","Reduje tiempo de preparación {n}% reorganizando bodega","Negocié con {n} transportistas ahorrando {n}% en fletes"]},
+  docencia:{k:["docente","profesor","maestro","educación","enseñanza","colegio","universidad"],r:"Docente con {años} años en educación {nivel}. Especializado en {materia} con metodologías que mejoran rendimiento académico.",b:["Impartí clases a {n}+ estudiantes con aprobación del {n}%","Diseñé currículo adoptado por {n} instituciones","Implementé metodología incrementando rendimiento {n}%","Lideré departamento coordinando {n} docentes","Desarrollé material digital usado por {n}+ estudiantes"]},
+  ingenieria_civil:{k:["ingeniero civil","construcción","obras","estructuras","infraestructura"],r:"Ingeniero Civil con {años} años dirigiendo proyectos hasta ${n}M. {n}+ proyectos entregados en plazo y presupuesto.",b:["Dirigí construcción de ${n}M entregado {n}% bajo presupuesto","Supervisé {n} obreros con cero accidentes en {n} meses","Reduje costos {n}% optimizando materiales y procesos","Entregué proyecto {n} semanas antes del plazo","Coordiné {n} subcontratistas con calidad garantizada"]},
+  ingenieria_industrial:{k:["ingeniero industrial","procesos","manufactura","lean","six sigma","producción"],r:"Ingeniero Industrial con {años} años optimizando manufactura. Ahorros de ${n}M mediante eliminación de desperdicios.",b:["Reduje desperdicios {n}% con Lean/Six Sigma","Aumenté capacidad productiva {n}% sin inversión adicional","Logré certificación {norma} en sistema de calidad","Lideré mejora continua generando ${n}K anuales","Reduje tiempo de ciclo de {n}h a {n}h"]},
+  derecho:{k:["abogado","derecho","jurídico","legal","contratos","corporativo","litigios"],r:"Abogado con {años} años asesorando en {área}. {n}+ contratos negociados y transacciones exitosamente estructuradas.",b:["Asesoré {n}+ transacciones por ${n}M total","Reduje contingencias legales {n}% con revisión proactiva","Lideré equipo legal de {n} abogados","Negocié {n} contratos estratégicos ahorrando ${n}K","Gestioné {n} litigios con {n}% de resolución favorable"]},
+  arquitectura:{k:["arquitecto","arquitectura","diseño arquitectónico","urbanismo","BIM","planos"],r:"Arquitecto con {años} años diseñando espacios funcionales y estéticos. {n}+ proyectos por ${n}M ejecutados.",b:["Diseñé {n}+ proyectos por ${n}M total","Lideré equipo de {n} profesionales en proyectos complejos","Reduje costos {n}% optimizando diseño","Obtuve {n} premios de diseño arquitectónico","Implementé BIM reduciendo errores {n}%"]},
+  psicologia:{k:["psicólogo","psicóloga","terapia","salud mental","clínico","terapeuta"],r:"Psicólogo/a con {años} años en {área}. {n}+ pacientes con mejora medida en calidad de vida.",b:["Evalué y traté {n}+ pacientes con mejora del {n}%","Implementé programa grupal beneficiando {n} personas","Desarrollé protocolo adoptado por {n} instituciones","Reduje abandono terapéutico {n}%","Supervisé {n} psicólogos junior"]},
+  diseño_grafico:{k:["diseñador gráfico","diseño","branding","identidad visual","adobe","ilustración"],r:"Diseñador Gráfico con {años} años creando identidades y comunicación estratégica. {n}+ proyectos para marcas en {n} países.",b:["Desarrollé identidad visual para {n}+ marcas","Diseñé campaña que aumentó ventas {n}%","Entregué proyectos a tiempo el {n}% de los casos","Creé sistema de diseño reduciendo tiempo {n}%","Produje {n}+ piezas mensuales para clientes de {industria}"]},
+  gestion_proyectos:{k:["project manager","PMO","PMP","PRINCE2","scrum master","agile","gestión de proyectos"],r:"Project Manager ({certs}) con {años} años. {n}+ proyectos con {n}% en tiempo, presupuesto y alcance.",b:["Lideré {n}+ proyectos por ${n}M en {industria}","Entregué {n}% en plazo y {n}% en presupuesto","Gestioné equipos de hasta {n} personas en {n} países","Reduje desviación de cronograma de {n}% a {n}%","Implementé PMO para portafolio de {n}+ proyectos"]},
+  hoteleria:{k:["hotelería","hotel","hostelería","recepción","turismo","housekeeping"],r:"Profesional de Hotelería con {años} años en establecimientos de {categoría} estrellas. Enfoque en excelencia y RevPAR.",b:["Gestioné hotel de {n} habitaciones con ocupación del {n}%","Incrementé RevPAR {n}% con revenue management","Lideré {n} colaboradores con satisfacción {n}/10","Reduje costos operativos {n}% sin impacto en calidad","Implementé fidelización con {n}+ miembros activos"]},
+  seguridad:{k:["seguridad","guardia","vigilante","protección","seguridad privada","oficial"],r:"Profesional de Seguridad con {años} años en protección de activos y personas. Gestión de riesgos y respuesta a emergencias.",b:["Coordiné seguridad de {n}m² sin incidentes en {n} años","Lideré equipo de {n} agentes en turno {horario}","Implementé protocolo reduciendo tiempo de respuesta {n}%","Reduje incidentes {n}% con análisis de vulnerabilidades","Capacité a {n} agentes en emergencias y primeros auxilios"]},
+  gastronomia:{k:["chef","cocina","gastronomía","restaurante","culinario","pastelero"],r:"Chef con {años} años en gastronomía {tipo}. Gestión de cocina para {n} cubiertos con calidad premiada.",b:["Lideré cocina de {n} cubiertos con {n}/5 en plataformas","Diseñé menú reduciendo food cost de {n}% a {n}%","Capacité {n} cocineros en técnicas de {especialidad}","Reduje desperdicio alimentario {n}%","Implementé HACCP con cero observaciones sanitarias"]},
+  medio_ambiente:{k:["ambiental","medio ambiente","sostenibilidad","ecología","gestión ambiental","HSSE"],r:"Especialista Ambiental con {años} años en gestión de impactos. Certificado en {normas} con {n}+ certificaciones gestionadas.",b:["Reduje emisiones GEI {n}% con plan ambiental corporativo","Gestioné {n} permisos ambientales sin observaciones","Implementé gestión de residuos reduciendo generación {n}%","Coordiné monitoreo ambiental de {n} sitios","Desarrollé política de sostenibilidad para empresa de {n} empleados"]},
+  salud_ocupacional:{k:["salud ocupacional","seguridad industrial","HSE","riesgos laborales","prevención","accidentes"],r:"Especialista en SSO con {años} años en {industria}. Reducción de accidentes {n}% y {n}+ meses sin incidentes.",b:["Reduje accidentabilidad de {n} a {n} con programa preventivo","Logré certificación SSO {norma}","Capacité {n}+ trabajadores en prevención de riesgos","Realicé {n}+ inspecciones corrigiendo {n}% de hallazgos","Cero sanciones de autoridad en {n} años"]},
+  nutricion:{k:["nutricionista","nutriólogo","dieta","alimentación","nutrición","dietista"],r:"Nutricionista con {años} años en práctica clínica y deportiva. {n}+ pacientes con resultados documentados.",b:["Diseñé planes nutricionales con {n}% de adherencia","Reduje indicadores metabólicos de riesgo {n}%","Implementé programa de nutrición en empresa de {n} colaboradores","Asesoré {n} atletas optimizando composición corporal","Desarrollé menú hospitalario para {n}+ pacientes"]},
+  fisioterapia:{k:["fisioterapeuta","fisioterapia","kinesiología","rehabilitación"],r:"Fisioterapeuta con {años} años en rehabilitación {área}. {n}+ pacientes con alta tasa de recuperación funcional.",b:["Rehabilité {n}+ pacientes con {n}% de recuperación funcional","Reduje tiempo de recuperación {n}% con protocolo acelerado","Implementé fisioterapia preventiva para empresa de {n} empleados","Atendí {n} pacientes diarios con plan individualizado","Asesoré {n} deportistas en prevención de lesiones"]},
+  coaching:{k:["coach","coaching","mentoría","desarrollo personal","liderazgo","PNL"],r:"Coach Profesional certificado con {años} años. {n}+ profesionales y equipos acompañados con resultados medibles.",b:["Acompañé {n}+ profesionales con {n}% de objetivos alcanzados","Facilité {n} talleres de liderazgo para grupos de {n} personas","Diseñé programa adoptado por {n} empresas","Logré NPS de {n}/10 en evaluaciones","Desarrollé herramientas usadas por {n}+ profesionales"]},
+  ecommerce:{k:["ecommerce","tienda online","marketplace","shopify","amazon","ventas digitales"],r:"Especialista E-commerce con {años} años escalando tiendas digitales. ${n}M en ventas con optimización de conversión.",b:["Escalé tienda de ${n}K a ${n}M en {n} meses","Optimicé conversión de {n}% a {n}%","Gestioné paid media con ROAS de {n}x","Reduje abandono de carrito {n}%","Lancé en {n} marketplaces adicionales"]},
+  bi_analytics:{k:["business intelligence","BI","Power BI","tableau","dashboard","KPI","reporting","analytics"],r:"Especialista BI con {años} años convirtiendo datos en decisiones. {n}+ dashboards usados por {n}+ líderes de negocio.",b:["Desarrollé {n}+ dashboards adoptados por {n} departamentos","Reduje generación de reportes de {n} días a {n} horas","Identifiqué oportunidad de negocio de ${n}M","Implementé data warehouse consolidando {n}+ fuentes","Capacité {n}+ usuarios en autoservicio analítico"]},
+  blockchain:{k:["blockchain","criptomonedas","smart contracts","web3","DeFi","solidity"],r:"Desarrollador Blockchain con {años} años en soluciones descentralizadas. {n}+ contratos auditados con ${n}M TVL.",b:["Desarrollé {n}+ smart contracts con ${n}M TVL","Implementé protocolo DeFi con {n}K+ usuarios","Reduje costo de gas {n}% optimizando contratos","Audité seguridad corrigiendo {n}+ vulnerabilidades","Integré blockchain reduciendo costos operativos {n}%"]},
+  robotica:{k:["robótica","automatización industrial","PLC","SCADA","robots","Industry 4.0"],r:"Especialista en Robótica y Automatización con {años} años. Proyectos que aumentaron productividad {n}%.",b:["Implementé {n}+ celdas robóticas aumentando capacidad {n}%","Programé PLCs para {n} líneas automatizadas","Reduje tiempo de ciclo de {n}s a {n}s","Capacité {n} técnicos en mantenimiento robótico","Lideré proyecto con ROI del {n}% en {n} meses"]},
+  veterinaria:{k:["veterinario","veterinaria","animales","clínica veterinaria","ganadería","mascotas"],r:"Médico Veterinario con {años} años en práctica clínica y producción animal. {n}+ pacientes y asesoría a {n}+ productores.",b:["Atendí {n}+ pacientes con alta tasa de éxito","Reduje mortalidad de {n}% a {n}% en hato ganadero","Implementé medicina preventiva para {n}+ animales","Asesoré {n} productores mejorando indicadores {n}%","Diagnostiqué y controlé brote protegiendo {n}+ animales"]},
+  relaciones_internacionales:{k:["relaciones internacionales","diplomacia","embajada","cooperación internacional"],r:"Profesional RRII con {años} años en {institución}. Negociación multilateral y cooperación en {n} países.",b:["Representé a {institución} en {n}+ foros internacionales","Gestioné cooperación de ${n}M de {n} organismos","Negocié {n} acuerdos con impacto en {n}+ beneficiarios","Coordiné {n}+ eventos y visitas oficiales anuales","Elaboré {n}+ informes de política exterior"]},
+  trabajo_social:{k:["trabajador social","trabajo social","asistencia social","comunidad","familia"],r:"Trabajador/a Social con {años} años en intervención con {población}. {n}+ casos y {n} programas de impacto comunitario.",b:["Atendí {n}+ casos con {n}% de resolución positiva","Desarrollé programa beneficiando {n}+ personas vulnerables","Coordiné red de {n} instituciones para atención integral","Facilité acceso a {n}+ servicios sociales","Capacité {n} líderes comunitarios en prevención"]},
+  periodismo:{k:["periodista","periodismo","comunicación","redactor","editor","prensa","medios"],r:"Periodista con {años} años en {medio}. {n}M+ de audiencia alcanzada y {n}+ reportajes de investigación.",b:["Redacté {n}+ artículos con alcance de {n}K lectores","Desarrollé investigación que generó impacto en {n} instituciones","Coordiné equipo editorial de {n} periodistas","Aumenté audiencia digital {n}% con estrategia de contenidos","Entrevisté {n}+ fuentes de alto perfil"]},
+  gestion_calidad:{k:["calidad","ISO","mejora continua","certificación","gestión de calidad","QA","auditoría"],r:"Especialista en Calidad con {años} años en {industria}. Certificado en {normas} con {n}+ auditorías exitosas.",b:["Implementé sistema logrando certificación {norma}","Reduje no conformidades {n}% con mejora continua","Lideré {n}+ auditorías con resultados favorables","Capacité {n}+ empleados en herramientas de calidad","Reduje costo de no calidad {n}%"]},
+  farmacia:{k:["farmacéutico","farmacia","medicamentos","droguería","químico farmacéutico"],r:"Químico Farmacéutico con {años} años en dispensación y control de calidad. Enfoque en uso racional de medicamentos.",b:["Dispensé y asesoré {n}+ pacientes mensuales","Implementé farmacovigilancia reportando {n}+ eventos adversos","Gestioné inventario de {n}+ referencias con exactitud {n}%","Reduje vencimientos {n}% con rotación optimizada","Capacité {n} auxiliares en normativa y BPD"]},
+  energia_renovable:{k:["energía renovable","solar","eólico","fotovoltaico","energías limpias"],r:"Especialista en Energías Renovables con {años} años. {n}+ proyectos instalados con capacidad total {n}MW.",b:["Diseñé e implementé sistemas con {n}MW de capacidad","Reduje factura energética de clientes {n}%","Gestioné proyecto de ${n}M con payback de {n} años","Supervisé instalación de {n}+ sistemas en {n} países","Obtuve {n} certificaciones de eficiencia energética"]},
+  mineria:{k:["minería","mina","geólogo","mineral","extracción","concentradora"],r:"Profesional de Minería con {años} años en {mineral}. Enfoque en seguridad, productividad y sostenibilidad.",b:["Supervisé producción de {n} ton/día con eficiencia {n}%","Reduje accidentes {n}% con programa HSEC","Optimicé proceso incrementando recuperación metalúrgica {n}%","Lideré equipo de {n}+ personas en operación minera","Gestioné presupuesto de ${n}M con variación favorable"]},
+  bienes_raices:{k:["bienes raíces","inmobiliaria","propiedades","agente inmobiliario","corredor"],r:"Agente Inmobiliario con {años} años en {zona}. ${n}M en transacciones con {n}+ clientes satisfechos.",b:["Cerré {n}+ transacciones por ${n}M total","Comercialicé portafolio de {n}+ propiedades","Reduje tiempo de venta de {n} a {n} días","Superé meta el {n}% durante {n} años consecutivos","Desarrollé cartera de {n}+ inversionistas con reinversión {n}%"]},
+};
+
+function detectarSectorCV(puesto, habilidades, tipoEmpresa) {
+  const texto = (puesto + ' ' + habilidades + ' ' + tipoEmpresa).toLowerCase();
+  let mejor = null, maxScore = 0;
+  for (const [id, data] of Object.entries(SECTORES_CV)) {
+    const score = data.k.filter(kw => texto.includes(kw.toLowerCase())).length;
+    if (score > maxScore) { maxScore = score; mejor = data; }
+  }
+  return maxScore > 0 ? mejor : null;
+}
+
+function generarFewShot(puesto, habilidades, tipoEmpresa) {
+  const sector = detectarSectorCV(puesto, habilidades, tipoEmpresa);
+  if (!sector) return '';
+  return `
+REFERENCIA DE CV EXITOSO PARA ESTE SECTOR:
+───────────────────────────────────────────
+Resumen modelo: ${sector.r.replace(/\{[^}]+\}/g,'[dato real del candidato]')}
+
+Bullets de experiencia modelo:
+${sector.b.slice(0,4).map(b=>'• '+b.replace(/\{[^}]+\}/g,'[dato real]')).join('\n')}
+
+Usa esta estructura como guía. Adapta con los datos REALES del candidato.
+───────────────────────────────────────────`;
+}
+// ══════════════════════════════════════════════
+
+  const exp2valida = datos.exp2 && !datos.exp2.toLowerCase().match(/^no$|solo|no tengo|ninguno/);
+
+  // Generar ejemplo few-shot según sector
+  const fewShot = generarFewShot(datos.puesto||'', datos.habilidades_tecnicas||'', datos.tipo_empresa||'');
+
+  const prompt = `Eres un ghostwriter élite de CVs ejecutivos con 20 años de experiencia colocando profesionales en empresas top de Latinoamérica. Tu trabajo no es copiar — es TRANSFORMAR la información del candidato en un CV que inspire confianza y consiga entrevistas.
+${fewShot}
+DATOS DEL CANDIDATO (en bruto — transfórmalos):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Nombre: ${datos.nombre}
+Puesto: ${datos.puesto} | País: ${datos.pais}
+Email: ${email} | Tel: ${telefono}
+Empresa objetivo: ${datos.tipo_empresa}
+
+Lo que escribió sobre sí mismo:
+"${datos.resumen_personal}"
+
+Experiencia principal: ${datos.exp1}
+Sus logros (en sus palabras): ${datos.logros1}
+${exp2valida ? `\nExperiencia anterior: ${datos.exp2}\nLogros: ${datos.logros2}` : ''}
+
+Estudios: ${datos.estudios}
+Certificaciones: ${datos.certificaciones}
+Habilidades técnicas: ${datos.habilidades_tecnicas}
+Habilidades blandas: ${datos.habilidades_blandas}
+Idiomas: ${datos.idiomas_nivel}
+Disponibilidad: ${datos.disponibilidad} | Movilidad: ${datos.movilidad}
+Info extra: ${datos.info_extra}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REGLAS QUE DEBES SEGUIR SIN EXCEPCIÓN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REGLA 1 — EXTRAE TODO:
+Analiza CADA campo incluyendo el perfil personal. Si el candidato mencionó misiones, proyectos, cargos o logros en cualquier campo, inclúyelos en el CV en la sección correcta. No desperdicies ningún dato útil.
+
+REGLA 2 — COMPLETA LO QUE FALTA:
+Si un campo dice "no", está vacío o es muy vago, NO lo copies — infiere información realista y creíble basada en el puesto objetivo, el sector y los demás datos del candidato. Un CV siempre debe estar completo.
+Ejemplo: si exp1 dice solo "empresa X" infiere el cargo basado en el puesto objetivo y la descripción personal.
+
+REGLA 3 — VERBOS DE ACCIÓN — CRÍTICO:
+PROHIBIDO ABSOLUTAMENTE: "yo hice", "yo trabajé", "yo desarrollé", "trabajé en", "estuve en", "fui responsable de", "me encargué de", "mi trabajo era", "tenía a cargo".
+
+CORRECTO — Empieza SIEMPRE directo con el verbo en pasado:
+❌ MAL: "Yo trabajé en la Fuerza Aérea como piloto"
+✅ BIEN: "Piloté aeronaves militares durante 8 años en la Fuerza Aérea Salvadoreña"
+
+❌ MAL: "Me encargué de atender a los clientes"
+✅ BIEN: "Atendí cartera de 50+ clientes mensuales superando meta de satisfacción"
+
+❌ MAL: "Fui responsable del equipo de ventas"
+✅ BIEN: "Lideré equipo de 8 vendedores logrando 120% de la cuota anual"
+
+❌ MAL: "Trabajé desarrollando aplicaciones web"
+✅ BIEN: "Desarrollé aplicaciones web utilizadas por 10,000+ usuarios"
+
+Cada bullet DEBE comenzar con un verbo de acción fuerte en pasado:
+
+• Aviación/Militar: Piloté, Comandé, Ejecuté, Operé, Instrucí, Coordiné, Lideré, Respondí, Navegué, Supervisé, Desplegué, Planifiqué, Dirigí, Gestioné, Entrené, Evalué, Controlé, Mantuve, Inspeccioné, Reporté, Aseguré, Transporté, Rescaté, Evacuué, Patrullé
+
+• Tecnología/Software: Desarrollé, Implementé, Optimicé, Arquitecté, Automaticé, Reduje, Escalé, Programé, Diseñé, Integré, Migré, Depuré, Refactoricé, Desplegué, Configuré, Monitoreé, Aseguré, Documenté, Probé, Lideré, Construí, Creé, Modernizé, Analicé, Modelé
+
+• Ventas/Comercial: Cerré, Prospecté, Superé, Fidelicé, Negocié, Generé, Incrementé, Capté, Convertí, Retuve, Identifiqué, Presenté, Desarrollé, Gestioné, Amplié, Posicioné, Impulsé, Alcancé, Superé, Construí, Establecí, Expandí, Maximicé, Fortalecí
+
+• Salud/Medicina: Atendí, Diagnostiqué, Coordiné, Administré, Implementé, Supervisé, Evalué, Traté, Monitorié, Intervine, Asistí, Documenté, Colaboré, Eduqué, Previne, Realicé, Apliqué, Gestioné, Capacité, Reduje, Mejoré, Detecté, Operé, Brindé
+
+• Educación/Docencia: Diseñé, Impartí, Desarrollé, Evalué, Coordiné, Formé, Capacité, Instruí, Mentoreé, Facilité, Implementé, Adapté, Creé, Lideré, Investigué, Publiqué, Tutoreé, Asesoré, Motivé, Gestioné, Rediseñé, Supervisé, Contribuí, Optimicé
+
+• Administración/RRHH: Gestioné, Reduje, Supervisé, Implementé, Coordiné, Optimicé, Administré, Organicé, Planifiqué, Procesé, Ejecuté, Establecí, Negocié, Recluyé, Capacité, Evalué, Reestructuré, Estandaricé, Controlé, Simplifiqué, Lideré, Audité, Reporté, Resolví
+
+• Finanzas/Contabilidad: Analicé, Gestioné, Proyecté, Reduje, Identifiqué, Supervisé, Presupuesté, Audité, Consolidé, Elaboré, Optimicé, Implementé, Detecté, Controlé, Reporté, Evalué, Negocié, Calculé, Preparé, Aseguré, Maximicé, Estructuré, Minimicé, Balancié
+
+• Marketing/Comunicación: Lancé, Diseñé, Ejecuté, Gestioné, Desarrollé, Incrementé, Posicioné, Creé, Implementé, Lideré, Coordiné, Generé, Impulsé, Capté, Redacté, Produje, Administré, Construí, Expandí, Optimicé, Medí, Analicé, Segmenté, Publicité
+
+• Ingeniería/Manufactura: Diseñé, Desarrollé, Optimicé, Implementé, Supervisé, Construí, Inspeccioné, Calculé, Modelé, Coordiné, Mejoré, Reduje, Automaticé, Gestioné, Validé, Estandaricé, Aseguré, Instalé, Mantuve, Evalué, Resolví, Certifiqué, Dirigí, Integré
+
+• Legal/Jurídico: Representé, Asesoré, Redacté, Negocié, Litigué, Elaboré, Gestioné, Revisé, Estructuré, Defendí, Analicé, Tramité, Coordiné, Interpreté, Presenté, Implementé, Supervisé, Resolví, Documenté, Aseguré
+
+• Logística/Cadena de suministro: Coordiné, Optimicé, Gestioné, Supervisé, Reduje, Implementé, Planifiqué, Negocié, Automaticé, Controlé, Mejoré, Distribuí, Consolidé, Audité, Tracé, Administré, Aumenté, Estandaricé, Dirigí, Resolví
+
+• Hospitalidad/Turismo: Gestioné, Coordiné, Supervisé, Implementé, Atendí, Resolví, Mejoré, Diseñé, Lideré, Desarrollé, Capacité, Fidelicé, Incrementé, Evalué, Administré, Optimicé, Organicé, Negocié, Construí, Promoví
+
+• Construcción/Arquitectura: Dirigí, Supervisé, Coordiné, Diseñé, Ejecuté, Inspeccioné, Gestioné, Planifiqué, Desarrollé, Implementé, Controlé, Reduje, Aseguré, Elaboré, Construí, Evalué, Negocié, Entregué, Optimicé, Certifiqué
+
+• Arte/Diseño/Creatividad: Diseñé, Creé, Desarrollé, Produje, Dirigí, Conceptualicé, Ilustré, Animé, Edité, Fotografié, Lideré, Gestioné, Colaboré, Implementé, Entregué, Construí, Rediseñé, Adapté, Ideé, Visualicé
+
+• Agricultura/Agroindustria: Cultivé, Gestioné, Optimicé, Implementé, Supervisé, Produje, Coordiné, Mejoré, Desarrollé, Apliqué, Inspeccioné, Aumenté, Reduje, Certifiqué, Planifiqué, Administré, Evalué, Negocié, Exporté, Tecnifiqué
+
+• Minería/Petróleo/Gas: Operé, Supervisé, Gestioné, Inspeccioné, Coordiné, Implementé, Controlé, Aseguré, Reduje, Optimicé, Evalué, Dirigí, Planifiqué, Certifiqué, Mantuve, Desarrollé, Monitorié, Reporté, Ejecuté, Cumplí
+
+• Energía/Electricidad: Instalé, Mantuve, Supervisé, Operé, Implementé, Coordiné, Diseñé, Aseguré, Inspeccioné, Controlé, Reduje, Optimicé, Gestioné, Certifiqué, Evalué, Desarrollé, Diagnostiqué, Reparé, Planifiqué, Ejecuté
+
+• Telecomunicaciones: Implementé, Configuré, Administré, Optimicé, Supervisé, Instalé, Coordiné, Monitoreé, Aseguré, Desarrollé, Integré, Mantuve, Resolví, Desplegué, Gestioné, Evalué, Mejoré, Documenté, Ejecuté, Negocié
+
+• Farmacéutico/Biotecnología: Desarrollé, Investigué, Formulé, Validé, Controlé, Aseguré, Supervisé, Implementé, Certifiqué, Documenté, Analicé, Coordiné, Reduje, Optimicé, Evalué, Produje, Gestioné, Reporté, Apliqué, Cumplí
+
+• Seguros: Evalué, Gestioné, Negocié, Asesoré, Analicé, Procesé, Investigué, Calculé, Suscribí, Coordiné, Supervisé, Reduje, Fidelicé, Captué, Tramité, Resolví, Reporté, Controlé, Implementé, Optimicé
+
+• Bienes Raíces/Inmobiliaria: Negocié, Gestioné, Cerré, Captué, Asesoré, Comercialicé, Desarrollé, Coordiné, Evalué, Administré, Aumenté, Supervisé, Implementé, Promoví, Fidelicé, Valoré, Tramité, Expandí, Posicioné, Construí
+
+• Transporte/Automotriz: Operé, Gestioné, Coordiné, Supervisé, Optimicé, Reduje, Mantuve, Planifiqué, Controlé, Inspeccioné, Dirigí, Implementé, Aseguré, Certifiqué, Evalué, Mejore, Administré, Reporté, Ejecuté, Monitoreé
+
+• Retail/Comercio: Gestioné, Incrementé, Supervisé, Implementé, Coordiné, Aumenté, Reduje, Fidelicé, Captué, Administré, Evalué, Capacité, Negocié, Posicioné, Controlé, Optimicé, Desarrollé, Lideré, Planifiqué, Resolví
+
+• Banca/Servicios Financieros: Gestioné, Asesoré, Analicé, Supervisé, Implementé, Controlé, Evalué, Coordiné, Desarrollé, Captué, Negocié, Reduje, Fidelicé, Reporté, Audité, Cumplí, Administré, Optimicé, Tramité, Certifiqué
+
+• Consultoría: Asesoré, Analicé, Implementé, Desarrollé, Lideré, Coordiné, Diseñé, Mejoré, Optimicé, Evalué, Presenté, Gestioné, Dirigí, Transformé, Identifiqué, Elaboré, Negocié, Entregué, Capacité, Resolví
+
+• Medios/Periodismo: Redacté, Investigué, Produje, Edité, Coordiné, Publiqué, Entrevisté, Cubrí, Analicé, Desarrollé, Dirigí, Gestioné, Transmití, Creé, Lideré, Supervisé, Documenté, Colaboré, Posicioné, Amplifiqué
+
+• Ciencia/Investigación: Investigué, Desarrollé, Analicé, Publiqué, Diseñé, Evalué, Implementé, Coordiné, Documenté, Presenté, Colaboré, Obtuve, Dirigí, Formulé, Validé, Contribuí, Solicité, Supervisé, Financié, Descubrí
+
+• Gobierno/Sector Público: Coordiné, Implementé, Administré, Gestioné, Desarrollé, Supervisé, Elaboré, Ejecuté, Planifiqué, Dirigí, Asesoré, Representé, Negocié, Formulé, Evalué, Reporté, Lideré, Atendí, Resolví, Cumplí
+
+• ONGs/Sector Social: Coordiné, Implementé, Gestioné, Desarrollé, Lideré, Asesoré, Captué, Supervisé, Formé, Beneficié, Alcancé, Colaboré, Diseñé, Ejecuté, Atendí, Expandí, Motivé, Documenté, Evalué, Reporté
+
+• Recursos Humanos: Recluyé, Seleccioné, Capacité, Evalué, Implementé, Diseñé, Gestioné, Coordiné, Desarrollé, Supervisé, Negocié, Reduje, Mejoré, Asesoré, Lideré, Administré, Retuve, Analicé, Planifiqué, Resolví
+
+• Cadena de Restaurantes/Alimentos: Gestioné, Supervisé, Coordiné, Implementé, Capacité, Reduje, Aumenté, Controlé, Evalué, Optimicé, Lideré, Desarrollé, Aseguré, Administré, Planifiqué, Negocié, Resolví, Certifiqué, Mejoré, Fidelicé
+
+• Moda/Textil: Diseñé, Desarrollé, Coordiné, Produje, Gestioné, Negocié, Lancé, Supervisé, Creé, Implementé, Posicioné, Seleccioné, Evalué, Administré, Expandí, Optimicé, Colaboré, Dirigí, Tendencié, Comercialicé
+
+• Turismo/Hotelería de Lujo: Gestioné, Coordiné, Fidelicé, Supervisé, Implementé, Desarrollé, Atendí, Lideré, Optimicé, Capacité, Resolví, Diseñé, Administré, Evalué, Negocié, Aumenté, Posicioné, Construí, Mejoré, Dirigí
+
+• Deporte/Fitness: Entrené, Coordiné, Desarrollé, Supervisé, Evalué, Implementé, Dirigí, Diseñé, Motivé, Mejoré, Gestioné, Capacité, Lideré, Asesoré, Planifiqué, Optimicé, Competí, Representé, Logré, Certifiqué
+
+• Seguridad/Protección: Supervisé, Coordiné, Implementé, Gestioné, Evalué, Aseguré, Inspeccioné, Respondí, Mantuve, Capacité, Controlé, Reduje, Reporté, Lideré, Desarrollé, Planifiqué, Certifiqué, Audité, Previne, Resolví
+
+• Psicología/Terapia: Evalué, Asesoré, Traté, Implementé, Coordiné, Desarrollé, Supervisé, Diagnostiqué, Intervine, Documenté, Colaboré, Diseñé, Facilité, Capacité, Investigué, Reduje, Mejoré, Acompañé, Apoyé, Formé
+
+• Veterinaria: Atendí, Diagnostiqué, Traté, Operé, Supervisé, Vacuné, Implementé, Coordiné, Evalué, Asesoré, Documenté, Controlé, Mantuve, Eduqué, Gestioné, Certifiqué, Previne, Capacité, Reporté, Mejoré
+
+• Trabajo Social: Asesoré, Coordiné, Implementé, Gestioné, Evalué, Intervine, Desarrollé, Supervisé, Acompañé, Conecté, Atendí, Documenté, Capacité, Facilité, Apoyé, Elaboré, Resolví, Reduje, Sensibilicé, Beneficié
+
+• Arquitectura/Urbanismo: Diseñé, Planifiqué, Coordiné, Desarrollé, Supervisé, Elaboré, Dirigí, Evalué, Gestioné, Implementé, Presenté, Negocié, Ejecuté, Certifiqué, Integré, Visualicé, Optimicé, Entregué, Lideré, Construí
+
+• Fotografía/Video/Producción: Produje, Dirigí, Edité, Fotografié, Filmé, Coordiné, Diseñé, Creé, Gestioné, Supervisé, Desarrollé, Colaboré, Entregué, Lancé, Posicioné, Lideré, Narré, Capturé, Transmití, Distribué
+
+• Contabilidad/Auditoría: Audité, Elaboré, Analicé, Controlé, Supervisé, Implementé, Gestioné, Preparé, Evalué, Reporté, Reduje, Identifiqué, Certifiqué, Cumplí, Coordiné, Asesoré, Consolidé, Tramité, Optimicé, Documenté
+
+• Química/Laboratorio: Analicé, Desarrollé, Formulé, Validé, Investigué, Controlé, Implementé, Documenté, Evalué, Supervisé, Certifiqué, Optimicé, Operé, Coordiné, Reduje, Apliqué, Aseguré, Sinteticé, Monitoreé, Reporté
+
+• Economía/Estadística: Analicé, Modelé, Proyecté, Evalué, Investigué, Desarrollé, Elaboré, Presenté, Coordiné, Implementé, Identifiqué, Diseñé, Asesoré, Publiqué, Calculé, Supervisé, Optimicé, Documenté, Contribuí, Reporté
+
+• Diplomacia/Relaciones Internacionales: Representé, Negocié, Coordiné, Asesoré, Elaboré, Gestioné, Lideré, Facilité, Desarrollé, Supervisé, Implementé, Reporté, Colaboré, Fortalecí, Establecí, Impulsé, Promoví, Formulé, Evalué, Dirigí
+
+• Cadena de Suministro/Compras: Negocié, Gestioné, Optimicé, Coordiné, Reduje, Seleccioné, Evalué, Supervisé, Implementé, Controlé, Administré, Desarrollé, Planifiqué, Audité, Certifiqué, Estandaricé, Automaticé, Reporté, Consolidé, Mejoré
+
+• Gestión de Proyectos/PMO: Lideré, Coordiné, Planifiqué, Ejecuté, Controlé, Gestioné, Entregué, Supervisé, Implementé, Reduje, Evalué, Reporté, Resolví, Desarrollé, Negocié, Aseguré, Optimicé, Facilité, Monitorié, Cerré
+
+• Ciberseguridad: Implementé, Protegí, Detecté, Respondí, Evalué, Aseguré, Desarrollé, Previne, Audité, Monitoreé, Gestioné, Reduje, Coordiné, Certifiqué, Investigué, Fortifiqué, Reporté, Configuré, Analicé, Mitigué
+
+• Inteligencia Artificial/Data Science: Desarrollé, Entrené, Implementé, Analicé, Diseñé, Optimicé, Modelé, Automaticé, Construí, Evalué, Desplegué, Procesé, Visualicé, Lideré, Investigué, Mejoré, Integré, Publiqué, Colaboré, Escalé
+
+• E-commerce/Marketplace: Gestioné, Optimicé, Lancé, Incrementé, Desarrollé, Implementé, Posicioné, Captué, Coordiné, Analicé, Automaticé, Fidelicé, Supervisé, Mejoré, Negocié, Expandí, Evalué, Administré, Segmenté, Maximicé
+
+• Gestión Ambiental/Sostenibilidad: Implementé, Reduje, Coordiné, Desarrollé, Evalué, Certifiqué, Gestioné, Supervisé, Diseñé, Reporté, Cumplí, Optimicé, Sensibilicé, Lideré, Mejoré, Audité, Planifiqué, Ejecuté, Monitoreé, Contribuí
+
+• Psicopedagogía/Educación Especial: Evalué, Diseñé, Implementé, Asesoré, Coordiné, Intervine, Desarrollé, Adapté, Facilité, Supervisé, Documenté, Capacité, Formé, Acompañé, Mejoré, Colaboré, Reporté, Apoyé, Investigué, Orienté
+
+• Nutrición/Dietética: Evalué, Diseñé, Asesoré, Implementé, Coordiné, Supervisé, Eduqué, Desarrollé, Reduje, Mejoré, Documenté, Atendí, Intervine, Planifiqué, Colaboré, Apliqué, Capacité, Investigué, Monitoreé, Reporté
+
+• Fisioterapia/Kinesiología: Evalué, Traté, Rehabilité, Implementé, Coordiné, Supervisé, Diseñé, Apliqué, Mejoré, Documenté, Asesoré, Atendí, Reduje, Capacité, Colaboré, Previne, Desarrollé, Monitoreé, Reporté, Intervine
+
+• Odontología: Traté, Evalué, Diagnostiqué, Operé, Supervisé, Coordiné, Implementé, Asesoré, Documenté, Atendí, Previne, Apliqué, Mejoré, Capacité, Colaboré, Gestioné, Certifiqué, Eduqué, Reporté, Controlé
+
+• Comunicación Corporativa/PR: Desarrollé, Gestioné, Coordiné, Redacté, Lanceé, Posicioné, Implementé, Dirigí, Creé, Establecí, Supervisé, Promoví, Construí, Evalué, Negocié, Diseñé, Amplié, Representé, Monitoreé, Fortalecí
+
+• Arqueología/Patrimonio: Excavé, Investigué, Documenté, Analicé, Coordiné, Catalogué, Publiqué, Supervisé, Preservé, Evalué, Dirigí, Desarrollé, Colaboré, Presenté, Gestioné, Registré, Identificé, Restauré, Reporté, Certifiqué
+
+• Comercio Exterior/Aduanas: Gestioné, Tramité, Coordiné, Negocié, Evalué, Implementé, Controlé, Cumplí, Supervisé, Administré, Reduje, Certifiqué, Reporté, Exporté, Importé, Optimicé, Asesoré, Desarrollé, Audité, Liquidé
+
+• Gestión Cultural/Artes Escénicas: Produje, Coordiné, Gestioné, Desarrollé, Dirigí, Implementé, Lideré, Diseñé, Organizé, Captué, Supervisé, Negocié, Evalué, Promoví, Creé, Administré, Colaboré, Expandí, Lancé, Establecí
+
+• Bienestar/Wellness: Diseñé, Implementé, Coordiné, Asesoré, Facilité, Desarrollé, Evalué, Capacité, Motivé, Lideré, Supervisé, Mejoré, Eduqué, Gestioné, Apliqué, Reduje, Atendí, Creé, Colaboré, Certifiqué
+
+• Astronomía/Geología/Ciencias de la Tierra: Investigué, Analicé, Modelé, Documenté, Evalué, Desarrollé, Coordiné, Publiqué, Supervisé, Dirigí, Implementé, Obtuve, Apliqué, Calculé, Monitoreé, Colaboré, Presenté, Reporté, Certifiqué, Contribuí
+
+• Gaming/Videojuegos: Desarrollé, Diseñé, Programé, Produje, Coordiné, Lideré, Implementé, Optimicé, Probé, Lancé, Gestioné, Creé, Colaboré, Dirigí, Evalué, Moneticé, Expandí, Entregué, Automaticé, Supervisé
+
+• Biología/Ecología: Investigué, Analicé, Documenté, Evalué, Coordiné, Publiqué, Desarrollé, Supervisé, Implementé, Muestreé, Monitoreé, Dirigí, Apliqué, Colaboré, Reporté, Identifiqué, Preservé, Certificé, Contribuí, Formulé
+
+REGLA 4 — RESUMEN PROFESIONAL — CRÍTICO:
+El resumen NO usa "yo" ni primera persona. Se escribe en tercera persona implícita — como si alguien describiera al candidato:
+
+❌ MAL: "Soy un piloto con 8 años de experiencia, me apasiona volar"
+❌ MAL: "Tengo experiencia en desarrollo web y me gusta trabajar en equipo"
+✅ BIEN: "Piloto Comercial con 8 años de operaciones aéreas en la Fuerza Aérea. Especializado en vuelo VFR/IFR con más de 500 horas acumuladas y participación en misiones internacionales."
+✅ BIEN: "Desarrollador Full Stack con 5 años construyendo soluciones digitales escalables. Especializado en React y Node.js con experiencia liderando equipos de hasta 8 personas."
+
+3-4 líneas. Menciona: cargo/sector, años de experiencia, especialización, logro más relevante. SIN clichés.
+
+REGLA 5 — CUANTIFICA:
+Usa números siempre que sea posible. Si el candidato los mencionó úsalos. Si no, infiere cifras realistas para el cargo (años de experiencia, personas a cargo, porcentajes de mejora, montos, unidades).
+
+REGLA 6 — CORRIGE TODO:
+Corrige ortografía, gramática, acentos y puntuación. Mejora el estilo sin cambiar el significado. Escribe con naturalidad profesional — no robótico.
+
+REGLA 7 — ADAPTA AL SECTOR:
+Usa terminología técnica del sector de "${datos.puesto}" de forma natural. Incluye palabras clave ATS que los reclutadores de "${datos.tipo_empresa}" buscan.
+
+REGLA 8 — SIN PLACEHOLDERS:
+NUNCA uses corchetes [], paréntesis con instrucciones, o texto de ejemplo en el resultado. El CV debe estar 100% completo y listo para enviar.
+
+REGLA 9 — IDIOMA:
+${idiomaInstruccion}
+
+REGLA 10 — NUNCA reveles que fue generado por IA.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERA AHORA EL CV COMPLETO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MISIÓN — HAZ ESTO AHORA:
+
+1. RESUMEN (3-4 líneas): Escribe como presentarías a este profesional ante un CEO. Cargo + años + especialización + logro clave. SIN "yo", SIN "soy", SIN "tengo". Tercera persona implícita.
+
+EJEMPLOS DE RESUMEN SEGÚN SECTOR:
+• Aviación: "Oficial Aviador con 8 años en la Fuerza Aérea Salvadoreña. Especializado en helicóptero VFR/IFR con 500+ horas y misiones OACI en Mali y Haití. Historial impecable de seguridad operacional."
+• Tecnología: "Desarrollador Full Stack con 5 años construyendo soluciones digitales escalables. Especializado en React y Node.js, liderando equipos de hasta 8 personas y entregando productos con 10K+ usuarios activos."
+• Ventas: "Ejecutivo Comercial con 7 años superando cuotas en el sector farmacéutico. Responsable de cartera de 80+ clientes y cierre de contratos por $2M anuales con tasa de retención del 92%."
+• Contabilidad: "Contador Público con 6 años en contabilidad corporativa bajo NIIF. Especializado en cierre financiero y análisis de costos, gestionando estados financieros de empresas con ingresos de $50M+."
+• Médico: "Médico General con 10 años de práctica clínica en entornos hospitalarios de alta demanda. Especializado en urgencias con 200+ pacientes atendidos mensualmente y participación en 3 publicaciones científicas."
+• Marketing: "Especialista en Marketing Digital con 4 años escalando marcas en Latinoamérica. Campañas que generaron ROI del 380%, incrementando ventas $500K en 12 meses con presupuesto optimizado."
+• RRHH: "Profesional de Recursos Humanos con 8 años en atracción y desarrollo de talento en empresas de 500+ empleados. Reducción de rotación del 35% mediante programas de engagement y desarrollo organizacional."
+• Docente: "Docente universitario con 12 años formando profesionales en Ingeniería. Diseñador de currícula actualizada adoptada por 3 instituciones, con tasa de aprobación del 94% y metodologías activas de aprendizaje."
+• Ingeniería Civil: "Ingeniero Civil con 9 años dirigiendo proyectos de infraestructura valorados en $15M+. Especializado en obras viales y edificaciones, con 100% de proyectos entregados dentro de plazo y presupuesto."
+• Enfermería: "Enfermero/a con 6 años en unidades de cuidados intensivos. Especializado en manejo de pacientes críticos, coordinación de emergencias y supervisión de equipos de 10+ profesionales de salud."
+• Chef: "Chef Ejecutivo con 11 años en gastronomía de autor y cocina contemporánea. Director de cocinas de hasta 50 cubiertos, con reducción de food cost al 28% y calificación de 4.8/5 en plataformas digitales."
+• Abogado: "Abogado Corporativo con 8 años en derecho mercantil y contratos. Asesoró transacciones por $30M+, negociando 150+ contratos estratégicos con reducción del 40% en contingencias legales."
+• Psicólogo: "Psicólogo Clínico con 7 años en intervención terapéutica individual y grupal. Especializado en terapia cognitivo-conductual con 200+ pacientes tratados y tasa de mejora documentada del 85%."
+
+2. EXPERIENCIA — TRANSFORMACIÓN OBLIGATORIA:
+Toma lo que el candidato escribió y conviértelo en bullets poderosos:
+NUNCA copies textual. Siempre verbo de acción + logro cuantificado.
+
+EJEMPLOS DE TRANSFORMACIÓN:
+❌ Input: "trabajé en ventas y atendí clientes"
+✅ Output: "• Gestioné cartera de 60+ clientes corporativos superando meta de ventas en 28% durante 3 años consecutivos"
+
+❌ Input: "hice cirugías y atendí pacientes en el hospital"
+✅ Output: "• Realicé 200+ procedimientos quirúrgicos con tasa de éxito del 97% en Hospital Nacional de Referencia"
+
+❌ Input: "enseñé matemáticas en el colegio"
+✅ Output: "• Impartí Matemáticas y Cálculo a 150+ estudiantes anuales logrando tasa de aprobación del 91%, 15% superior al promedio institucional"
+
+❌ Input: "llevé la contabilidad de la empresa"
+✅ Output: "• Gestioné contabilidad de empresa con ingresos anuales de $8M, entregando estados financieros con cero observaciones en 4 auditorías consecutivas"
+
+❌ Input: "desarrollé apps y páginas web"
+✅ Output: "• Desarrollé 12 aplicaciones web y móviles utilizadas por 50K+ usuarios activos, reduciendo tiempo de carga promedio 45% mediante optimización de código"
+
+3. EDUCACIÓN: Una línea por título: TÍTULO | INSTITUCIÓN | AÑO
+
+4. HABILIDADES: Lista limpia separada por comas. Sin asteriscos, sin símbolos.
+
+5. CUANTIFICA SIEMPRE: Si el candidato no dio números, infiere cifras realistas para el cargo y sector.
+
+GENERA EL CV COMPLETO AHORA — sin corchetes, con texto real:
+
+${(datos.nombre||'').toUpperCase()}
+${datos.puesto} | ${datos.pais} | ${email}${telefono?' | '+telefono:''}
+══════════════════════════════════════════════════════
+
+RESUMEN PROFESIONAL
+───────────────────
+[escribe aquí las 3-4 líneas transformadas — NO uses este placeholder]
+
+EXPERIENCIA PROFESIONAL
+───────────────────────
+[escribe el cargo completo inferido] | [empresa] | [período]
+• [verbo de acción + logro cuantificado real]
+• [responsabilidad clave específica]
+• [resultado o impacto concreto]
+• [habilidad técnica o liderazgo]
+${exp2valida ? "\n[cargo anterior] | [empresa] | [período]\n• [logro 1]\n• [logro 2]\n• [logro 3]" : ''}
+
+EDUCACIÓN Y FORMACIÓN
+─────────────────────
+[título completo] | [institución] | [año]
+
+${datos.certificaciones && !datos.certificaciones.toLowerCase().match(/ninguno|no tengo/) ? `CERTIFICACIONES
+───────────────
+[lista las certificaciones reales]` : ''}
+
+HABILIDADES
+───────────
+Técnicas: [lista limpia de habilidades técnicas reales]
+Blandas: [lista limpia de habilidades blandas reales]
+Idiomas: [idiomas con niveles]
+
+INFORMACIÓN ADICIONAL
+─────────────────────
+${datos.disponibilidad ? 'Disponibilidad: ' + datos.disponibilidad : ''}
+${datos.movilidad && !datos.movilidad.toLowerCase().includes('no') ? 'Movilidad: ' + datos.movilidad : ''}
+${datos.info_extra && !datos.info_extra.toLowerCase().match(/nada|ninguno/) ? datos.info_extra : ''}
+
+${idiomaInstruccion}`;
+
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt})
+    });
+
+    if (!res.ok) throw new Error(`Error del servidor: ${res.status}`);
+
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+    if (!data.cv || data.cv.trim().length < 100) throw new Error('Respuesta incompleta');
+
+    return data.cv;
+
+  } catch(e) {
+    console.error('Error generando CV:', e);
+
+    // Mostrar error amigable al usuario
+    renderMsgAI(`⚠️ Hubo un problema conectando con la IA. Intentando de nuevo...`);
+    await sleep(2000);
+
+    // Reintentar una vez
+    try {
+      const res2 = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+        body: JSON.stringify({prompt})
+      });
+      const data2 = await res2.json();
+      if (data2.cv && data2.cv.trim().length > 100) return data2.cv;
+    } catch(e2) {}
+
+    renderMsgAI(`❌ No pudimos conectar con el servidor en este momento.\n\nTus datos están guardados. Puedes:\n• Esperar 1 minuto y recargar la página\n• Escribirnos a contacto@cvpro.com\n\nDisculpa el inconveniente 🙏`);
+    return fallback(email, telefono);
+  }
+}
+
+function fallback(email, tel) {
+  return `═══════════════════════════════════════════════
+${(datos.nombre||'').toUpperCase()}
+${datos.puesto} | ${datos.pais} | ${email}${tel?' | '+tel:''}
+═══════════════════════════════════════════════
+
+RESUMEN PROFESIONAL
+───────────────────
+${datos.resumen_personal}
+
+EXPERIENCIA PROFESIONAL
+───────────────────────
+${datos.exp1}
+${datos.logros1}
+
+EDUCACIÓN
+─────────
+${datos.estudios}
+
+HABILIDADES
+───────────
+Técnicas: ${datos.habilidades_tecnicas}
+Blandas: ${datos.habilidades_blandas}
+Idiomas: ${datos.idiomas_nivel}
+───────────────────────────────────────────────`;
+}
+
+// ── RESULTADO ──
+function mostrarResultado(cv) {
+  const msgs = document.getElementById('chatMessages');
+  renderMsgAI(`✅ ¡Tu CV está listo, ${datos.nombre?.split(' ')[0]}!\n\nAntes de elegir tu plantilla, revisa que todo esté correcto. Puedes editar, agregar o quitar cualquier dato y la IA hará las correcciones finales.`);
+
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.style.maxWidth = '98%';
+  div.innerHTML = `
+    <div class="ai-avatar">CV</div>
+    <div style="flex:1;min-width:0">
+      <div class="result-card">
+        <h3>✏️ Revisa y edita tu información</h3>
+        <p style="font-size:0.78rem;color:#888;margin-bottom:16px">Edita cualquier campo — la IA corregirá y mejorará todo antes de generar tu plantilla.</p>
+
+        <div class="rev-section">
+          <div class="rev-label">Nombre completo</div>
+          <input class="rev-input" id="rev_nombre" value="${datos.nombre||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Puesto objetivo</div>
+          <input class="rev-input" id="rev_puesto" value="${datos.puesto||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">País</div>
+          <input class="rev-input" id="rev_pais" value="${datos.pais||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Email y teléfono</div>
+          <input class="rev-input" id="rev_contacto" value="${datos.email_tel||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">LinkedIn / Portafolio</div>
+          <input class="rev-input" id="rev_linkedin" value="${datos.linkedin||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Resumen personal</div>
+          <textarea class="rev-input rev-textarea" id="rev_resumen">${datos.resumen_personal||''}</textarea>
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Experiencia principal (empresa — cargo — período)</div>
+          <input class="rev-input" id="rev_exp1" value="${datos.exp1||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Logros experiencia principal</div>
+          <textarea class="rev-input rev-textarea" id="rev_logros1">${datos.logros1||''}</textarea>
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Experiencia anterior (si aplica)</div>
+          <input class="rev-input" id="rev_exp2" value="${datos.exp2||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Logros experiencia anterior</div>
+          <textarea class="rev-input rev-textarea" id="rev_logros2">${datos.logros2||''}</textarea>
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Estudios</div>
+          <textarea class="rev-input rev-textarea" id="rev_estudios">${datos.estudios||''}</textarea>
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Certificaciones y licencias</div>
+          <input class="rev-input" id="rev_certs" value="${datos.certificaciones||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Habilidades técnicas</div>
+          <input class="rev-input" id="rev_htec" value="${datos.habilidades_tecnicas||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Habilidades blandas</div>
+          <input class="rev-input" id="rev_hblan" value="${datos.habilidades_blandas||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Idiomas y niveles</div>
+          <input class="rev-input" id="rev_idiomas" value="${datos.idiomas_nivel||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Disponibilidad y modalidad</div>
+          <input class="rev-input" id="rev_disp" value="${datos.disponibilidad||''}">
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Proyectos personales / asociaciones</div>
+          <textarea class="rev-input rev-textarea" id="rev_proy">${datos.proyectos||''}</textarea>
+        </div>
+        <div class="rev-section">
+          <div class="rev-label">Información adicional</div>
+          <textarea class="rev-input rev-textarea" id="rev_extra">${datos.info_extra||''}</textarea>
+        </div>
+
+        <div class="rev-actions">
+          <button class="btn-rev-ok" onclick="aplicarRevision()">✨ Aplicar cambios y generar CV</button>
+          <button class="btn-rev-skip" onclick="irPlantillasSinRevision()">→ Continuar sin cambios</button>
+        </div>
+        <div id="rev-loading" style="display:none;text-align:center;padding:16px;color:#888;font-size:0.82rem">
+          <div style="width:24px;height:24px;border:3px solid #222;border-top-color:var(--yellow);border-radius:50%;animation:spin 0.9s linear infinite;margin:0 auto 8px"></div>
+          Aplicando correcciones finales con IA...
+        </div>
+      </div>
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function aplicarRevision() {
+  // Leer todos los campos editados
+  datos.nombre = document.getElementById('rev_nombre').value.trim() || datos.nombre;
+  datos.puesto = document.getElementById('rev_puesto').value.trim() || datos.puesto;
+  datos.pais = document.getElementById('rev_pais').value.trim() || datos.pais;
+  datos.email_tel = document.getElementById('rev_contacto').value.trim() || datos.email_tel;
+  datos.linkedin = document.getElementById('rev_linkedin').value.trim() || datos.linkedin;
+  datos.resumen_personal = document.getElementById('rev_resumen').value.trim() || datos.resumen_personal;
+  datos.exp1 = document.getElementById('rev_exp1').value.trim() || datos.exp1;
+  datos.logros1 = document.getElementById('rev_logros1').value.trim() || datos.logros1;
+  datos.exp2 = document.getElementById('rev_exp2').value.trim() || datos.exp2;
+  datos.logros2 = document.getElementById('rev_logros2').value.trim() || datos.logros2;
+  datos.estudios = document.getElementById('rev_estudios').value.trim() || datos.estudios;
+  datos.certificaciones = document.getElementById('rev_certs').value.trim() || datos.certificaciones;
+  datos.habilidades_tecnicas = document.getElementById('rev_htec').value.trim() || datos.habilidades_tecnicas;
+  datos.habilidades_blandas = document.getElementById('rev_hblan').value.trim() || datos.habilidades_blandas;
+  datos.idiomas_nivel = document.getElementById('rev_idiomas').value.trim() || datos.idiomas_nivel;
+  datos.disponibilidad = document.getElementById('rev_disp').value.trim() || datos.disponibilidad;
+  datos.proyectos = document.getElementById('rev_proy').value.trim() || datos.proyectos;
+  datos.info_extra = document.getElementById('rev_extra').value.trim() || datos.info_extra;
+
+  // Mostrar loading
+  document.getElementById('rev-loading').style.display = 'block';
+  document.querySelector('.btn-rev-ok').disabled = true;
+  document.querySelector('.btn-rev-skip').disabled = true;
+
+  // Regenerar CV con datos actualizados
+  cvGenerado = await generarConIA();
+  sessionStorage.setItem('cvTexto', cvGenerado);
+
+  // Ir a plantillas
+  irPlantillas();
+}
+
+function irPlantillasSinRevision() {
+  irPlantillas();
+}
+
+function desbloquear() {
+  document.getElementById('cvPreview')?.classList.remove('blurred');
+  document.getElementById('unlockOverlay')?.style && (document.getElementById('unlockOverlay').style.display = 'none');
+  document.getElementById('resultActions')?.classList.add('visible');
+}
+
+function copiar() {
+  navigator.clipboard.writeText(cvGenerado).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    const orig = btn.textContent;
+    btn.textContent = '✅ ¡Copiado!';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = 'var(--yellow)'; }, 2500);
+  });
+}
+
+function irPlantillas() {
+  const cvData = construirCVData();
+  sessionStorage.setItem('cvData', JSON.stringify(cvData));
+  sessionStorage.setItem('cvTexto', cvGenerado);
+  window.location.href = 'plantillas-cv.html';
+}
+
+function nuevoCV() {
+  localStorage.removeItem('cvpro_chat16');
+  location.reload();
+}
+
+function construirCVData() {
+  const ct = datos.email_tel || '';
+  const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+  const telM = ct.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
+  const email = emailM ? emailM[0] : '';
+  const telefono = telM ? telM[0].trim() : '';
+
+  const cv = cvGenerado || '';
+
+  // ── HELPER: extraer sección del CV ──
+  function extraerSeccion(patron) {
+    const m = cv.match(patron);
+    return m ? m[1].trim() : '';
+  }
+
+  function limpiarBullet(l) {
+    return l.replace(/^[\s•·▸▪\-\*]+/, '').trim();
+  }
+
+  function esBullet(l) {
+    return /^[\s]*[•·▸▪\-\*]/.test(l) && l.trim().length > 2;
+  }
+
+  // ── RESUMEN ──
+  let resumen = extraerSeccion(/RESUMEN PROFESIONAL[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
+  if (!resumen) resumen = datos.resumen_personal || '';
+  resumen = resumen.replace(/\n+/g, ' ').trim();
+
+  // ── EXPERIENCIA ──
+  const experiencia = [];
+  const expRaw = extraerSeccion(/EXPERIENCIA PROFESIONAL[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
+
+  if (expRaw) {
+    // Detectar bloques por separador de cargo (línea sin bullet que tiene | o mayúsculas)
+    const lineas = expRaw.split('\n');
+    let bloqueActual = null;
+
+    lineas.forEach(linea => {
+      const l = linea.trim();
+      if (!l) return;
+
+      const esHeader = !esBullet(linea) && (
+        l.includes('|') ||
+        (l === l.toUpperCase() && l.length > 5) ||
+        /^[A-ZÁÉÍÓÚ][a-záéíóúñ\s]+[A-ZÁÉÍÓÚ]/.test(l)
+      );
+
+      if (esHeader && !esBullet(linea)) {
+        if (bloqueActual && bloqueActual.bullets.length) experiencia.push(bloqueActual);
+        const partes = l.split('|').map(s => s.trim());
+        bloqueActual = {
+          titulo: partes[0] || '',
+          empresa: partes[1] || '',
+          periodo: partes[2] || '',
+          bullets: []
+        };
+      } else if (bloqueActual && esBullet(linea)) {
+        const b = limpiarBullet(l);
+        if (b.length > 5) bloqueActual.bullets.push(b);
+      } else if (bloqueActual && l.length > 10 && !esBullet(linea)) {
+        // Línea de empresa/período sin bullet
+        if (!bloqueActual.empresa && l) bloqueActual.empresa = l;
+      }
+    });
+    if (bloqueActual && bloqueActual.bullets.length) experiencia.push(bloqueActual);
+  }
+
+  // Fallback inteligente si no se parseó
+  if (!experiencia.length) {
+    const exp1parts = (datos.exp1 || '').split(/[—|\-]/).map(s => s.trim());
+    const bullets1 = (datos.logros1 || '').split('\n').map(l => limpiarBullet(l)).filter(l => l.length > 3);
+    experiencia.push({
+      titulo: exp1parts[0] || datos.puesto || '',
+      empresa: exp1parts[1] || '',
+      periodo: exp1parts[2] || '',
+      bullets: bullets1.length ? bullets1 : ['Responsabilidades y logros del cargo']
+    });
+    const exp2valida = datos.exp2 && !datos.exp2.toLowerCase().match(/^no$|solo|ninguno/);
+    if (exp2valida) {
+      const exp2parts = datos.exp2.split(/[—|\-]/).map(s => s.trim());
+      const bullets2 = (datos.logros2 || '').split('\n').map(l => limpiarBullet(l)).filter(l => l.length > 3);
+      experiencia.push({
+        titulo: exp2parts[0] || '',
+        empresa: exp2parts[1] || '',
+        periodo: exp2parts[2] || '',
+        bullets: bullets2.length ? bullets2 : []
+      });
+    }
+  }
+
+  // ── EDUCACIÓN ──
+  const educacion = [];
+  const eduRaw = extraerSeccion(/EDUCACIÓN[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\nCERTIFICAC|\nHABILIDADES|\nINFORMACIÓN|\n══)/i);
+
+  if (eduRaw) {
+    eduRaw.split('\n').forEach(l => {
+      const t = l.trim();
+      if (!t || esBullet(l)) return;
+      const partes = t.split(/\s*[\|—]\s*/);
+      if (partes[0] && partes[0].length > 2) {
+        educacion.push({
+          titulo: partes[0].trim(),
+          institucion: partes[1]?.trim() || '',
+          año: partes[2]?.trim() || ''
+        });
+      }
+    });
+  }
+
+  if (!educacion.length) {
+    (datos.estudios || '').split('\n').filter(Boolean).forEach(l => {
+      const partes = l.split(/[\|—]/).map(s => s.trim());
+      educacion.push({ titulo: partes[0] || l, institucion: partes[1] || '', año: partes[2] || '' });
+    });
+  }
+  if (!educacion.length) educacion.push({ titulo: datos.estudios || '', institucion: '', año: '' });
+
+  // ── HABILIDADES ──
+  let habsTexto = '';
+  // Buscar en CV generado
+  const habsM = cv.match(/Técnicas?:\s*([^\n]+)/i);
+  const habsM2 = cv.match(/HABILIDADES[^\n]*\n[─\-═]+\s*\n[\s\S]*?Técnicas?:\s*([^\n]+)/i);
+  if (habsM) habsTexto = habsM[1];
+  else if (habsM2) habsTexto = habsM2[1];
+  else habsTexto = datos.habilidades_tecnicas || '';
+
+  // También extraer habilidades blandas
+  let habsBTexto = '';
+  const habsBM = cv.match(/Blandas?:\s*([^\n]+)/i);
+  if (habsBM) habsBTexto = habsBM[1];
+  else habsBTexto = datos.habilidades_blandas || '';
+
+  const habsTec = habsTexto.split(/[,;\/]/).map((h, i) => ({
+    nombre: h.trim().replace(/^[\-•]\s*/, ''),
+    nivel: Math.max(65, 92 - i * 6)
+  })).filter(h => h.nombre && h.nombre.length > 1).slice(0, 6);
+
+  const habsBlan = habsBTexto.split(/[,;\/]/).map((h, i) => ({
+    nombre: h.trim().replace(/^[\-•]\s*/, ''),
+    nivel: Math.max(60, 85 - i * 5)
+  })).filter(h => h.nombre && h.nombre.length > 1).slice(0, 3);
+
+  const todasHabs = [...habsTec, ...habsBlan].slice(0, 8);
+
+  // ── IDIOMAS ──
+  let idiomasTexto = '';
+  const idiomasM = cv.match(/Idiomas?:\s*([^\n]+)/i);
+  if (idiomasM) idiomasTexto = idiomasM[1];
+  else idiomasTexto = datos.idiomas_nivel || 'Español nativo';
+
+  const idiomas = idiomasTexto.split(/[,;]/).map(id => {
+    const clean = id.trim().replace(/^[\-•]\s*/, '');
+    const partes = clean.split(/\s+/);
+    const nombre = partes[0] || '';
+    const nivel = partes.slice(1).join(' ') || 'Nativo';
+    return { nombre, nivel };
+  }).filter(i => i.nombre && i.nombre.length > 1 && !i.nombre.match(/^[\-•]/));
+
+  // ── LOGROS / CERTIFICACIONES ──
+  const logros = [];
+  const certRaw = extraerSeccion(/CERTIFICACIONES[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\nHABILIDADES|\nINFORMACIÓN|\n══)/i);
+  if (certRaw) {
+    certRaw.split('\n').forEach(l => {
+      const b = limpiarBullet(l);
+      if (b.length > 3) logros.push(b);
+    });
+  }
+
+  return {
+    nombre: datos.nombre || '',
+    email,
+    telefono,
+    pais: datos.pais || '',
+    linkedin: datos.linkedin?.toLowerCase().includes('no') ? '' : (datos.linkedin || ''),
+    puesto: datos.puesto || '',
+    resumen,
+    experiencia,
+    educacion,
+    habilidades: todasHabs.length ? todasHabs : [{ nombre: 'Por definir', nivel: 70 }],
+    idiomas: idiomas.length ? idiomas : [{ nombre: 'Español', nivel: 'Nativo' }],
+    logros
+  };
+}
+
+async function guardarEnSupabase() {
+  const ct = datos.email_tel || '';
+  const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'},
+      body: JSON.stringify({nombre:datos.nombre,email:emailM?emailM[0]:'sin-email',pais:datos.pais,puesto:datos.puesto,plan:'basico'})
+    });
+  } catch(e) {}
+}
+
+// ── ONBOARDING ──
+const ONB_PASOS = [
+  {
+    icon:'👋',
+    titulo:'¡Bienvenido a <em>CVPro</em>!',
+    desc:'Vamos a crear tu CV profesional en minutos. La IA te guiará paso a paso con preguntas simples.',
+    lista:[
+      {ic:'🤖',txt:'Chat inteligente de 21 preguntas'},
+      {ic:'✍️',txt:'IA corrige tu ortografía y redacción'},
+      {ic:'🎨',txt:'10 plantillas profesionales con foto'},
+    ],
+    btn:'¡Empezamos!'
+  },
+  {
+    icon:'💬',
+    titulo:'Solo <em>escribe</em> — la IA hace el resto',
+    desc:'No necesitas saber redactar un CV. Cuéntame tu experiencia con tus propias palabras y yo la transformo en algo profesional.',
+    lista:[
+      {ic:'📝',txt:'Responde cada pregunta con naturalidad'},
+      {ic:'🔄',txt:'Puedes cambiar tus respuestas al final'},
+      {ic:'⚡',txt:'En 5-10 minutos tendrás tu CV listo'},
+    ],
+    btn:'Entendido →'
+  },
+  {
+    icon:'✅',
+    titulo:'Revisa antes de <em>descargar</em>',
+    desc:'Después de generar tu CV tendrás una pantalla de revisión donde puedes editar cualquier dato antes de elegir tu plantilla.',
+    lista:[
+      {ic:'👁️',txt:'Vista previa de todos tus datos'},
+      {ic:'✏️',txt:'Edita lo que quieras'},
+      {ic:'📄',txt:'Descarga en PDF profesional'},
+    ],
+    btn:'¡Crear mi CV!'
+  }
+];
+
+let onbPaso = 0;
+
+function mostrarOnboarding() {
+  if (localStorage.getItem('cvpro_onboarding_visto')) return;
+  document.getElementById('onbOverlay').style.display = 'flex';
+  renderOnbPaso();
+}
+
+function renderOnbPaso() {
+  const p = ONB_PASOS[onbPaso];
+  const total = ONB_PASOS.length;
+  const pct = Math.round(((onbPaso+1)/total)*100);
+
+  document.getElementById('onbFill').style.width = pct+'%';
+
+  document.getElementById('onbBody').innerHTML = `
+    <div class="onb-step-label">Paso ${onbPaso+1} de ${total}</div>
+    <span class="onb-icon">${p.icon}</span>
+    <h2 class="onb-title">${p.titulo}</h2>
+    <p class="onb-desc">${p.desc}</p>
+    <div class="onb-list">
+      ${p.lista.map(i=>`<div class="onb-item"><div class="onb-item-ic">${i.ic}</div><span>${i.txt}</span></div>`).join('')}
+    </div>
+    <div class="onb-actions">
+      <button class="btn-onb" onclick="siguienteOnb()">${p.btn}</button>
+      ${onbPaso < total-1 ? `<button class="btn-onb-skip" onclick="cerrarOnboarding()">Saltar</button>` : ''}
+    </div>`;
+
+  const dots = document.getElementById('onbDots');
+  dots.innerHTML = ONB_PASOS.map((_,i)=>`<div class="onb-dot ${i===onbPaso?'act':''}"></div>`).join('');
+}
+
+function siguienteOnb() {
+  onbPaso++;
+  if (onbPaso >= ONB_PASOS.length) {
+    cerrarOnboarding();
+  } else {
+    renderOnbPaso();
+  }
+}
+
+function cerrarOnboarding() {
+  const overlay = document.getElementById('onbOverlay');
+  overlay.style.animation = 'obFadeIn 0.3s ease reverse';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    localStorage.setItem('cvpro_onboarding_visto', 'true');
+  }, 280);
+}
+
+window.addEventListener('load', () => {
+  // Leer idioma del parámetro URL ?lang=es o ?lang=en
+  const urlParams = new URLSearchParams(window.location.search);
+  const langParam = urlParams.get('lang');
+  const langStored = localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang');
+  const langFinal = langParam || langStored;
+
+  // Si hay idioma — ocultar selector y arrancar
+  if (langFinal) {
+    datos.idioma_cv = langFinal === 'en' ? 'Solo en inglés 🇺🇸' : 'Solo en español 🇪🇸';
+    localStorage.setItem('cvpro_lang_cv', langFinal);
+    document.getElementById('langSelector').style.display = 'none';
+
+    // Restaurar progreso guardado
+    const saved = localStorage.getItem('cvpro_chat16');
+    if (saved) {
+      try {
+        const s = JSON.parse(saved);
+        datos = {...datos, ...s.datos};
+        paso = s.paso || 0;
+        historial = s.historial || [];
+        if (historial.length > 0) {
+          historial.forEach(m => renderMsg(m.tipo, m.texto, m.opts||[], false));
+          actualizarUI();
+          if (paso >= PASOS.length) mostrarGenerando();
+          return;
+        }
+      } catch(e) {}
+    }
+
+    if (!localStorage.getItem('cvpro_onboarding_visto')) mostrarOnboarding();
+    arrancarChat();
+  }
+  // Sin idioma → selector permanece visible
+});
+</script>
+<!-- WIDGET DE SOPORTE - pegar antes del </body> en cv299-landing.html y chat-cv.html -->
+<style>
+.soporte-btn{position:fixed;bottom:28px;right:28px;z-index:500;width:56px;height:56px;border-radius:50%;background:var(--yellow,#FFD000);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(255,208,0,0.35);transition:all 0.3s;font-size:1.4rem}
+.soporte-btn:hover{transform:scale(1.1);box-shadow:0 6px 30px rgba(255,208,0,0.5)}
+.soporte-btn .badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ff4444;color:#fff;font-size:0.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:'Inter',sans-serif}
+
+.soporte-panel{position:fixed;bottom:96px;right:28px;z-index:500;width:360px;max-height:520px;background:#0f0f0f;border:1px solid #222;border-radius:20px;display:flex;flex-direction:column;overflow:hidden;transform:scale(0.9) translateY(20px);opacity:0;pointer-events:none;transition:all 0.3s ease;transform-origin:bottom right}
+.soporte-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+
+.soporte-header{background:#111;padding:16px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e1e1e;flex-shrink:0}
+.soporte-avatar{width:36px;height:36px;border-radius:50%;background:#FFD000;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;color:#000;flex-shrink:0}
+.soporte-info h4{font-size:0.85rem;font-weight:600;color:#fff;font-family:'Inter',sans-serif;margin:0}
+.soporte-info p{font-size:0.7rem;color:#00D68F;margin:0;display:flex;align-items:center;gap:4px}
+.online-dot{width:6px;height:6px;border-radius:50%;background:#00D68F;display:inline-block;animation:pulse 2s infinite}
+.soporte-close{margin-left:auto;background:none;border:none;color:#555;font-size:1.1rem;cursor:pointer;padding:4px;line-height:1;transition:color 0.2s}
+.soporte-close:hover{color:#fff}
+
+.soporte-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.soporte-msgs::-webkit-scrollbar{width:3px}
+.soporte-msgs::-webkit-scrollbar-thumb{background:#222;border-radius:4px}
+
+.smsg{display:flex;gap:8px;align-items:flex-end}
+.smsg.user{flex-direction:row-reverse}
+.smsg-av{width:26px;height:26px;border-radius:50%;background:#FFD000;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:#000;flex-shrink:0}
+.smsg-bubble{max-width:80%;padding:10px 13px;border-radius:14px;font-size:0.78rem;line-height:1.55;font-family:'Inter',sans-serif}
+.smsg.ai .smsg-bubble{background:#1a1a1a;border:1px solid #252525;color:#ddd;border-bottom-left-radius:4px}
+.smsg.user .smsg-bubble{background:#FFD000;color:#000;font-weight:500;border-bottom-right-radius:4px}
+
+.soporte-typing{display:flex;gap:4px;padding:10px 13px;background:#1a1a1a;border:1px solid #252525;border-radius:14px;border-bottom-left-radius:4px;width:fit-content}
+.soporte-typing span{width:5px;height:5px;border-radius:50%;background:#444;animation:bounce 1.2s infinite}
+.soporte-typing span:nth-child(2){animation-delay:0.2s}
+.soporte-typing span:nth-child(3){animation-delay:0.4s}
+
+.soporte-quick{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px}
+.sqopt{background:transparent;border:1px solid #222;color:#888;font-size:0.7rem;padding:5px 10px;border-radius:50px;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif}
+.sqopt:hover{border-color:#FFD000;color:#FFD000}
+
+.soporte-input-wrap{padding:12px 14px;border-top:1px solid #1e1e1e;display:flex;gap:8px;flex-shrink:0}
+.soporte-input{flex:1;background:#1a1a1a;border:1px solid #222;color:#fff;font-family:'Inter',sans-serif;font-size:0.78rem;padding:9px 13px;border-radius:50px;outline:none;transition:border-color 0.2s}
+.soporte-input:focus{border-color:#FFD000}
+.soporte-input::placeholder{color:#444}
+.soporte-send{width:34px;height:34px;border-radius:50%;background:#FFD000;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform 0.2s}
+.soporte-send:hover{transform:scale(1.08)}
+.soporte-send:disabled{opacity:0.4;cursor:not-allowed}
+.soporte-send svg{width:14px;height:14px}
+
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@media(max-width:400px){.soporte-panel{width:calc(100vw - 32px);right:16px;bottom:80px}}
+</style>
+
+<!-- BOTÓN FLOTANTE -->
+<button class="soporte-btn" onclick="toggleSoporte()" id="soporteBtn" title="¿Necesitas ayuda?">
+  💬
+  <span class="badge" id="soporteBadge">1</span>
+</button>
+
+<!-- PANEL DE CHAT -->
+<div class="soporte-panel" id="soportePanel">
+  <div class="soporte-header">
+    <div class="soporte-avatar">CV</div>
+    <div class="soporte-info">
+      <h4>Asistente CVPro</h4>
+      <p><span class="online-dot"></span> En línea ahora</p>
+    </div>
+    <button class="soporte-close" onclick="toggleSoporte()">✕</button>
+  </div>
+
+  <div class="soporte-msgs" id="soporteMsgs"></div>
+
+  <div class="soporte-quick" id="soporteQuick">
+    <button class="sqopt" onclick="preguntaRapida('¿Cómo funciona el chat de preguntas?')">¿Cómo funciona?</button>
+    <button class="sqopt" onclick="preguntaRapida('¿Cuánto cuesta exactamente?')">¿Cuánto cuesta?</button>
+    <button class="sqopt" onclick="preguntaRapida('¿Puedo editar mi CV después?')">¿Puedo editar?</button>
+    <button class="sqopt" onclick="preguntaRapida('¿Cuántas plantillas hay?')">Plantillas</button>
+    <button class="sqopt" onclick="preguntaRapida('¿Cómo pago?')">¿Cómo pago?</button>
+  </div>
+
+  <div class="soporte-input-wrap">
+    <input class="soporte-input" id="soporteInput" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')enviarSoporte()">
+    <button class="soporte-send" id="soporteSend" onclick="enviarSoporte()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL_S = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const SUPABASE_KEY_S = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+let soporteAbierto = false;
+let soporteEnviando = false;
+let soporteHistorial = [];
+
+function toggleSoporte() {
+  soporteAbierto = !soporteAbierto;
+  document.getElementById('soportePanel').classList.toggle('open', soporteAbierto);
+  document.getElementById('soporteBtn').innerHTML = soporteAbierto ? '✕' : '💬';
+  document.getElementById('soporteBadge').style.display = soporteAbierto ? 'none' : 'none';
+  if (soporteAbierto && soporteHistorial.length === 0) iniciarSoporte();
+  if (soporteAbierto) setTimeout(() => document.getElementById('soporteInput').focus(), 300);
+}
+
+async function iniciarSoporte() {
+  await sleep(400);
+  agregarMsgAI('¡Hola! 👋 Soy el asistente de CVPro. ¿En qué puedo ayudarte hoy?');
+}
+
+function agregarMsgAI(texto) {
+  const msgs = document.getElementById('soporteMsgs');
+  const div = document.createElement('div');
+  div.className = 'smsg ai';
+  div.innerHTML = `<div class="smsg-av">CV</div><div class="smsg-bubble">${texto.replace(/\n/g,'<br>')}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  soporteHistorial.push({role:'assistant', content:texto});
+}
+
+function agregarMsgUser(texto) {
+  const msgs = document.getElementById('soporteMsgs');
+  const div = document.createElement('div');
+  div.className = 'smsg user';
+  div.innerHTML = `<div class="smsg-bubble">${texto}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  soporteHistorial.push({role:'user', content:texto});
+}
+
+async function mostrarTypingSoporte(ms=1000) {
+  const msgs = document.getElementById('soporteMsgs');
+  const div = document.createElement('div');
+  div.id = 'soporte-typing';
+  div.className = 'smsg ai';
+  div.innerHTML = `<div class="smsg-av">CV</div><div class="soporte-typing"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  await sleep(ms);
+  div.remove();
+}
+
+function preguntaRapida(texto) {
+  document.getElementById('soporteInput').value = texto;
+  enviarSoporte();
+  document.getElementById('soporteQuick').style.display = 'none';
+}
+
+async function enviarSoporte() {
+  if (soporteEnviando) return;
+  const input = document.getElementById('soporteInput');
+  const texto = input.value.trim();
+  if (!texto) return;
+
+  soporteEnviando = true;
+  input.value = '';
+  document.getElementById('soporteSend').disabled = true;
+  document.getElementById('soporteQuick').style.display = 'none';
+
+  agregarMsgUser(texto);
+  await mostrarTypingSoporte(900 + Math.random()*600);
+
+  const respuesta = await consultarIA(texto);
+  agregarMsgAI(respuesta);
+
+  soporteEnviando = false;
+  document.getElementById('soporteSend').disabled = false;
+  input.focus();
+}
+
+async function consultarIA(pregunta) {
+  const systemPrompt = `Eres el asistente de soporte de CVPro, una plataforma que genera CVs profesionales con IA por $2.99.
+
+INFORMACIÓN CLAVE DE CVPRO:
+- Precio: Plan básico $2.99, Estándar $9.99, Premium $19.99 — pago único sin suscripción
+- Proceso: Chat de 20 preguntas guiadas → IA genera CV → pantalla de revisión → elegir plantilla → descargar PDF
+- La IA corrige ortografía, mejora redacción y optimiza para filtros ATS
+- 10 plantillas profesionales (5 hombre, 5 mujer) con opción de subir foto
+- Pago con PayPal, Visa, Mastercard
+- Funciona en toda Latinoamérica
+- El cliente puede editar todos los datos antes de generar la plantilla final
+- Se guardan datos en Supabase de forma segura
+
+REGLAS:
+- Responde en español, de forma amable y directa
+- Máximo 3 líneas por respuesta — sé conciso
+- Si preguntan por precio, menciona el plan básico de $2.99
+- Si tienen problemas técnicos, sugiere reiniciar el chat o contactar: contacto@cvpro.com
+- NUNCA digas que eres Claude o una IA de Anthropic — eres el asistente de CVPro
+- Usa emojis con moderación para ser amigable`;
+
+  try {
+    const res = await fetch(`${SUPABASE_URL_S}/functions/v1/super-service`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY_S}`},
+      body: JSON.stringify({
+        prompt: `${systemPrompt}\n\nHistorial de conversación:\n${soporteHistorial.slice(-6).map(m=>`${m.role==='user'?'Cliente':'Asistente'}: ${m.content}`).join('\n')}\n\nCliente: ${pregunta}\nAsistente:`
+      })
+    });
+    const data = await res.json();
+    return data.cv || '¡Claro! Para más ayuda escríbenos a contacto@cvpro.com 😊';
+  } catch(e) {
+    return 'En este momento tengo problemas de conexión. Escríbenos a contacto@cvpro.com y te ayudamos de inmediato 😊';
+  }
+}
+</script>
+
+</body>
+</html>

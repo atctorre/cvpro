@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Profesional por $2.99 | CVPro — IA que consigue entrevistas</title>
+<meta name="description" content="CV profesional generado por IA en minutos por solo $2.99. Chat guiado de 20 preguntas. 10 plantillas profesionales. Más de 10,000 profesionales en Latam ya consiguieron trabajo.">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#080808;
+  --black2:#0f0f0f;
+  --yellow:#FFD000;
+  --yellow2:#FFC200;
+  --white:#ffffff;
+  --gray:#111111;
+  --gray2:#1a1a1a;
+  --gl:#666;
+  --gl2:#444;
+  --green:#00D68F;
+  --border:#1e1e1e;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--white);overflow-x:hidden}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--black)}
+::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:center;justify-content:space-between;padding:18px 6%;background:rgba(8,8,8,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.04);transition:all 0.3s}
+nav.scrolled{padding:12px 6%;background:rgba(8,8,8,0.97)}
+.nav-logo{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:900;color:var(--yellow);letter-spacing:-0.5px}
+.nav-logo span{color:var(--white)}
+.nav-right{display:flex;align-items:center;gap:20px}
+.nav-link{color:var(--gl);font-size:0.82rem;text-decoration:none;transition:color 0.2s}
+.nav-link:hover{color:var(--white)}
+.nav-cta{background:var(--yellow);color:var(--black);font-weight:700;font-size:0.82rem;padding:10px 22px;border-radius:50px;text-decoration:none;transition:all 0.2s;letter-spacing:0.2px}
+.nav-cta:hover{background:var(--yellow2);transform:scale(1.04)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:140px 6% 100px;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.hero-glow{position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(255,208,0,0.06) 0%,transparent 65%)}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.015) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 0%,#000 40%,transparent 100%)}
+
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,208,0,0.08);border:1px solid rgba(255,208,0,0.2);color:var(--yellow);font-size:0.75rem;font-weight:600;padding:7px 16px;border-radius:50px;margin-bottom:36px;letter-spacing:0.5px;animation:fadeDown 0.8s ease both}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+
+.hero-price{font-family:'Syne',sans-serif;font-size:clamp(7rem,20vw,16rem);font-weight:900;line-height:0.85;color:var(--yellow);letter-spacing:-6px;animation:fadeUp 0.8s ease 0.1s both;position:relative;display:inline-block}
+.hero-price::after{content:'USD';position:absolute;bottom:10%;right:-5%;font-size:0.12em;letter-spacing:2px;color:rgba(255,208,0,0.4);font-weight:700}
+
+.hero-headline{font-family:'Syne',sans-serif;font-size:clamp(1.5rem,3.5vw,2.8rem);font-weight:800;line-height:1.2;max-width:700px;margin:20px auto 0;animation:fadeUp 0.8s ease 0.2s both;letter-spacing:-0.5px}
+.hero-headline em{color:var(--yellow);font-style:normal}
+
+.hero-sub{color:var(--gl);font-size:1rem;line-height:1.75;max-width:480px;margin:18px auto 0;animation:fadeUp 0.8s ease 0.3s both;font-weight:300}
+
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:40px;animation:fadeUp 0.8s ease 0.4s both}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--yellow);color:var(--black);font-weight:700;font-size:0.95rem;padding:16px 32px;border-radius:50px;text-decoration:none;border:none;cursor:pointer;transition:all 0.25s;box-shadow:0 0 0 0 rgba(255,208,0,0.4)}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 0 40px rgba(255,208,0,0.3)}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--white);font-weight:500;font-size:0.95rem;padding:16px 32px;border-radius:50px;text-decoration:none;border:1px solid var(--border);transition:all 0.25s}
+.btn-secondary:hover{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.03)}
+
+.hero-trust{display:flex;align-items:center;gap:24px;justify-content:center;margin-top:52px;flex-wrap:wrap;animation:fadeUp 0.8s ease 0.5s both}
+.trust-item{display:flex;align-items:center;gap:7px;color:var(--gl);font-size:0.78rem}
+.trust-check{width:16px;height:16px;border-radius:50%;background:rgba(0,214,143,0.15);border:1px solid rgba(0,214,143,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trust-check svg{width:8px;height:8px;stroke:var(--green)}
+.trust-div{width:1px;height:16px;background:var(--border)}
+
+/* ── STATS ── */
+.stats{padding:70px 6%;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.stats-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:48px;text-align:center}
+.stat-num{font-family:'Syne',sans-serif;font-size:3rem;font-weight:900;color:var(--yellow);line-height:1;letter-spacing:-2px}
+.stat-label{color:var(--gl);font-size:0.8rem;margin-top:6px;letter-spacing:0.3px}
+
+/* ── SECTIONS ── */
+section{padding:100px 6%}
+.sec-label{font-size:0.7rem;font-weight:600;letter-spacing:3px;color:var(--yellow);text-transform:uppercase;margin-bottom:16px;opacity:0.8}
+.sec-title{font-family:'Syne',sans-serif;font-size:clamp(2rem,4vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-1px}
+.sec-title em{color:var(--yellow);font-style:normal}
+.sec-sub{color:var(--gl);font-size:0.95rem;line-height:1.7;margin-top:14px;max-width:500px;font-weight:300}
+
+/* ── HOW ── */
+.how{background:var(--gray)}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;max-width:1100px;margin:60px auto 0;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.step{background:var(--black2);padding:32px 28px;transition:background 0.3s}
+.step:hover{background:#111}
+.step-num{font-family:'Syne',sans-serif;font-size:3rem;font-weight:900;color:var(--yellow);opacity:0.15;line-height:1;margin-bottom:20px}
+.step h3{font-size:1rem;font-weight:600;margin-bottom:8px;letter-spacing:-0.2px}
+.step p{color:var(--gl);font-size:0.82rem;line-height:1.65;font-weight:300}
+
+/* ── PRICING ── */
+.pricing{text-align:center}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1px;max-width:900px;margin:60px auto 0;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.plan{background:var(--black2);padding:36px 28px;position:relative;transition:background 0.3s}
+.plan:hover{background:#111}
+.plan.featured{background:#0d0d00}
+.plan-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--yellow);color:var(--black);font-size:0.65rem;font-weight:800;padding:4px 14px;border-radius:0 0 8px 8px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
+.plan-name{font-size:0.7rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gl);margin-bottom:16px}
+.plan-price{font-family:'Syne',sans-serif;font-size:3.2rem;font-weight:900;color:var(--yellow);line-height:1;letter-spacing:-2px}
+.plan-period{color:var(--gl2);font-size:0.75rem;margin-top:4px}
+.plan-features{list-style:none;margin:24px 0;text-align:left;display:flex;flex-direction:column;gap:10px}
+.plan-features li{display:flex;align-items:center;gap:10px;font-size:0.82rem;color:#aaa;font-weight:300}
+.plan-features li::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--yellow);flex-shrink:0}
+.plan-btn{display:block;text-align:center;text-decoration:none;padding:13px;border-radius:50px;font-weight:700;font-size:0.85rem;cursor:pointer;border:none;width:100%;transition:all 0.25s;font-family:'Inter',sans-serif;letter-spacing:0.2px}
+.plan.featured .plan-btn{background:var(--yellow);color:var(--black)}
+.plan.featured .plan-btn:hover{background:var(--yellow2);transform:translateY(-2px)}
+.plan:not(.featured) .plan-btn{background:transparent;color:var(--white);border:1px solid var(--border)}
+.plan:not(.featured) .plan-btn:hover{border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.03)}
+
+/* ── TESTIMONIOS ── */
+.testi-section{background:var(--gray)}
+.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;max-width:1100px;margin:60px auto 0;background:var(--border);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.testi{background:var(--black2);padding:28px;transition:background 0.3s}
+.testi:hover{background:#111}
+.testi-stars{display:flex;gap:3px;margin-bottom:14px}
+.testi-star{color:var(--yellow);font-size:0.85rem}
+.testi-text{color:#bbb;font-size:0.85rem;line-height:1.7;font-weight:300;font-style:italic;margin-bottom:18px}
+.testi-text::before{content:'"';color:var(--yellow);font-size:1.5rem;line-height:0;vertical-align:-8px;margin-right:3px;opacity:0.5}
+.testi-author{display:flex;align-items:center;gap:12px}
+.testi-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--yellow),#ff8c00);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;color:var(--black);flex-shrink:0}
+.testi-name{font-size:0.82rem;font-weight:600;letter-spacing:-0.2px}
+.testi-role{color:var(--gl);font-size:0.72rem;margin-top:2px}
+
+/* ── PRUEBA SOCIAL ── */
+.social-proof{padding:60px 6%;text-align:center;border-top:1px solid var(--border)}
+.sp-logos{display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;margin-top:24px;opacity:0.3}
+.sp-label{font-size:0.72rem;color:var(--gl);letter-spacing:2px;text-transform:uppercase}
+.sp-logo{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;color:var(--white)}
+
+/* ── COMPARATIVA ── */
+.compare-section{background:var(--gray)}
+.compare-table{max-width:700px;margin:50px auto 0;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.compare-header{display:grid;grid-template-columns:1fr 140px 140px;background:#0a0a0a;border-bottom:1px solid var(--border)}
+.compare-header div{padding:14px 20px;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gl)}
+.compare-header div:nth-child(2){text-align:center;color:var(--yellow)}
+.compare-header div:nth-child(3){text-align:center}
+.compare-row{display:grid;grid-template-columns:1fr 140px 140px;border-bottom:1px solid var(--border);background:var(--black2);transition:background 0.2s}
+.compare-row:last-child{border:none}
+.compare-row:hover{background:#111}
+.compare-row div{padding:13px 20px;font-size:0.8rem;color:#aaa;font-weight:300;display:flex;align-items:center}
+.compare-row div:nth-child(2){justify-content:center;color:var(--green);font-weight:700}
+.compare-row div:nth-child(3){justify-content:center;color:var(--gl2)}
+
+/* ── FAQ ── */
+.faq-inner{max-width:660px;margin:50px auto 0}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-q{padding:20px 0;font-size:0.88rem;font-weight:500;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:color 0.2s;user-select:none;letter-spacing:-0.2px}
+.faq-q:hover{color:var(--yellow)}
+.faq-arrow{color:var(--gl);transition:transform 0.3s;font-size:0.75rem}
+.faq-q.open{color:var(--yellow)}
+.faq-q.open .faq-arrow{transform:rotate(180deg);color:var(--yellow)}
+.faq-a{padding:0;color:var(--gl);font-size:0.82rem;line-height:1.7;max-height:0;overflow:hidden;transition:max-height 0.4s ease,padding 0.3s;font-weight:300}
+.faq-a.open{max-height:200px;padding:0 0 20px}
+
+/* ── FINAL CTA ── */
+.final-cta{text-align:center;padding:120px 6%;position:relative;overflow:hidden}
+.final-cta::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(255,208,0,0.05) 0%,transparent 70%);pointer-events:none}
+.final-price{font-family:'Syne',sans-serif;font-size:clamp(4rem,12vw,9rem);font-weight:900;color:var(--yellow);line-height:1;letter-spacing:-4px;margin-bottom:16px}
+.btn-dark{display:inline-flex;align-items:center;gap:10px;background:var(--white);color:var(--black);font-weight:700;font-size:1rem;padding:18px 40px;border-radius:50px;text-decoration:none;margin-top:36px;transition:all 0.25s}
+.btn-dark:hover{background:var(--yellow);transform:translateY(-3px)}
+
+/* ── FOOTER ── */
+footer{background:var(--gray);border-top:1px solid var(--border);padding:40px 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-logo{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:900;color:var(--yellow)}
+.footer-logo span{color:var(--white)}
+footer p{color:var(--gl2);font-size:0.75rem}
+footer a{color:var(--gl2);text-decoration:none;transition:color 0.2s}
+footer a:hover{color:var(--white)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+
+.reveal{opacity:0;transform:translateY(32px);transition:opacity 0.8s ease,transform 0.8s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.1s}
+.reveal-delay-2{transition-delay:0.2s}
+.reveal-delay-3{transition-delay:0.3s}
+
+@media(max-width:768px){
+  nav{padding:14px 5%}
+  .nav-link{display:none}
+  section{padding:70px 5%}
+  .hero{padding:120px 5% 80px}
+  .trust-div{display:none}
+  footer{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-logo">CV<span>Pro</span></div>
+  <div class="nav-right">
+    <a href="#how" class="nav-link">Cómo funciona</a>
+    <a href="#pricing" class="nav-link">Precios</a>
+    <a href="#testimonios" class="nav-link">Testimonios</a>
+    <a href="chat-cv.html" class="nav-cta">Crear mi CV →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-glow"></div>
+    <div class="hero-grid"></div>
+  </div>
+
+  <div class="hero-badge">
+    <span class="badge-dot"></span>
+    +10,000 profesionales contratados en Latam
+  </div>
+
+  <div class="hero-price">$2.99</div>
+
+  <h1 class="hero-headline">
+    El CV que <em>sí consigue</em> entrevistas.<br>Generado por IA en minutos.
+  </h1>
+
+  <p class="hero-sub">
+    Chat guiado de 20 preguntas · IA corrige y mejora tu redacción · 10 plantillas profesionales · Descarga en PDF
+  </p>
+
+  <div class="hero-actions">
+    <a href="chat-cv.html" class="btn-primary">⚡ Crear mi CV ahora</a>
+    <a href="#how" class="btn-secondary">Ver cómo funciona →</a>
+  </div>
+
+  <div class="hero-trust">
+    <div class="trust-item">
+      <div class="trust-check"><svg viewBox="0 0 10 10" fill="none" stroke-width="2" stroke-linecap="round"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
+      Chat guiado de 20 preguntas
+    </div>
+    <div class="trust-div"></div>
+    <div class="trust-item">
+      <div class="trust-check"><svg viewBox="0 0 10 10" fill="none" stroke-width="2" stroke-linecap="round"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
+      IA corrige tu ortografía
+    </div>
+    <div class="trust-div"></div>
+    <div class="trust-item">
+      <div class="trust-check"><svg viewBox="0 0 10 10" fill="none" stroke-width="2" stroke-linecap="round"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
+      10 plantillas profesionales
+    </div>
+    <div class="trust-div"></div>
+    <div class="trust-item">
+      <div class="trust-check"><svg viewBox="0 0 10 10" fill="none" stroke-width="2" stroke-linecap="round"><path d="M2 5l2.5 2.5L8 3"/></svg></div>
+      Descarga PDF al instante
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stats-inner">
+    <div class="reveal">
+      <div class="stat-num">10K+</div>
+      <div class="stat-label">CVs generados</div>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="stat-num">94%</div>
+      <div class="stat-label">Consiguieron entrevista</div>
+    </div>
+    <div class="reveal reveal-delay-2">
+      <div class="stat-num">20</div>
+      <div class="stat-label">Preguntas guiadas por IA</div>
+    </div>
+    <div class="reveal reveal-delay-3">
+      <div class="stat-num">15+</div>
+      <div class="stat-label">Países en Latam</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW -->
+<section class="how" id="how">
+  <div style="max-width:1100px;margin:0 auto">
+    <p class="sec-label reveal">El proceso</p>
+    <h2 class="sec-title reveal">Listo en <em>4 pasos</em></h2>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <h3>Elige tu plan</h3>
+        <p>Desde $2.99. Sin suscripciones, sin letras pequeñas. Pagas una vez.</p>
+      </div>
+      <div class="step reveal reveal-delay-1">
+        <div class="step-num">02</div>
+        <h3>Chat IA te guía</h3>
+        <p>20 preguntas inteligentes. Solo escribe tu información — la IA la transforma.</p>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-num">03</div>
+        <h3>Revisa y ajusta</h3>
+        <p>Edita cada campo, corrige lo que quieras. La IA aplica las mejoras finales.</p>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-num">04</div>
+        <h3>Descarga tu PDF</h3>
+        <p>10 plantillas profesionales. Foto incluida. PDF en A4 listo para enviar.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRUEBA SOCIAL -->
+<div class="social-proof">
+  <p class="sp-label reveal">Profesionales que ya consiguieron trabajo</p>
+  <div class="sp-logos reveal">
+    <span class="sp-logo">Aviación ✈</span>
+    <span class="sp-logo">·</span>
+    <span class="sp-logo">Tech 💻</span>
+    <span class="sp-logo">·</span>
+    <span class="sp-logo">Salud 🏥</span>
+    <span class="sp-logo">·</span>
+    <span class="sp-logo">Finanzas 💼</span>
+    <span class="sp-logo">·</span>
+    <span class="sp-logo">Educación 🎓</span>
+    <span class="sp-logo">·</span>
+    <span class="sp-logo">Ventas 🚀</span>
+  </div>
+</div>
+
+<!-- COMPARATIVA -->
+<section class="compare-section" id="compare">
+  <div style="max-width:700px;margin:0 auto">
+    <p class="sec-label reveal">Por qué CVPro</p>
+    <h2 class="sec-title reveal">CVPro vs <em>las alternativas</em></h2>
+    <div class="compare-table reveal">
+      <div class="compare-header">
+        <div>Característica</div>
+        <div>CVPro</div>
+        <div>Otros</div>
+      </div>
+      <div class="compare-row">
+        <div>Precio</div>
+        <div>$2.99</div>
+        <div>$50–$200</div>
+      </div>
+      <div class="compare-row">
+        <div>IA guiada por chat</div>
+        <div>✓</div>
+        <div>✗</div>
+      </div>
+      <div class="compare-row">
+        <div>Corrección de ortografía</div>
+        <div>✓</div>
+        <div>✗</div>
+      </div>
+      <div class="compare-row">
+        <div>Revisión antes de generar</div>
+        <div>✓</div>
+        <div>✗</div>
+      </div>
+      <div class="compare-row">
+        <div>10 plantillas con foto</div>
+        <div>✓</div>
+        <div>Algunas</div>
+      </div>
+      <div class="compare-row">
+        <div>Descarga PDF al instante</div>
+        <div>✓</div>
+        <div>✓</div>
+      </div>
+      <div class="compare-row">
+        <div>Sin suscripción</div>
+        <div>✓</div>
+        <div>✗</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIOS -->
+<section id="testimonios" style="padding:100px 6%">
+  <div style="max-width:1100px;margin:0 auto">
+    <p class="sec-label reveal">Testimonios reales</p>
+    <h2 class="sec-title reveal">Ellos ya <em>consiguieron</em> su trabajo</h2>
+    <p class="sec-sub reveal">Más de 10,000 profesionales en Latam confían en CVPro</p>
+
+    <div class="testi-grid" style="margin-top:48px">
+      <div class="testi reveal">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">Mandé mi CV viejo 3 meses y nada. Con CVPro me llamaron en una semana. El chat me hizo preguntas que nunca hubiera pensado incluir.</p>
+        <div class="testi-author">
+          <div class="testi-avatar">AG</div>
+          <div><div class="testi-name">Ana González</div><div class="testi-role">Contadora · Colombia</div></div>
+        </div>
+      </div>
+      <div class="testi reveal reveal-delay-1">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">Pagué $2.99 y conseguí trabajo que paga $1,200 al mes. La mejor inversión de mi vida. El CV quedó tan profesional que no lo reconocí.</p>
+        <div class="testi-author">
+          <div class="testi-avatar">MT</div>
+          <div><div class="testi-name">Miguel Torres</div><div class="testi-role">Desarrollador · México</div></div>
+        </div>
+      </div>
+      <div class="testi reveal reveal-delay-2">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">Pensé que por ese precio sería algo básico. Me sorprendió la calidad. La IA corrigió mi redacción y lo adaptó perfectamente a mi sector.</p>
+        <div class="testi-author">
+          <div class="testi-avatar">VR</div>
+          <div><div class="testi-name">Valeria Ríos</div><div class="testi-role">Enfermera · Chile</div></div>
+        </div>
+      </div>
+      <div class="testi reveal">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">El chat de preguntas es increíble. Me fue guiando paso a paso y al final tenía un CV que realmente me representaba. Conseguí 3 entrevistas en una semana.</p>
+        <div class="testi-author">
+          <div class="testi-avatar">JM</div>
+          <div><div class="testi-name">Jorge Mendez</div><div class="testi-role">Ingeniero · Argentina</div></div>
+        </div>
+      </div>
+      <div class="testi reveal reveal-delay-1">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">Llevaba 6 meses buscando trabajo. Con este CV conseguí entrevista en 4 días. Lo que más me gustó fue poder revisar y editar antes de descargar.</p>
+        <div class="testi-author">
+          <div class="testi-avatar">LP</div>
+          <div><div class="testi-name">Laura Pérez</div><div class="testi-role">Administradora · Perú</div></div>
+        </div>
+      </div>
+      <div class="testi reveal reveal-delay-2">
+        <div class="testi-stars">★★★★★</div>
+        <p class="testi-text">Soy piloto y conseguir trabajo civil es difícil. CVPro tradujo mi experiencia militar a términos que los empleadores civiles entienden. Genial.</p>
+        <div class="testi-author">
+          <div class="testi-avatar">CA</div>
+          <div><div class="testi-name">Carlos Alvarez</div><div class="testi-role">Piloto · El Salvador</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing" style="background:var(--gray)">
+  <p class="sec-label reveal">Precios</p>
+  <h2 class="sec-title reveal">Sin sorpresas. <em>Sin suscripciones.</em></h2>
+  <p class="sec-sub reveal" style="margin:14px auto">Pago único. Todo incluido.</p>
+
+  <div class="pricing-grid">
+    <div class="plan reveal">
+      <div class="plan-name">Básico</div>
+      <div class="plan-price">$2.99</div>
+      <div class="plan-period">pago único</div>
+      <ul class="plan-features">
+        <li>CV profesional completo</li>
+        <li>Chat guiado de 20 preguntas</li>
+        <li>IA corrige ortografía</li>
+        <li>Pantalla de revisión</li>
+        <li>5 plantillas + foto</li>
+        <li>Descarga PDF</li>
+      </ul>
+      <button class="plan-btn" onclick="window.location='chat-cv.html'">⚡ Crear mi CV ahora</button>
+    </div>
+    <div class="plan featured reveal reveal-delay-1">
+      <div class="plan-badge">⭐ Más popular</div>
+      <div class="plan-name">Estándar</div>
+      <div class="plan-price">$9.99</div>
+      <div class="plan-period">pago único</div>
+      <ul class="plan-features">
+        <li>Todo lo del plan básico</li>
+        <li>Carta de presentación</li>
+        <li>10 plantillas + foto</li>
+        <li>Perfil LinkedIn optimizado</li>
+        <li>2 revisiones incluidas</li>
+      </ul>
+      <button class="plan-btn" onclick="window.location='chat-cv.html'">⚡ Crear mi CV ahora</button>
+    </div>
+    <div class="plan reveal reveal-delay-2">
+      <div class="plan-name">Premium</div>
+      <div class="plan-price">$19.99</div>
+      <div class="plan-period">pago único</div>
+      <ul class="plan-features">
+        <li>Todo lo del estándar</li>
+        <li>CV en español + inglés</li>
+        <li>Revisiones ilimitadas</li>
+        <li>Soporte prioritario</li>
+      </ul>
+      <button class="plan-btn" onclick="window.location='chat-cv.html'">⚡ Crear mi CV ahora</button>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section style="padding:100px 6%">
+  <div style="max-width:660px;margin:0 auto">
+    <p class="sec-label reveal">Preguntas frecuentes</p>
+    <h2 class="sec-title reveal">FAQ</h2>
+    <div class="faq-inner">
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Realmente cuesta solo $2.99? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí, el plan básico cuesta exactamente $2.99. Sin costos ocultos, sin suscripciones. Pagas una vez y recibes tu CV profesional completo.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Cómo funciona el chat de 20 preguntas? <span class="faq-arrow">▼</span></div><div class="faq-a">Nuestro asistente IA te hace 20 preguntas guiadas sobre tu experiencia, estudios, habilidades y metas. Es como hablar con un experto en CVs — solo escribe y la IA se encarga de todo.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿La IA realmente mejora mi redacción? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí. La IA corrige ortografía, mejora la redacción, usa verbos de acción profesionales y optimiza el texto para pasar filtros ATS automáticos. Tu información, pero presentada de la mejor manera posible.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Puedo revisar el CV antes de descargar? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí. Después de que la IA genera tu CV, tienes una pantalla de revisión donde puedes editar cada campo. Si haces cambios, la IA aplica las correcciones finales antes de generar tu plantilla.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Funciona en todos los países de Latam? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí, trabajamos con clientes de México, Colombia, Chile, Argentina, Perú, El Salvador, Costa Rica y más de 15 países latinoamericanos.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Puedo pagar con tarjeta? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí. Aceptamos Visa, Mastercard, American Express y PayPal. 100% seguro, sin importar el país.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <p class="sec-label reveal">¿Listo?</p>
+  <div class="final-price reveal">$2.99</div>
+  <h2 class="sec-title reveal">Tu próximo trabajo empieza<br>con un buen CV</h2>
+  <p class="sec-sub reveal" style="margin:16px auto;text-align:center">Cuesta menos que un café. Vale más que cualquier otra inversión que puedas hacer hoy.</p>
+  <a href="chat-cv.html" class="btn-dark reveal">⚡ Crear mi CV profesional ahora</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">CV<span>Pro</span></div>
+  <p>© 2026 CVPro · <a href="#">Privacidad</a> · <a href="#">Términos</a> · <a href="mailto:contacto@cvpro.com">contacto@cvpro.com</a></p>
+</footer>
+
+<script>
+// Nav scroll
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// Reveal on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// FAQ
+function toggleFaq(el) {
+  const ans = el.nextElementSibling;
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.faq-q').forEach(q => { q.classList.remove('open'); q.nextElementSibling.classList.remove('open'); });
+  if (!isOpen) { el.classList.add('open'); ans.classList.add('open'); }
+}
+</script>
+</body>
+</html>

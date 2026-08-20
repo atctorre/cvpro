@@ -435,18 +435,37 @@ async function generarCV() {
   const esEstandar = currentPlan === 'estandar' || currentPlan === 'premium';
   const esPremium  = currentPlan === 'premium';
 
-  const prompt = `Eres un experto en recursos humanos y redacción de CVs para Latinoamérica. Crea un CV profesional, persuasivo y optimizado para ATS con esta información:
+  const prompt = `Eres un reclutador senior y escritor experto en CVs con 15 años de experiencia contratando en empresas Fortune 500 de Latinoamérica. Tu especialidad es transformar información básica en CVs que consiguen entrevistas.
 
-DATOS: Nombre: ${nombre} | Email: ${email} | Teléfono: ${telefono||'N/A'} | País: ${pais||'Latam'} | LinkedIn: ${linkedin||'N/A'}
-PUESTO OBJETIVO: ${puesto}
-EXPERIENCIA: ${experiencia}
-ESTUDIOS: ${estudios}
-HABILIDADES: ${habilidades}
-LOGROS: ${logros||'N/A'}
-IDIOMAS: ${idiomas||'N/A'}
-EXTRA: ${extra||'N/A'}
+MISIÓN: Crear un CV altamente personalizado y específico para ${nombre} que aplica a ${puesto} en ${pais||'Latinoamérica'}. NO uses frases genéricas. Cada línea debe reflejar EXACTAMENTE la experiencia de esta persona.
 
-Genera el CV con este formato exacto:
+INFORMACIÓN DEL CANDIDATO:
+━━━━━━━━━━━━━━━━━━━━━━━━━
+Nombre: ${nombre}
+Email: ${email}${telefono?'\nTeléfono: '+telefono:''}${linkedin?'\nLinkedIn: '+linkedin:''}
+País: ${pais||'Latinoamérica'}
+Puesto objetivo: ${puesto}
+
+Experiencia laboral:
+${experiencia}
+
+Educación:
+${estudios}
+
+Habilidades:
+${habilidades}
+${logros?'\nLogros y reconocimientos:\n'+logros:''}
+${idiomas?'\nIdiomas: '+idiomas:''}
+${extra?'\nInfo adicional: '+extra:''}
+
+REGLAS CRÍTICAS para escribir el CV:
+1. RESUMEN: Escribe 3-4 líneas 100% personalizadas basadas en SU experiencia real. Menciona el sector específico, años aproximados y su propuesta de valor única. PROHIBIDO usar frases como "profesional comprometido" o "orientado a resultados" — son genéricas.
+2. EXPERIENCIA: Para cada trabajo usa verbos de acción específicos del sector (si es ventas: "cerré", "prospecté", "superé cuota"; si es tech: "desarrollé", "implementé", "optimicé"). Si el candidato menciona números úsalos. Si no menciona números, infiere logros realistas basados en el cargo.
+3. HABILIDADES: Organízalas estratégicamente — primero las más relevantes para el puesto objetivo.
+4. TONO: Confiado, específico y orientado a logros. Cada bala debe responder "¿por qué deberían contratarme?"
+5. PALABRAS CLAVE ATS: Incluye términos clave del sector de ${puesto} para pasar filtros automatizados.
+
+FORMATO EXACTO A USAR:
 
 ═══════════════════════════════════════════════
 ${nombre.toUpperCase()}
@@ -455,14 +474,15 @@ ${puesto} | ${pais||'Latinoamérica'} | ${email}${telefono?' | '+telefono:''}
 
 RESUMEN PROFESIONAL
 ───────────────────
-[3-4 líneas impactantes sobre el perfil, mencionando años de experiencia, especialidad y valor aportado]
+[3-4 líneas únicas y personalizadas — NO genéricas. Menciona sector, especialidad y valor concreto]
 
 EXPERIENCIA PROFESIONAL
 ───────────────────────
-[Para cada trabajo: CARGO | EMPRESA | PERÍODO
-• Logro con verbo de acción fuerte y número cuando sea posible
-• Responsabilidad clave
-• Resultado concreto]
+[Para cada trabajo:]
+CARGO | EMPRESA | PERÍODO
+• [Verbo acción + logro específico con número si aplica]
+• [Responsabilidad clave más impactante]
+• [Resultado o contribución concreta]
 
 EDUCACIÓN
 ─────────
@@ -470,12 +490,10 @@ EDUCACIÓN
 
 HABILIDADES
 ───────────
-Técnicas: [lista]
-Blandas: [lista]
-${idiomas?'Idiomas: '+idiomas:''}
+Técnicas: [las más relevantes para ${puesto} primero]
+Blandas: [3-4 habilidades interpersonales clave]${idiomas?'\nIdiomas: '+idiomas:''}
 
-${logros?'LOGROS DESTACADOS\n─────────────────\n• [logros formateados con impacto]':''}
-${extra?'\nINFORMACIÓN ADICIONAL\n─────────────────────\n'+extra:''}
+${logros?'LOGROS DESTACADOS\n─────────────────\n• [cada logro redactado con impacto máximo]':''}${extra?'\n\nINFORMACIÓN ADICIONAL\n─────────────────────\n'+extra:''}
 
 ───────────────────────────────────────────────
 ${esEstandar?`

@@ -337,7 +337,7 @@ Bachillerato en Ciencias — Instituto Central — 2018" style="min-height:90px"
     </div>
 
     <!-- RESEÑA -->
-    <div class="resena-box fade-in" id="resenaBox">
+    <div class="resena-box fade-in" id="resenaBox" style="display:none">
       <h3>⭐ ¿Cómo quedó tu CV?</h3>
       <p>Tu opinión ayuda a otros profesionales de Latam a tomar la decisión</p>
       <div class="stars-row" id="starsRow">
@@ -594,6 +594,8 @@ ACERCA DE:
   document.getElementById('cvOutput').textContent = cvGenerado;
   if (esPremium) document.getElementById('upsellBox').style.display = 'none';
   document.getElementById('resultPage').classList.add('active');
+  document.getElementById('resenaBox').style.display = 'block';
+  setStars(5);
   window.scrollTo({top:0, behavior:'smooth'});
 }
 

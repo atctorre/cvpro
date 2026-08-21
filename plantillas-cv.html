@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elige tu plantilla | CVPro</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',sans-serif;background:#111;color:#fff;min-height:100vh}
+nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 5%;background:rgba(10,10,10,0.97);backdrop-filter:blur(12px);border-bottom:1px solid #222}
+.nav-logo{font-family:'Montserrat',sans-serif;font-size:1.2rem;font-weight:800;color:#FFD000;text-decoration:none}
+.nav-logo span{color:#fff}
+.nav-back{color:#888;font-size:0.85rem;text-decoration:none;cursor:pointer}
+.nav-back:hover{color:#FFD000}
+
+/* ── LAYOUT ── */
+.page{max-width:1100px;margin:0 auto;padding:40px 20px 80px}
+.page-title{text-align:center;margin-bottom:40px}
+.page-title h1{font-family:'Montserrat',sans-serif;font-size:2rem;font-weight:800;color:#FFD000;margin-bottom:8px}
+.page-title p{color:#888;font-size:0.9rem}
+
+/* ── GENDER TABS ── */
+.gender-tabs{display:flex;gap:10px;justify-content:center;margin-bottom:32px}
+.gender-tab{padding:11px 30px;border-radius:50px;font-size:0.88rem;font-weight:700;cursor:pointer;border:2px solid #333;background:transparent;color:#888;transition:all 0.3s;font-family:'Montserrat',sans-serif}
+.gender-tab.active{background:#FFD000;color:#000;border-color:#FFD000}
+
+/* ── PLANTILLAS GRID ── */
+.templates-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:36px}
+@media(max-width:700px){.templates-grid{grid-template-columns:repeat(2,1fr)}}
+.tpl-card{background:#1a1a1a;border:2px solid #2a2a2a;border-radius:14px;overflow:hidden;cursor:pointer;transition:all 0.3s;position:relative}
+.tpl-card:hover{border-color:#FFD000;transform:translateY(-4px)}
+.tpl-card.selected{border-color:#FFD000;box-shadow:0 0 24px rgba(255,208,0,0.3)}
+.tpl-selected-badge{display:none;position:absolute;top:8px;right:8px;background:#FFD000;color:#000;font-size:0.6rem;font-weight:800;padding:3px 8px;border-radius:50px;z-index:2}
+.tpl-card.selected .tpl-selected-badge{display:block}
+
+/* MINIATURAS */
+.tpl-preview{height:160px;overflow:hidden;position:relative;pointer-events:none}
+.tpl-preview .mini{transform:scale(0.22);transform-origin:top left;width:454%;height:454%;pointer-events:none}
+.tpl-name{padding:10px 12px;font-size:0.75rem;font-weight:700;color:#ccc;text-align:center;border-top:1px solid #2a2a2a}
+.tpl-card.selected .tpl-name{color:#FFD000}
+
+/* ── FOTO UPLOAD ── */
+.foto-section{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:24px;margin-bottom:24px}
+.foto-section h3{font-size:0.85rem;font-weight:700;color:#FFD000;margin-bottom:16px;letter-spacing:1px;text-transform:uppercase}
+.foto-upload-area{border:2px dashed #333;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color 0.3s;margin-bottom:16px}
+.foto-upload-area:hover{border-color:#FFD000}
+.foto-upload-area input{display:none}
+.foto-upload-area p{color:#888;font-size:0.82rem;margin-top:8px}
+
+/* AJUSTE FOTO */
+.foto-ajuste{display:none}
+.foto-ajuste.visible{display:block}
+.foto-ajuste h4{font-size:0.78rem;color:#aaa;margin-bottom:10px}
+.foto-crop-wrap{position:relative;width:200px;height:200px;margin:0 auto 16px;border-radius:50%;overflow:hidden;border:3px solid #FFD000;background:#222;cursor:move;user-select:none}
+.foto-crop-wrap.square{border-radius:12px}
+.foto-crop-wrap img{position:absolute;cursor:move;transform-origin:center center}
+.crop-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:300px;margin:0 auto}
+.crop-ctrl{display:flex;flex-direction:column;gap:4px}
+.crop-ctrl label{font-size:0.72rem;color:#888}
+.crop-ctrl input[type=range]{width:100%;accent-color:#FFD000}
+.btn-foto-ok{display:block;width:100%;background:#FFD000;color:#000;font-weight:700;font-size:0.85rem;padding:10px;border:none;border-radius:50px;cursor:pointer;margin-top:12px;font-family:'Montserrat',sans-serif}
+
+/* ── BOTÓN GENERAR ── */
+.btn-generar{width:100%;background:#FFD000;color:#000;font-family:'Montserrat',sans-serif;font-weight:800;font-size:1rem;padding:16px;border:none;border-radius:50px;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 0 30px rgba(255,208,0,0.2);margin-top:8px}
+.btn-generar:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(255,208,0,0.4)}
+
+/* ── CV OUTPUT ── */
+.cv-result{display:none;max-width:900px;margin:0 auto;padding:20px}
+.cv-actions{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.btn-pdf{background:#FFD000;color:#000;font-weight:700;padding:12px 28px;border:none;border-radius:50px;cursor:pointer;font-size:0.9rem;transition:transform 0.2s;font-family:'Montserrat',sans-serif}
+.btn-pdf:hover{transform:scale(1.04)}
+.btn-carta{background:#0d1b2a;color:#FFD000;font-weight:700;padding:12px 28px;border:none;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Montserrat',sans-serif;transition:transform 0.2s}
+.btn-carta:hover{transform:scale(1.04)}
+.btn-volver{background:transparent;color:#fff;font-weight:600;padding:12px 28px;border:2px solid #444;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Montserrat',sans-serif}
+.btn-volver:hover{border-color:#FFD000;color:#FFD000}
+#cvFinal{background:#fff}
+
+/* ════════════════════
+   PLANTILLAS CSS
+════════════════════ */
+/* H1 NAVY */
+.cv-h1{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h1 .hdr{background:#0d1b2a;padding:36px 40px;display:flex;gap:24px;align-items:center}
+.cv-h1 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #FFD000;flex-shrink:0;background:#2a4a6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#FFD000}
+.cv-h1 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h1 .nm{font-size:1.8rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h1 .rl{color:#FFD000;font-size:0.82rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:5px 0 12px}
+.cv-h1 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h1 .ci{font-size:0.72rem;color:#ccc}
+.cv-h1 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-h1 .sb{background:#f0f4f8;padding:24px 20px}
+.cv-h1 .mn{padding:24px 26px}
+.cv-h1 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0d1b2a;border-bottom:2px solid #FFD000;padding-bottom:4px;margin-bottom:12px}
+.cv-h1 .sk{margin-bottom:8px}
+.cv-h1 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h1 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h1 .sf{height:100%;background:linear-gradient(90deg,#0d1b2a,#FFD000);border-radius:2px}
+.cv-h1 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #FFD000}
+.cv-h1 .jt{font-size:0.86rem;font-weight:700;color:#0d1b2a}
+.cv-h1 .jm{font-size:0.72rem;color:#666;margin:3px 0 7px}
+.cv-h1 .bl{font-size:0.74rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h1 .bl::before{content:'▸';position:absolute;left:0;color:#0d1b2a;font-size:0.65rem}
+.cv-h1 .li{display:flex;justify-content:space-between;font-size:0.74rem;margin-bottom:5px}
+
+/* H2 NEGRO DORADO */
+.cv-h2{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h2 .hdr{background:#111;padding:32px 36px;display:flex;gap:20px;align-items:center}
+.cv-h2 .ph{width:90px;height:90px;border-radius:10px;overflow:hidden;border:3px solid #FFD000;flex-shrink:0;background:#222;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#FFD000}
+.cv-h2 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h2 .nm{font-size:1.7rem;font-weight:700;color:#fff}
+.cv-h2 .rl{color:#FFD000;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h2 .gl{width:40px;height:2px;background:#FFD000;margin-bottom:10px}
+.cv-h2 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-h2 .ci{font-size:0.7rem;color:#aaa}
+.cv-h2 .bd{display:grid;grid-template-columns:1fr 240px}
+.cv-h2 .mn{padding:24px 28px}
+.cv-h2 .sb{background:#f9f9f9;padding:24px 20px;border-left:1px solid #eee}
+.cv-h2 .st{font-size:0.62rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#111;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.cv-h2 .st::after{content:'';flex:1;height:1px;background:#FFD000}
+.cv-h2 .jb{margin-bottom:16px}
+.cv-h2 .jh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.cv-h2 .jt{font-size:0.86rem;font-weight:700;color:#111}
+.cv-h2 .jd{font-size:0.68rem;background:#111;color:#FFD000;padding:2px 7px;border-radius:3px}
+.cv-h2 .jm{font-size:0.74rem;color:#666;margin-bottom:7px}
+.cv-h2 .bl{font-size:0.73rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative}
+.cv-h2 .bl::before{content:'→';position:absolute;left:0;color:#FFD000;font-size:0.6rem}
+.cv-h2 .tg{display:inline-block;background:#111;color:#FFD000;font-size:0.67rem;padding:3px 8px;border-radius:3px;margin:2px;font-weight:700}
+
+/* H3 MINIMALISTA */
+.cv-h3{font-family:'Lato',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h3 .hdr{padding:30px 36px;border-bottom:3px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center}
+.cv-h3 .ph{width:80px;height:80px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#eee;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#666}
+.cv-h3 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h3 .nm{font-size:2rem;font-weight:900;color:#1a1a1a;letter-spacing:-1px;line-height:1}
+.cv-h3 .rl{font-size:0.8rem;font-weight:300;color:#666;letter-spacing:4px;text-transform:uppercase;margin-top:5px}
+.cv-h3 .ct{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.cv-h3 .ci{font-size:0.72rem;color:#888}
+.cv-h3 .bd{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:26px 36px}
+.cv-h3 .col{padding:0 14px}
+.cv-h3 .col:first-child{padding-left:0;border-right:1px solid #eee}
+.cv-h3 .col:last-child{padding-right:0}
+.cv-h3 .st{font-size:0.58rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#1a1a1a;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #1a1a1a}
+.cv-h3 .jb{margin-bottom:14px}
+.cv-h3 .jt{font-size:0.84rem;font-weight:700;color:#1a1a1a}
+.cv-h3 .jm{font-size:0.7rem;color:#888;margin:2px 0 5px}
+.cv-h3 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h3 .bl::before{content:'·';position:absolute;left:0;font-weight:900}
+.cv-h3 .dr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.cv-h3 .dn{font-size:0.72rem;font-weight:700}
+.cv-h3 .ds{display:flex;gap:3px}
+.cv-h3 .dot{width:7px;height:7px;border-radius:50%;background:#eee}
+.cv-h3 .dot.f{background:#1a1a1a}
+
+/* H4 VERDE OLIVA */
+.cv-h4{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h4 .hdr{background:#2d4a22;padding:32px 36px;display:flex;gap:22px;align-items:flex-start}
+.cv-h4 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c8e6a0;flex-shrink:0;background:#3d6130;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c8e6a0}
+.cv-h4 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h4 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h4 .rl{color:#c8e6a0;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h4 .ct{display:flex;flex-direction:column;gap:4px}
+.cv-h4 .ci{font-size:0.7rem;color:#b0cc96}
+.cv-h4 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-h4 .sb{background:#f4f8f0;padding:22px 18px;border-right:3px solid #c8e6a0}
+.cv-h4 .mn{padding:22px 24px}
+.cv-h4 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2d4a22;margin-bottom:10px;padding:3px 7px;background:#e8f5d8;border-left:3px solid #2d4a22}
+.cv-h4 .sk{margin-bottom:8px}
+.cv-h4 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h4 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h4 .sf{height:100%;background:#2d4a22;border-radius:2px}
+.cv-h4 .jb{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #eee}
+.cv-h4 .jb:last-child{border:none}
+.cv-h4 .jt{font-size:0.84rem;font-weight:700;color:#2d4a22}
+.cv-h4 .jm{font-size:0.7rem;color:#888;margin:3px 0 6px}
+.cv-h4 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h4 .bl::before{content:'▪';position:absolute;left:0;color:#2d4a22}
+
+/* H5 TECH AZUL */
+.cv-h5{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h5 .hdr{background:#0a0a0a;padding:0;display:flex}
+.cv-h5 .ph-rect{width:140px;flex-shrink:0;overflow:hidden;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:#00d4ff;min-height:150px}
+.cv-h5 .ph-rect img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h5 .hdr-info{flex:1;padding:24px 28px;border-left:4px solid #00d4ff}
+.cv-h5 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h5 .rl{color:#00d4ff;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h5 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h5 .ci{font-size:0.7rem;color:#aaa}
+.cv-h5 .bd{display:grid;grid-template-columns:1fr 200px}
+.cv-h5 .mn{padding:22px 26px}
+.cv-h5 .sb{background:#f5f9ff;padding:22px 18px;border-left:1px solid #e0eeff}
+.cv-h5 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0066ff;margin-bottom:12px;border-bottom:2px solid #00d4ff;padding-bottom:3px}
+.cv-h5 .jb{margin-bottom:14px;padding-left:10px;border-left:2px solid #0066ff}
+.cv-h5 .jt{font-size:0.84rem;font-weight:700;color:#0a0a0a}
+.cv-h5 .jm{font-size:0.7rem;color:#666;margin:2px 0 6px}
+.cv-h5 .bl{font-size:0.72rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h5 .bl::before{content:'>';position:absolute;left:0;color:#0066ff;font-weight:700;font-size:0.6rem}
+.cv-h5 .tg{display:inline-block;background:#e0eeff;color:#0066ff;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+.cv-h5 .sk{margin-bottom:8px}
+.cv-h5 .sn{font-size:0.7rem;font-weight:600;margin-bottom:2px}
+.cv-h5 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h5 .sf{height:100%;background:linear-gradient(90deg,#0066ff,#00d4ff);border-radius:2px}
+
+/* M1 ROSA GOLD */
+.cv-m1{font-family:'Playfair Display',serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m1 .hdr{background:linear-gradient(135deg,#2d1b35,#4a2d5c);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m1 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #e8b4d0;flex-shrink:0;background:#3d2448;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e8b4d0}
+.cv-m1 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m1 .nm{font-size:1.8rem;font-weight:700;color:#fff;letter-spacing:0.5px;line-height:1.1}
+.cv-m1 .rl{color:#e8b4d0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px;font-family:'Montserrat',sans-serif}
+.cv-m1 .gl{width:50px;height:2px;background:linear-gradient(90deg,#e8b4d0,#c9a96e);margin-bottom:10px}
+.cv-m1 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m1 .ci{font-size:0.7rem;color:#d4a8c0;font-family:'Montserrat',sans-serif}
+.cv-m1 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m1 .sb{background:#fdf5f8;padding:22px 18px;border-right:1px solid #f0d8e5}
+.cv-m1 .mn{padding:22px 24px}
+.cv-m1 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#4a2d5c;margin-bottom:12px;padding-bottom:4px;border-bottom:2px solid #e8b4d0;font-family:'Montserrat',sans-serif}
+.cv-m1 .sk{margin-bottom:8px}
+.cv-m1 .sn{font-size:0.72rem;color:#555;margin-bottom:2px;font-family:'Montserrat',sans-serif}
+.cv-m1 .sb2{height:4px;background:#f0d8e5;border-radius:2px}
+.cv-m1 .sf{height:100%;background:linear-gradient(90deg,#4a2d5c,#e8b4d0);border-radius:2px}
+.cv-m1 .jb{margin-bottom:16px}
+.cv-m1 .jt{font-size:0.86rem;font-weight:700;color:#2d1b35}
+.cv-m1 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px;font-family:'Montserrat',sans-serif}
+.cv-m1 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative;font-family:'Montserrat',sans-serif}
+.cv-m1 .bl::before{content:'✦';position:absolute;left:0;color:#e8b4d0;font-size:0.45rem;top:4px}
+
+/* M2 TEAL */
+.cv-m2{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m2 .hdr{background:#0d4f4f;padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m2 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #7ecece;flex-shrink:0;background:#1a6b6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#7ecece}
+.cv-m2 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m2 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m2 .rl{color:#7ecece;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m2 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m2 .ci{font-size:0.7rem;color:#aacece}
+.cv-m2 .bd{display:grid;grid-template-columns:1fr 220px}
+.cv-m2 .mn{padding:22px 26px}
+.cv-m2 .sb{background:#f0f8f8;padding:22px 18px;border-left:3px solid #7ecece}
+.cv-m2 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0d4f4f;margin-bottom:12px;border-bottom:2px solid #7ecece;padding-bottom:3px}
+.cv-m2 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #7ecece}
+.cv-m2 .jt{font-size:0.86rem;font-weight:700;color:#0d4f4f}
+.cv-m2 .jm{font-size:0.7rem;color:#888;margin:3px 0 7px}
+.cv-m2 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m2 .bl::before{content:'◆';position:absolute;left:0;color:#0d4f4f;font-size:0.35rem;top:5px}
+.cv-m2 .sk{margin-bottom:8px}
+.cv-m2 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m2 .sb2{height:4px;background:#d8eded;border-radius:2px}
+.cv-m2 .sf{height:100%;background:#0d4f4f;border-radius:2px}
+.cv-m2 .tg{display:inline-block;background:#e0f4f4;color:#0d4f4f;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+
+/* M3 NARANJA */
+.cv-m3{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m3 .hdr{padding:28px 36px;display:flex;gap:22px;align-items:center;border-bottom:4px solid #ff6b35}
+.cv-m3 .ph{width:95px;height:95px;border-radius:50%;overflow:hidden;border:4px solid #ff6b35;flex-shrink:0;background:#fff3ee;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#ff6b35}
+.cv-m3 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m3 .nm{font-size:1.75rem;font-weight:700;color:#1a1a1a}
+.cv-m3 .rl{color:#ff6b35;font-size:0.78rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:3px 0 8px}
+.cv-m3 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m3 .ci{font-size:0.7rem;color:#888}
+.cv-m3 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-m3 .sb{background:#fff8f5;padding:22px 18px;border-right:2px solid #ffe0d4}
+.cv-m3 .mn{padding:22px 24px}
+.cv-m3 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#ff6b35;margin-bottom:10px;padding:3px 7px;background:#fff0ea;border-radius:3px}
+.cv-m3 .jb{margin-bottom:14px}
+.cv-m3 .jt{font-size:0.84rem;font-weight:700;color:#1a1a1a}
+.cv-m3 .jd{display:inline-block;background:#ff6b35;color:#fff;font-size:0.62rem;padding:2px 7px;border-radius:3px;margin-bottom:6px}
+.cv-m3 .jm{font-size:0.7rem;color:#888;margin-bottom:6px}
+.cv-m3 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m3 .bl::before{content:'→';position:absolute;left:0;color:#ff6b35;font-size:0.6rem;font-weight:700}
+.cv-m3 .sk{margin-bottom:8px}
+.cv-m3 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m3 .sb2{height:4px;background:#ffe0d4;border-radius:2px}
+.cv-m3 .sf{height:100%;background:#ff6b35;border-radius:2px}
+
+/* M4 BURDEOS */
+.cv-m4{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m4 .hdr{background:#6b1a1a;padding:32px 36px;display:flex;gap:22px;align-items:center;border-bottom:3px solid #c9a96e}
+.cv-m4 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #c9a96e;flex-shrink:0;background:#8b2a2a;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c9a96e}
+.cv-m4 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m4 .nm{font-size:1.8rem;font-weight:700;color:#fff}
+.cv-m4 .rl{color:#e8d5a0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m4 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m4 .ci{font-size:0.7rem;color:#d4b4a0}
+.cv-m4 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m4 .sb{background:#fdf8f5;padding:22px 18px;border-right:1px solid #f0e0d5}
+.cv-m4 .mn{padding:22px 24px}
+.cv-m4 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#6b1a1a;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #c9a96e}
+.cv-m4 .jb{margin-bottom:16px}
+.cv-m4 .jt{font-size:0.86rem;font-weight:700;color:#6b1a1a}
+.cv-m4 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m4 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m4 .bl::before{content:'◈';position:absolute;left:0;color:#c9a96e;font-size:0.45rem;top:3px}
+.cv-m4 .sk{margin-bottom:8px}
+.cv-m4 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m4 .sb2{height:4px;background:#f0e0d5;border-radius:2px}
+.cv-m4 .sf{height:100%;background:linear-gradient(90deg,#6b1a1a,#c9a96e);border-radius:2px}
+.cv-m4 .tg{display:inline-block;background:#fdf0ea;color:#6b1a1a;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:600;border:1px solid #c9a96e}
+
+/* M5 LAVANDA */
+.cv-m5{font-family:'Lato',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m5 .hdr{background:linear-gradient(135deg,#4a3f8b,#6b5fa0);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m5 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c4b8f0;flex-shrink:0;background:#5a4f9b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c4b8f0}
+.cv-m5 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m5 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m5 .rl{color:#c4b8f0;font-size:0.78rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m5 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m5 .ci{font-size:0.7rem;color:#b0a4e0}
+.cv-m5 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m5 .sb{background:#f7f5ff;padding:22px 18px;border-right:3px solid #c4b8f0}
+.cv-m5 .mn{padding:22px 24px}
+.cv-m5 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#4a3f8b;margin-bottom:12px;border-bottom:2px solid #c4b8f0;padding-bottom:3px}
+.cv-m5 .jb{margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed #e0d8ff}
+.cv-m5 .jb:last-child{border:none}
+.cv-m5 .jt{font-size:0.86rem;font-weight:700;color:#4a3f8b}
+.cv-m5 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m5 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m5 .bl::before{content:'◉';position:absolute;left:0;color:#c4b8f0;font-size:0.4rem;top:5px}
+.cv-m5 .sk{margin-bottom:8px}
+.cv-m5 .sn{font-size:0.72rem;font-weight:700;color:#333;margin-bottom:2px}
+.cv-m5 .sb2{height:4px;background:#e0d8ff;border-radius:2px}
+.cv-m5 .sf{height:100%;background:linear-gradient(90deg,#4a3f8b,#c4b8f0);border-radius:2px}
+.cv-m5 .lb{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.cv-m5 .lbg{background:#4a3f8b;color:#c4b8f0;font-size:0.62rem;padding:2px 6px;border-radius:3px;font-weight:700}
+.sk-list{margin-bottom:4px}.sk-item{font-size:0.72rem;color:#444;line-height:1.7;overflow-wrap:break-word}
+
+/* ── 10 PLANTILLAS NUEVAS (paletas élite) ── */
+.cv-h6{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h6 .hdr{background:#2b2d31;padding:36px 40px;display:flex;gap:24px;align-items:center}
+.cv-h6 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c9a227;flex-shrink:0;background:#2a4a6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c9a227}
+.cv-h6 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h6 .nm{font-size:1.8rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h6 .rl{color:#c9a227;font-size:0.82rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:5px 0 12px}
+.cv-h6 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h6 .ci{font-size:0.72rem;color:#ccc}
+.cv-h6 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-h6 .sb{background:#f0f4f8;padding:24px 20px}
+.cv-h6 .mn{padding:24px 26px}
+.cv-h6 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2b2d31;border-bottom:2px solid #c9a227;padding-bottom:4px;margin-bottom:12px}
+.cv-h6 .sk{margin-bottom:8px}
+.cv-h6 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h6 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h6 .sf{height:100%;background:linear-gradient(90deg,#2b2d31,#c9a227);border-radius:2px}
+.cv-h6 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #c9a227}
+.cv-h6 .jt{font-size:0.86rem;font-weight:700;color:#2b2d31}
+.cv-h6 .jm{font-size:0.72rem;color:#666;margin:3px 0 7px}
+.cv-h6 .bl{font-size:0.74rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h6 .bl::before{content:'▸';position:absolute;left:0;color:#2b2d31;font-size:0.65rem}
+.cv-h6 .li{display:flex;justify-content:space-between;font-size:0.74rem;margin-bottom:5px}
+.cv-h7{font-family:'Lato',sans-serif;background:#fff;color:#00434d;width:794px}
+.cv-h7 .hdr{padding:30px 36px;border-bottom:3px solid #00434d;display:flex;justify-content:space-between;align-items:center}
+.cv-h7 .ph{width:80px;height:80px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#eee;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#666}
+.cv-h7 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h7 .nm{font-size:2rem;font-weight:900;color:#00434d;letter-spacing:-1px;line-height:1}
+.cv-h7 .rl{font-size:0.8rem;font-weight:300;color:#666;letter-spacing:4px;text-transform:uppercase;margin-top:5px}
+.cv-h7 .ct{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.cv-h7 .ci{font-size:0.72rem;color:#888}
+.cv-h7 .bd{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:26px 36px}
+.cv-h7 .col{padding:0 14px}
+.cv-h7 .col:first-child{padding-left:0;border-right:1px solid #eee}
+.cv-h7 .col:last-child{padding-right:0}
+.cv-h7 .st{font-size:0.58rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#00434d;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #00434d}
+.cv-h7 .jb{margin-bottom:14px}
+.cv-h7 .jt{font-size:0.84rem;font-weight:700;color:#00434d}
+.cv-h7 .jm{font-size:0.7rem;color:#888;margin:2px 0 5px}
+.cv-h7 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h7 .bl::before{content:'·';position:absolute;left:0;font-weight:900}
+.cv-h7 .dr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.cv-h7 .dn{font-size:0.72rem;font-weight:700}
+.cv-h7 .ds{display:flex;gap:3px}
+.cv-h7 .dot{width:7px;height:7px;border-radius:50%;background:#eee}
+.cv-h7 .dot.f{background:#00434d}
+.cv-h8{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h8 .hdr{background:#3a0d16;padding:32px 36px;display:flex;gap:20px;align-items:center}
+.cv-h8 .ph{width:90px;height:90px;border-radius:10px;overflow:hidden;border:3px solid #d4af37;flex-shrink:0;background:#222;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#d4af37}
+.cv-h8 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h8 .nm{font-size:1.7rem;font-weight:700;color:#fff}
+.cv-h8 .rl{color:#d4af37;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h8 .gl{width:40px;height:2px;background:#d4af37;margin-bottom:10px}
+.cv-h8 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-h8 .ci{font-size:0.7rem;color:#aaa}
+.cv-h8 .bd{display:grid;grid-template-columns:1fr 240px}
+.cv-h8 .mn{padding:24px 28px}
+.cv-h8 .sb{background:#f9f9f9;padding:24px 20px;border-left:1px solid #eee}
+.cv-h8 .st{font-size:0.62rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#3a0d16;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.cv-h8 .st::after{content:'';flex:1;height:1px;background:#d4af37}
+.cv-h8 .jb{margin-bottom:16px}
+.cv-h8 .jh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.cv-h8 .jt{font-size:0.86rem;font-weight:700;color:#3a0d16}
+.cv-h8 .jd{font-size:0.68rem;background:#3a0d16;color:#d4af37;padding:2px 7px;border-radius:3px}
+.cv-h8 .jm{font-size:0.74rem;color:#666;margin-bottom:7px}
+.cv-h8 .bl{font-size:0.73rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative}
+.cv-h8 .bl::before{content:'→';position:absolute;left:0;color:#d4af37;font-size:0.6rem}
+.cv-h8 .tg{display:inline-block;background:#3a0d16;color:#d4af37;font-size:0.67rem;padding:3px 8px;border-radius:3px;margin:2px;font-weight:700}
+.cv-h9{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h9 .hdr{background:#0a0a0a;padding:0;display:flex}
+.cv-h9 .ph-rect{width:140px;flex-shrink:0;overflow:hidden;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:#00d4ff;min-height:150px}
+.cv-h9 .ph-rect img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h9 .hdr-info{flex:1;padding:24px 28px;border-left:4px solid #00d4ff}
+.cv-h9 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h9 .rl{color:#00d4ff;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h9 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h9 .ci{font-size:0.7rem;color:#aaa}
+.cv-h9 .bd{display:grid;grid-template-columns:1fr 200px}
+.cv-h9 .mn{padding:22px 26px}
+.cv-h9 .sb{background:#f5f9ff;padding:22px 18px;border-left:1px solid #e0eeff}
+.cv-h9 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#123e93;margin-bottom:12px;border-bottom:2px solid #00d4ff;padding-bottom:3px}
+.cv-h9 .jb{margin-bottom:14px;padding-left:10px;border-left:2px solid #123e93}
+.cv-h9 .jt{font-size:0.84rem;font-weight:700;color:#0a0a0a}
+.cv-h9 .jm{font-size:0.7rem;color:#666;margin:2px 0 6px}
+.cv-h9 .bl{font-size:0.72rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h9 .bl::before{content:'>';position:absolute;left:0;color:#123e93;font-weight:700;font-size:0.6rem}
+.cv-h9 .tg{display:inline-block;background:#e0eeff;color:#123e93;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+.cv-h9 .sk{margin-bottom:8px}
+.cv-h9 .sn{font-size:0.7rem;font-weight:600;margin-bottom:2px}
+.cv-h9 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h9 .sf{height:100%;background:linear-gradient(90deg,#123e93,#00d4ff);border-radius:2px}
+.cv-h10{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h10 .hdr{background:#1f3a2d;padding:32px 36px;display:flex;gap:22px;align-items:flex-start}
+.cv-h10 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c8e6a0;flex-shrink:0;background:#3d6130;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c8e6a0}
+.cv-h10 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h10 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h10 .rl{color:#c8e6a0;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h10 .ct{display:flex;flex-direction:column;gap:4px}
+.cv-h10 .ci{font-size:0.7rem;color:#b0cc96}
+.cv-h10 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-h10 .sb{background:#f4f8f0;padding:22px 18px;border-right:3px solid #c8e6a0}
+.cv-h10 .mn{padding:22px 24px}
+.cv-h10 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#1f3a2d;margin-bottom:10px;padding:3px 7px;background:#e8f5d8;border-left:3px solid #1f3a2d}
+.cv-h10 .sk{margin-bottom:8px}
+.cv-h10 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h10 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h10 .sf{height:100%;background:#1f3a2d;border-radius:2px}
+.cv-h10 .jb{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #eee}
+.cv-h10 .jb:last-child{border:none}
+.cv-h10 .jt{font-size:0.84rem;font-weight:700;color:#1f3a2d}
+.cv-h10 .jm{font-size:0.7rem;color:#888;margin:3px 0 6px}
+.cv-h10 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h10 .bl::before{content:'▪';position:absolute;left:0;color:#1f3a2d}
+.cv-m6{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m6 .hdr{background:#0e5c46;padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m6 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #7ecece;flex-shrink:0;background:#1a6b6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#7ecece}
+.cv-m6 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m6 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m6 .rl{color:#7ecece;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m6 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m6 .ci{font-size:0.7rem;color:#aacece}
+.cv-m6 .bd{display:grid;grid-template-columns:1fr 220px}
+.cv-m6 .mn{padding:22px 26px}
+.cv-m6 .sb{background:#f0f8f8;padding:22px 18px;border-left:3px solid #7ecece}
+.cv-m6 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0e5c46;margin-bottom:12px;border-bottom:2px solid #7ecece;padding-bottom:3px}
+.cv-m6 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #7ecece}
+.cv-m6 .jt{font-size:0.86rem;font-weight:700;color:#0e5c46}
+.cv-m6 .jm{font-size:0.7rem;color:#888;margin:3px 0 7px}
+.cv-m6 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m6 .bl::before{content:'◆';position:absolute;left:0;color:#0e5c46;font-size:0.35rem;top:5px}
+.cv-m6 .sk{margin-bottom:8px}
+.cv-m6 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m6 .sb2{height:4px;background:#d8eded;border-radius:2px}
+.cv-m6 .sf{height:100%;background:#0e5c46;border-radius:2px}
+.cv-m6 .tg{display:inline-block;background:#e0f4f4;color:#0e5c46;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+.cv-m7{font-family:'Playfair Display',serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m7 .hdr{background:linear-gradient(135deg,#2d1b35,#7a5c3e);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m7 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #e8b4d0;flex-shrink:0;background:#3d2448;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e8b4d0}
+.cv-m7 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m7 .nm{font-size:1.8rem;font-weight:700;color:#fff;letter-spacing:0.5px;line-height:1.1}
+.cv-m7 .rl{color:#e8b4d0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px;font-family:'Montserrat',sans-serif}
+.cv-m7 .gl{width:50px;height:2px;background:linear-gradient(90deg,#e8b4d0,#c9a96e);margin-bottom:10px}
+.cv-m7 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m7 .ci{font-size:0.7rem;color:#d4a8c0;font-family:'Montserrat',sans-serif}
+.cv-m7 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m7 .sb{background:#fdf5f8;padding:22px 18px;border-right:1px solid #f0d8e5}
+.cv-m7 .mn{padding:22px 24px}
+.cv-m7 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#7a5c3e;margin-bottom:12px;padding-bottom:4px;border-bottom:2px solid #e8b4d0;font-family:'Montserrat',sans-serif}
+.cv-m7 .sk{margin-bottom:8px}
+.cv-m7 .sn{font-size:0.72rem;color:#555;margin-bottom:2px;font-family:'Montserrat',sans-serif}
+.cv-m7 .sb2{height:4px;background:#f0d8e5;border-radius:2px}
+.cv-m7 .sf{height:100%;background:linear-gradient(90deg,#7a5c3e,#e8b4d0);border-radius:2px}
+.cv-m7 .jb{margin-bottom:16px}
+.cv-m7 .jt{font-size:0.86rem;font-weight:700;color:#2d1b35}
+.cv-m7 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px;font-family:'Montserrat',sans-serif}
+.cv-m7 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative;font-family:'Montserrat',sans-serif}
+.cv-m7 .bl::before{content:'✦';position:absolute;left:0;color:#e8b4d0;font-size:0.45rem;top:4px}
+.cv-m8{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m8 .hdr{padding:28px 36px;display:flex;gap:22px;align-items:center;border-bottom:4px solid #e2555f}
+.cv-m8 .ph{width:95px;height:95px;border-radius:50%;overflow:hidden;border:4px solid #e2555f;flex-shrink:0;background:#fff3ee;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e2555f}
+.cv-m8 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m8 .nm{font-size:1.75rem;font-weight:700;color:#1a1a1a}
+.cv-m8 .rl{color:#e2555f;font-size:0.78rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:3px 0 8px}
+.cv-m8 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m8 .ci{font-size:0.7rem;color:#888}
+.cv-m8 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-m8 .sb{background:#fff8f5;padding:22px 18px;border-right:2px solid #ffe0d4}
+.cv-m8 .mn{padding:22px 24px}
+.cv-m8 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#e2555f;margin-bottom:10px;padding:3px 7px;background:#fff0ea;border-radius:3px}
+.cv-m8 .jb{margin-bottom:14px}
+.cv-m8 .jt{font-size:0.84rem;font-weight:700;color:#1a1a1a}
+.cv-m8 .jd{display:inline-block;background:#e2555f;color:#fff;font-size:0.62rem;padding:2px 7px;border-radius:3px;margin-bottom:6px}
+.cv-m8 .jm{font-size:0.7rem;color:#888;margin-bottom:6px}
+.cv-m8 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m8 .bl::before{content:'→';position:absolute;left:0;color:#e2555f;font-size:0.6rem;font-weight:700}
+.cv-m8 .sk{margin-bottom:8px}
+.cv-m8 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m8 .sb2{height:4px;background:#ffe0d4;border-radius:2px}
+.cv-m8 .sf{height:100%;background:#e2555f;border-radius:2px}
+.cv-m9{font-family:'Lato',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m9 .hdr{background:linear-gradient(135deg,#12557d,#6b5fa0);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m9 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c4b8f0;flex-shrink:0;background:#5a4f9b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c4b8f0}
+.cv-m9 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m9 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m9 .rl{color:#c4b8f0;font-size:0.78rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m9 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m9 .ci{font-size:0.7rem;color:#b0a4e0}
+.cv-m9 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m9 .sb{background:#f7f5ff;padding:22px 18px;border-right:3px solid #c4b8f0}
+.cv-m9 .mn{padding:22px 24px}
+.cv-m9 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#12557d;margin-bottom:12px;border-bottom:2px solid #c4b8f0;padding-bottom:3px}
+.cv-m9 .jb{margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed #e0d8ff}
+.cv-m9 .jb:last-child{border:none}
+.cv-m9 .jt{font-size:0.86rem;font-weight:700;color:#12557d}
+.cv-m9 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m9 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m9 .bl::before{content:'◉';position:absolute;left:0;color:#c4b8f0;font-size:0.4rem;top:5px}
+.cv-m9 .sk{margin-bottom:8px}
+.cv-m9 .sn{font-size:0.72rem;font-weight:700;color:#333;margin-bottom:2px}
+.cv-m9 .sb2{height:4px;background:#e0d8ff;border-radius:2px}
+.cv-m9 .sf{height:100%;background:linear-gradient(90deg,#12557d,#c4b8f0);border-radius:2px}
+.cv-m9 .lb{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.cv-m9 .lbg{background:#12557d;color:#c4b8f0;font-size:0.62rem;padding:2px 6px;border-radius:3px;font-weight:700}
+.cv-m10{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m10 .hdr{background:#5c1f3d;padding:32px 36px;display:flex;gap:22px;align-items:center;border-bottom:3px solid #c9a96e}
+.cv-m10 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #c9a96e;flex-shrink:0;background:#8b2a2a;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c9a96e}
+.cv-m10 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m10 .nm{font-size:1.8rem;font-weight:700;color:#fff}
+.cv-m10 .rl{color:#e8d5a0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m10 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m10 .ci{font-size:0.7rem;color:#d4b4a0}
+.cv-m10 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m10 .sb{background:#fdf8f5;padding:22px 18px;border-right:1px solid #f0e0d5}
+.cv-m10 .mn{padding:22px 24px}
+.cv-m10 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#5c1f3d;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #c9a96e}
+.cv-m10 .jb{margin-bottom:16px}
+.cv-m10 .jt{font-size:0.86rem;font-weight:700;color:#5c1f3d}
+.cv-m10 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m10 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m10 .bl::before{content:'◈';position:absolute;left:0;color:#c9a96e;font-size:0.45rem;top:3px}
+.cv-m10 .sk{margin-bottom:8px}
+.cv-m10 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m10 .sb2{height:4px;background:#f0e0d5;border-radius:2px}
+.cv-m10 .sf{height:100%;background:linear-gradient(90deg,#5c1f3d,#c9a96e);border-radius:2px}
+.cv-m10 .tg{display:inline-block;background:#fdf0ea;color:#5c1f3d;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:600;border:1px solid #c9a96e}
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="formulario-cv.html" class="nav-logo">CV<span>Pro</span></a>
+  <a class="nav-back" onclick="history.back()">← Volver</a>
+</nav>
+
+<!-- ── SELECTOR ── -->
+<div class="page" id="selectorPage">
+  <div class="page-title">
+    <h1>Elige tu plantilla</h1>
+    <p>Selecciona el estilo que mejor refleje tu personalidad profesional</p>
+  </div>
+
+  <div class="gender-tabs">
+    <button class="gender-tab active" onclick="setGender('h')">👔 Hombre</button>
+    <button class="gender-tab" onclick="setGender('m')">👩 Mujer</button>
+  </div>
+
+  <div class="templates-grid" id="templatesGrid"></div>
+
+  <!-- FOTO -->
+  <div class="foto-section">
+    <h3>📸 Tu foto profesional</h3>
+    <div class="foto-upload-area" onclick="document.getElementById('fotoInput').click()">
+      <input type="file" id="fotoInput" accept="image/*" onchange="cargarFoto(event)">
+      <div style="font-size:2rem">📷</div>
+      <p id="uploadTxt"><strong style="color:#FFD000">Haz clic para subir tu foto</strong><br>JPG o PNG recomendado</p>
+    </div>
+
+    <!-- AJUSTE FOTO -->
+    <div class="foto-ajuste" id="fotoAjuste">
+      <h4>Ajusta tu foto dentro del recuadro:</h4>
+    <p style="font-size:0.72rem;color:#999;margin:-4px 0 8px">✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom</p>
+      <div class="foto-crop-wrap" id="cropWrap">
+        <img id="cropImg" draggable="false">
+      </div>
+      <div class="crop-controls">
+        <div class="crop-ctrl">
+          <label>Zoom</label>
+          <input type="range" id="zoomCtrl" min="50" max="200" value="100" oninput="actualizarFoto()">
+        </div>
+        <div class="crop-ctrl">
+          <label>Vertical</label>
+          <input type="range" id="yCtrl" min="-100" max="100" value="0" oninput="actualizarFoto()">
+        </div>
+        <div class="crop-ctrl">
+          <label>Horizontal</label>
+          <input type="range" id="xCtrl" min="-100" max="100" value="0" oninput="actualizarFoto()">
+        </div>
+      </div>
+      <button class="btn-foto-ok" onclick="confirmarFoto()">✅ Confirmar ajuste</button>
+    </div>
+  </div>
+
+  <button class="btn-generar" onclick="mostrarCV()">⚡ Generar mi CV con esta plantilla</button>
+</div>
+
+<!-- ── CV RESULTADO ── -->
+<div class="cv-result" id="cvResult">
+  <div class="cv-actions">
+    <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar PDF</button>
+    <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
+    <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
+    <button class="btn-volver" onclick="volverSelector()">← Cambiar plantilla</button>
+  </div>
+  <div id="cvFinal"></div>
+
+  <!-- Carta de presentación -->
+  <div id="cartaWrap" style="display:none;margin-top:30px">
+    <div class="cv-actions">
+      <button class="btn-pdf" onclick="descargarCartaPDF()">📄 Descargar carta PDF</button>
+      <button class="btn-volver" onclick="document.getElementById('cartaWrap').style.display='none'">✕ Cerrar</button>
+    </div>
+    <div id="cartaFinal" style="background:#fff;width:794px;padding:60px 70px;font-family:'Lato',sans-serif;color:#1a1a1a;font-size:0.9rem;line-height:1.8;white-space:pre-wrap;margin:0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.15)"></div>
+  </div>
+</div>
+
+<script>
+const TPLS = {
+  h:[
+    {id:'h1',name:'Ejecutivo Navy',color:'#0d1b2a'},
+    {id:'h2',name:'Negro Dorado',color:'#111'},
+    {id:'h3',name:'Minimalista',color:'#1a1a1a'},
+    {id:'h4',name:'Verde Oliva',color:'#2d4a22'},
+    {id:'h5',name:'Tech Azul',color:'#0066ff'},
+    {id:'h6',name:'Grafito Ejecutivo',color:'#2b2d31'},
+    {id:'h7',name:'Carbón Petróleo',color:'#00434d'},
+    {id:'h8',name:'Burdeos Élite',color:'#3a0d16'},
+    {id:'h9',name:'Azul Real',color:'#123e93'},
+    {id:'h10',name:'Bosque Premium',color:'#1f3a2d'},
+  ],
+  m:[
+    {id:'m1',name:'Rosa Gold',color:'#4a2d5c'},
+    {id:'m2',name:'Corporativa Teal',color:'#0d4f4f'},
+    {id:'m3',name:'Moderna Naranja',color:'#ff6b35'},
+    {id:'m4',name:'Sofisticada',color:'#6b1a1a'},
+    {id:'m5',name:'Lavanda',color:'#4a3f8b'},
+    {id:'m6',name:'Esmeralda Ejecutiva',color:'#0e5c46'},
+    {id:'m7',name:'Champagne Élite',color:'#7a5c3e'},
+    {id:'m8',name:'Coral Contemporánea',color:'#e2555f'},
+    {id:'m9',name:'Azul Petróleo',color:'#12557d'},
+    {id:'m10',name:'Vino Elegante',color:'#5c1f3d'},
+  ]
+};
+// Clonado de layouts base para las 10 nuevas plantillas
+const CLONES = {h6:'h1', h7:'h3', h8:'h2', h9:'h5', h10:'h4', m6:'m2', m7:'m1', m8:'m3', m9:'m5', m10:'m4'};
+
+const LANG = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+const T = LANG === 'en' ? {
+  perfil:'Profile', habilidades:'Skills', idiomas:'Languages', educacion:'Education',
+  experiencia:'Professional experience', logros:'Achievements', certificaciones:'Certifications',
+  descargarPDF:'📄 Download PDF', volver:'← Back to templates', elegir:'Choose this template',
+  generar:'⚡ Generate my resume', titulo:'Choose your template', subtitulo:'10 professional designs — pick yours and download instantly',
+  fotoTitulo:'Add your photo (optional)', fotoOk:'✓ Use this photo', fotoSaltar:'Continue without photo',
+  hombre:'Men styles', mujer:'Women styles', cargando:'Generating your resume...'
+} : {
+  perfil:'Perfil', habilidades:'Habilidades', idiomas:'Idiomas', educacion:'Educación',
+  experiencia:'Experiencia profesional', logros:'Logros', certificaciones:'Certificaciones',
+  descargarPDF:'📄 Descargar PDF', volver:'← Volver a plantillas', elegir:'Elegir esta plantilla',
+  generar:'⚡ Generar mi CV', titulo:'Elige tu plantilla', subtitulo:'10 diseños profesionales — elige el tuyo y descarga al instante',
+  fotoTitulo:'Agrega tu foto (opcional)', fotoOk:'✓ Usar esta foto', fotoSaltar:'Continuar sin foto',
+  hombre:'Estilos hombre', mujer:'Estilos mujer', cargando:'Generando tu CV...'
+};
+
+let gender = 'h';
+let selTpl = 'h1';
+let fotoOriginal = null;
+let fotoAjustada = null;
+
+// Cargar datos del sessionStorage
+const capitalizar = (s) => (s||'').split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+const D = JSON.parse(sessionStorage.getItem('cvData') || 'null') || {
+  nombre:'Carlos Mendoza', email:'carlos@email.com', telefono:'+57 300 000 0000',
+  pais:'Colombia', linkedin:'linkedin.com/in/carlos', puesto:'Desarrollador Web Senior',
+  resumen:'Desarrollador con 5 años transformando ideas en productos digitales. Especialista en React y Node.js.',
+  experiencia:[
+    {titulo:'Senior Frontend Developer',empresa:'TechCorp Colombia',periodo:'2022 — Presente',bullets:['Lideré migración a React reduciendo tiempo de carga 40%','Desarrollé 12 componentes reutilizables','Mentoré a 3 desarrolladores junior']},
+    {titulo:'Web Developer',empresa:'StartupXYZ',periodo:'2020 — 2022',bullets:['Construí plataforma e-commerce con $2M en transacciones','Optimicé base de datos 60%']}
+  ],
+  educacion:[{titulo:'Ing. de Sistemas',institucion:'Universidad Nacional',año:'2019'}],
+  habilidades:[{nombre:'React/Next.js',nivel:90},{nombre:'Node.js',nivel:80},{nombre:'PostgreSQL',nivel:75},{nombre:'AWS',nivel:65}],
+  idiomas:[{nombre:'Español',nivel:'Nativo'},{nombre:'Inglés',nivel:'Intermedio'}],
+  logros:['Mejor desarrollador 2023','Speaker JSConf Colombia 2022']
+};
+
+if (D.nombre) D.nombre = capitalizar(D.nombre);
+
+// ── GENDER & TEMPLATES
+function setGender(g) {
+  gender = g;
+  selTpl = g === 'h' ? 'h1' : 'm1';
+  document.querySelectorAll('.gender-tab').forEach((t,i) => t.classList.toggle('active',(g==='h'&&i===0)||(g==='m'&&i===1)));
+  
+// ── CARTA DE PRESENTACIÓN CON IA ──
+const SUPABASE_URL_C = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const SUPABASE_URL = SUPABASE_URL_C;
+const SUPABASE_KEY_C = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+const SUPABASE_KEY = SUPABASE_KEY_C;
+let cartaGenerada = '';
+
+async function generarCarta() {
+  const btn = document.getElementById('btnCarta');
+  if (cartaGenerada) {
+    document.getElementById('cartaWrap').style.display = 'block';
+    document.getElementById('cartaWrap').scrollIntoView({behavior:'smooth'});
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = LANG==='en' ? '⏳ Writing your letter...' : '⏳ Escribiendo tu carta...';
+
+  let cvTexto = sessionStorage.getItem('cvTexto') || '';
+  if (cvTexto.length < 100) {
+    // Reconstruir desde cvData si la sesión no lo tiene
+    cvTexto = `${D.nombre} — ${D.puesto} (${D.pais||''})\n${D.resumen||''}\n` +
+      (D.experiencia||[]).map(j=>`${j.titulo} | ${j.empresa} | ${j.periodo}\n${(j.bullets||[]).join('\n')}`).join('\n') +
+      `\nEducación: ${(D.educacion||[]).map(e=>e.titulo+' - '+e.institucion).join('; ')}` +
+      `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
+  }
+  const prompt = LANG==='en'
+    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs, confident tone, mention 2-3 concrete achievements from the resume, no placeholders or brackets, ready to send. Start with "Dear Hiring Manager," and end with a professional signature with the candidate's name.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
+    : `Eres un ghostwriter élite de cartas de presentación. Basándote en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, que aplica como ${D.puesto}. 3-4 párrafos, tono seguro y profesional, menciona 2-3 logros concretos del CV, sin corchetes ni placeholders, lista para enviar. Empieza con "Estimado equipo de selección," y termina con firma profesional con el nombre del candidato.\n\nCV:\n${cvTexto.substring(0,2500)}`;
+
+  try {
+    const res = await fetch(`${SUPABASE_URL_C}/functions/v1/super-service`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY_C}`},
+      body: JSON.stringify({prompt})
+    });
+    const data = await res.json();
+    if (data.cv && data.cv.trim().length > 100) {
+      cartaGenerada = data.cv.trim().replace(/\*\*/g,'').replace(/\*/g,'');
+      document.getElementById('cartaFinal').textContent = cartaGenerada;
+      document.getElementById('cartaWrap').style.display = 'block';
+      document.getElementById('cartaWrap').scrollIntoView({behavior:'smooth'});
+      btn.textContent = LANG==='en' ? '✉️ View cover letter' : '✉️ Ver carta de presentación';
+    } else {
+      throw new Error('empty');
+    }
+  } catch(e) {
+    alert((LANG==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
+    btn.textContent = LANG==='en' ? '✉️ Cover letter' : '✉️ Carta de presentación';
+  }
+  btn.disabled = false;
+}
+
+function descargarCartaPDF() {
+  const el = document.getElementById('cartaFinal');
+  if (!el || !cartaGenerada) return;
+  const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
+  html2pdf().set({
+    margin:0,
+    filename:`${LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.pdf`,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,logging:false},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+  }).from(el).save();
+}
+
+// Traducir UI si el cliente es inglés
+if (LANG === 'en') {
+  document.title = 'Choose your template | CVPro';
+  const h1 = document.querySelector('.page-title h1');
+  if (h1) h1.textContent = 'Choose your template';
+  const sub = document.querySelector('.page-title p');
+  if (sub) sub.textContent = '10 professional designs — pick yours and download instantly';
+  const btnGen = document.querySelector('.btn-generar');
+  if (btnGen) btnGen.textContent = '⚡ Generate my resume with this template';
+  const btnPdf = document.querySelector('.btn-pdf');
+  if (btnPdf) btnPdf.textContent = '📄 Download PDF';
+  const btnCarta = document.getElementById('btnCarta');
+  if (btnCarta) btnCarta.textContent = '✉️ Cover letter';
+  const btnVolver = document.querySelector('.btn-volver');
+  if (btnVolver) btnVolver.textContent = '← Change template';
+  const navBack = document.querySelector('.nav-back');
+  if (navBack) navBack.textContent = '← Back';
+  document.querySelectorAll('.btn-foto-ok').forEach(b => { if(b.textContent.includes('Usar')) b.textContent = '✓ Use this photo'; });
+  document.querySelectorAll('button,a,div,h2,h3,p,span,label').forEach(el => {
+    if (el.children.length === 0) {
+      const t = el.textContent.trim();
+      const map = {
+        'Agrega tu foto (opcional)':'Add your photo (optional)',
+        'Continuar sin foto':'Continue without photo',
+        'Volver a plantillas':'Back to templates',
+        '← Volver a plantillas':'← Back to templates',
+        'Elegir otra plantilla':'Choose another template',
+        'Estilos hombre':'Men styles','Estilos mujer':'Women styles',
+        'Hombre':'Men','Mujer':'Women',
+        'Zoom':'Zoom','Mover':'Move'
+      };
+      if (map[t]) el.textContent = map[t];
+    }
+  });
+}
+
+// Aplicar idioma a UI
+if (LANG === 'en') {
+  document.querySelectorAll('button, h1, h2, h3, p, span, div').forEach(el => {
+    if (el.children.length > 0) return;
+    const t = el.textContent.trim();
+    const map = {
+      '📄 Descargar PDF': '📄 Download PDF',
+      '← Volver': '← Back',
+      '← Cambiar plantilla': '← Change template',
+      'Elige tu plantilla': 'Choose your template',
+      '👔 Hombre': '👔 Style A',
+      '👩 Mujer': '👩 Style B',
+      '📸 Tu foto profesional': '📸 Your professional photo',
+      'Haz clic para subir tu foto': 'Click to upload your photo',
+      'Ajusta tu foto dentro del recuadro:': 'Adjust your photo inside the frame:',
+      '⚡ Generar mi CV con esta plantilla': '⚡ Generate my resume with this template',
+      '📄 Descargar carta PDF': '📄 Download letter PDF',
+      '✉️ Generar carta de presentación (IA)': '✉️ Generate cover letter (AI)',
+      '📋 Versión ATS (texto seleccionable)': '📋 ATS version (selectable text)',
+      'Zoom': 'Zoom'
+    };
+    if (map[t]) el.textContent = map[t];
+    if (t.startsWith('Todas las plantillas')) el.textContent = 'All templates are ATS-optimized and recruiter-approved';
+    if (t.startsWith('Elige el estilo')) el.textContent = 'Choose the style that fits you';
+  });
+  document.title = 'Choose your template | CVPro';
+}
+renderTemplates();
+}
+
+function renderTemplates() {
+  const grid = document.getElementById('templatesGrid');
+  grid.innerHTML = TPLS[gender].map(t => `
+    <div class="tpl-card ${t.id===selTpl?'selected':''}" onclick="seleccionar('${t.id}')">
+      <span class="tpl-selected-badge">✓ Seleccionada</span>
+      <div class="tpl-preview">
+        <div class="mini" id="mini-${t.id}">${buildCV(t.id)}</div>
+      </div>
+      <div class="tpl-name">${t.name}</div>
+    </div>
+  `).join('');
+}
+
+function seleccionar(id) {
+  selTpl = id;
+  renderTemplates();
+  const isSquare = id === 'h2' || id === 'h3';
+  document.getElementById('cropWrap').classList.toggle('square', isSquare);
+}
+
+// ── FOTO
+function cargarFoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    fotoOriginal = ev.target.result;
+    mostrarAjuste();
+    document.getElementById('uploadTxt').innerHTML = '<strong style="color:#00C853">✅ Foto cargada — ajústala abajo</strong>';
+  };
+  reader.readAsDataURL(file);
+}
+
+function activarDragFoto() {
+  const wrap = document.getElementById('cropWrap');
+  if (!wrap || wrap.dataset.drag) return;
+  wrap.dataset.drag = '1';
+  wrap.style.cursor = 'grab';
+  wrap.style.touchAction = 'none';
+  let sx=0, sy=0, ox=0, oy=0, activo=false;
+  const X = () => document.getElementById('xCtrl');
+  const Y = () => document.getElementById('yCtrl');
+  const Z = () => document.getElementById('zoomCtrl');
+  const down = (e) => {
+    activo = true; wrap.style.cursor = 'grabbing';
+    const p = e.touches ? e.touches[0] : e;
+    sx = p.clientX; sy = p.clientY;
+    ox = parseInt(X()?.value||0); oy = parseInt(Y()?.value||0);
+    e.preventDefault();
+  };
+  const move = (e) => {
+    if (!activo) return;
+    const p = e.touches ? e.touches[0] : e;
+    if (X()) X().value = Math.max(-150, Math.min(150, ox + (p.clientX - sx)));
+    if (Y()) Y().value = Math.max(-150, Math.min(150, oy + (p.clientY - sy)));
+    actualizarFoto();
+  };
+  const up = () => { activo = false; wrap.style.cursor = 'grab'; };
+  wrap.addEventListener('mousedown', down);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', up);
+  wrap.addEventListener('touchstart', down, {passive:false});
+  window.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('touchend', up);
+  wrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (Z()) { Z().value = Math.max(50, Math.min(250, parseInt(Z().value) + (e.deltaY < 0 ? 6 : -6))); actualizarFoto(); }
+  }, {passive:false});
+}
+
+function mostrarAjuste() {
+  const ajuste = document.getElementById('fotoAjuste');
+  ajuste.classList.add('visible');
+  ajuste.innerHTML = `
+    <h4>Ajusta tu foto dentro del recuadro:</h4>
+    <p style="font-size:0.72rem;color:#999;margin:-4px 0 8px">✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom</p>
+    <div class="foto-crop-wrap ${selTpl==='h2'||selTpl==='h3'?'square':''}" id="cropWrap">
+      <img id="cropImg" src="${fotoOriginal}" draggable="false">
+    </div>
+    <div class="crop-controls">
+      <div class="crop-ctrl"><label>Zoom</label><input type="range" id="zoomCtrl" min="50" max="250" value="130" oninput="actualizarFoto()"></div>
+      <div class="crop-ctrl"><label>Vertical</label><input type="range" id="yCtrl" min="-150" max="150" value="0" oninput="actualizarFoto()"></div>
+      <div class="crop-ctrl"><label>Horizontal</label><input type="range" id="xCtrl" min="-150" max="150" value="0" oninput="actualizarFoto()"></div>
+    </div>
+    <button class="btn-foto-ok" onclick="confirmarFoto()">✅ Confirmar ajuste</button>
+  `;
+  actualizarFoto();
+  activarDragFoto();
+}
+
+function actualizarFoto() {
+  const zoomEl = document.getElementById('zoomCtrl');
+  const xEl = document.getElementById('xCtrl');
+  const yEl = document.getElementById('yCtrl');
+  if (!zoomEl) return;
+  const zoom = parseFloat(zoomEl.value);
+  const x = xEl.value;
+  const y = yEl.value;
+  const img = document.getElementById('cropImg');
+  if (!img) return;
+  img.style.width = zoom + '%';
+  img.style.height = 'auto';
+  img.style.left = '50%';
+  img.style.top = '50%';
+  img.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+}
+
+async function confirmarFoto() {
+  const wrap = document.getElementById('cropWrap');
+  const isCircle = !wrap.classList.contains('square');
+  const size = 400;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const tmpImg = new Image();
+  tmpImg.src = fotoOriginal;
+  await new Promise(r => tmpImg.onload = r);
+
+  const zoom = parseFloat(document.getElementById('zoomCtrl').value) / 100;
+  const xOff = parseFloat(document.getElementById('xCtrl').value) * 2;
+  const yOff = parseFloat(document.getElementById('yCtrl').value) * 2;
+
+  // Mantener proporción original
+  const ratio = tmpImg.naturalWidth / tmpImg.naturalHeight;
+  let iw, ih;
+  if (ratio >= 1) { ih = size * zoom; iw = ih * ratio; }
+  else { iw = size * zoom; ih = iw / ratio; }
+  const ix = (size - iw) / 2 + xOff;
+  const iy = (size - ih) / 2 + yOff;
+
+  // Detectar color dominante de los bordes de la foto
+  const sampleCanvas = document.createElement('canvas');
+  const sw = tmpImg.naturalWidth, sh = tmpImg.naturalHeight;
+  sampleCanvas.width = sw; sampleCanvas.height = sh;
+  const sCtx = sampleCanvas.getContext('2d');
+  sCtx.drawImage(tmpImg, 0, 0);
+
+  // Muestrear píxeles de los 4 bordes
+  let rSum=0, gSum=0, bSum=0, count=0;
+  const step = Math.max(1, Math.floor(Math.min(sw,sh)/20));
+  const borderPx = Math.floor(Math.min(sw,sh) * 0.08); // 8% del borde
+
+  const sampleRegions = [
+    {x:0, y:0, w:borderPx, h:sh},          // borde izquierdo
+    {x:sw-borderPx, y:0, w:borderPx, h:sh}, // borde derecho
+    {x:0, y:0, w:sw, h:borderPx},           // borde superior
+    {x:0, y:sh-borderPx, w:sw, h:borderPx}  // borde inferior
+  ];
+
+  sampleRegions.forEach(r => {
+    for (let x=r.x; x<r.x+r.w; x+=step) {
+      for (let y=r.y; y<r.y+r.h; y+=step) {
+        const px = sCtx.getImageData(Math.min(x,sw-1), Math.min(y,sh-1), 1, 1).data;
+        rSum+=px[0]; gSum+=px[1]; bSum+=px[2]; count++;
+      }
+    }
+  });
+
+  const br = Math.round(rSum/count);
+  const bg = Math.round(gSum/count);
+  const bb = Math.round(bSum/count);
+
+  // Rellenar canvas con color dominante del borde
+  ctx.fillStyle = `rgb(${br},${bg},${bb})`;
+  ctx.fillRect(0, 0, size, size);
+
+  // Clip circular si aplica
+  if (isCircle) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size/2, 0, Math.PI*2);
+    ctx.clip();
+  }
+
+  ctx.drawImage(tmpImg, ix, iy, iw, ih);
+  if (isCircle) ctx.restore();
+  fotoAjustada = canvas.toDataURL('image/jpeg', 0.95);
+
+  const ajuste = document.getElementById('fotoAjuste');
+  ajuste.innerHTML = `
+    <div style="text-align:center">
+      <img src="${fotoAjustada}" style="width:90px;height:90px;border-radius:${isCircle?'50%':'10px'};border:3px solid #FFD000;object-fit:cover;margin-bottom:8px">
+      <p style="color:#00C853;font-size:0.82rem;font-weight:700">✅ Foto ajustada correctamente</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+        <button onclick="mostrarAjuste()" style="background:transparent;color:#FFD000;border:1px solid #FFD000;border-radius:20px;padding:5px 14px;font-size:0.75rem;cursor:pointer;font-family:'Montserrat',sans-serif">✏️ Reajustar</button>
+        <button onclick="document.getElementById('fotoInput').click()" style="background:transparent;color:#888;border:1px solid #444;border-radius:20px;padding:5px 14px;font-size:0.75rem;cursor:pointer;font-family:'Montserrat',sans-serif">📷 Cambiar foto</button>
+      </div>
+    </div>`;
+  renderTemplates();
+}
+
+// ── CONSTRUIR CV
+function ph(cls, isRect) {
+  if (fotoAjustada) {
+    if (isRect) return `<div class="ph-rect"><img src="${fotoAjustada}"></div>`;
+    return `<div class="ph"><img src="${fotoAjustada}"></div>`;
+  }
+  const ini = (D.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  if (isRect) return `<div class="ph-rect">${ini}</div>`;
+  return `<div class="ph">${ini}</div>`;
+}
+
+function bls(cls, arr) { return arr.map(b=>`<div class="bl">${b}</div>`).join(''); }
+function skills(cls, arr) { return `<div class="sk-list">${arr.map(s=>`<div class="sk-item">• ${s.nombre}</div>`).join('')}</div>`; }
+function jobs(cls, arr) { return arr.map(j=>`<div class="jb"><div class="jt">${j.titulo}</div><div class="jm">${j.empresa} · ${j.periodo}</div>${bls(cls,j.bullets)}</div>`).join(''); }
+function edu(arr) { return arr.map(e=>`<p style="font-size:0.74rem;margin-bottom:6px"><strong>${e.titulo}</strong><br><span style="color:#888">${e.institucion} · ${e.año}</span></p>`).join(''); }
+function ct(cls) { return `<span class="ci">✉ ${D.email}</span>${D.telefono?`<span class="ci">📱 ${D.telefono}</span>`:''}${D.pais?`<span class="ci">📍 ${D.pais}</span>`:''}${D.linkedin?`<span class="ci">🔗 ${D.linkedin}</span>`:''}` }
+
+function buildCV(id) {
+  const d = D;
+  const resumen = d.resumen || '';
+  const logrosHtml = d.logros?.length ? `<div style="margin-top:14px"><div class="cv-${id} st">${T.logros}</div>${d.logros.map(l=>`<div class="cv-${id} bl">${l}</div>`).join('')}</div>` : '';
+  const langHtml = (d.idiomas||[]).map(l=>`<div class="li"><span>${l.nombre}</span><span style="color:#888;text-align:right;max-width:60%;overflow-wrap:break-word">${l.nivel}</span></div>`).join('');
+
+  const maps = {
+    h1:`<div class="cv-h1"><div class="hdr">${ph('cv-h1',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct">${ct('cv-h1')}</div></div></div><div class="bd"><div class="sb"><div class="st" style="margin-top:0">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:14px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h1',d.habilidades)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h1',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    h2:`<div class="cv-h2"><div class="hdr">${ph('cv-h2',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="gl"></div><div class="ct">${ct('cv-h2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jh"><div class="jt">${j.titulo}</div><div class="jd">${j.periodo}</div></div><div class="jm">${j.empresa}</div>${bls('cv-h2',j.bullets)}</div>`).join('')}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p>${logrosHtml}</div><div class="sb"><div class="st">${T.habilidades}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">${d.habilidades.map(s=>`<div class="tg">${s.nombre}</div>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${(d.idiomas||[]).map(l=>`<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px"><span>${l.nombre}</span><span style="color:#FFD000;font-weight:700">${l.nivel}</span></div>`).join('')}</div></div></div>`,
+
+    h3:`<div class="cv-h3"><div class="hdr"><div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct"><span class="ci">✉ ${d.email}</span>${d.telefono?`<span class="ci">📱 ${d.telefono}</span>`:''}</div></div>${ph('cv-h3',false)}</div><div class="bd"><div class="col"><div class="st">Experiencia</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${j.titulo}</div><div class="jm">${j.empresa} · ${j.periodo}</div>${bls('cv-h3',j.bullets)}</div>`).join('')}</div><div class="col"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${d.habilidades.map(s=>`<div class="dr"><span class="dn">${s.nombre}</span><div class="ds">${[1,2,3,4,5].map(i=>`<div class="dot ${s.nivel>=i*20?'f':''}"></div>`).join('')}</div></div>`).join('')}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+
+    h4:`<div class="cv-h4"><div class="hdr">${ph('cv-h4',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct">${ct('cv-h4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h4',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h4',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    h5:`<div class="cv-h5"><div class="hdr">${ph('cv-h5',true)}<div class="hdr-info"><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct">${ct('cv-h5')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h5',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-h5',d.habilidades)}<div class="st" style="margin-top:12px">Stack</div><div style="margin-bottom:14px">${d.habilidades.map(s=>`<span class="tg">${s.nombre}</span>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+
+    m1:`<div class="cv-m1"><div class="hdr">${ph('cv-m1',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="gl"></div><div class="ct">${ct('cv-m1')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px;font-family:'Montserrat',sans-serif">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m1',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m1',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    m2:`<div class="cv-m2"><div class="hdr">${ph('cv-m2',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct">${ct('cv-m2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m2',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-m2',d.habilidades)}<div class="st" style="margin-top:12px">Competencias</div><div style="margin-bottom:12px">${d.habilidades.map(s=>`<span class="tg">${s.nombre}</span>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+
+    m3:`<div class="cv-m3"><div class="hdr">${ph('cv-m3',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct">${ct('cv-m3')}</div></div></div><div class="bd"><div class="sb"><div class="st">Sobre mí</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m3',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">Experiencia</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${j.titulo}</div><div class="jd">${j.periodo}</div><div class="jm">${j.empresa}</div>${bls('cv-m3',j.bullets)}</div>`).join('')}${logrosHtml}</div></div></div>`,
+
+    m4:`<div class="cv-m4"><div class="hdr">${ph('cv-m4',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct">${ct('cv-m4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m4',d.habilidades)}<div class="st" style="margin-top:12px">Competencias</div><div style="margin-bottom:12px">${d.habilidades.map(s=>`<span class="tg">${s.nombre}</span>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m4',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    m5:`<div class="cv-m5"><div class="hdr">${ph('cv-m5',false)}<div><div class="nm">${d.nombre}</div><div class="rl">${d.puesto}</div><div class="ct">${ct('cv-m5')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m5',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${(d.idiomas||[]).map(l=>`<div class="lb"><span style="font-size:0.72rem;font-weight:700">${l.nombre}</span><span class="lbg">${l.nivel}</span></div>`).join('')}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m5',d.experiencia)}${logrosHtml}</div></div></div>`
+  };
+  for (const [nuevo, base] of Object.entries(CLONES)) {
+    if (!maps[nuevo]) maps[nuevo] = maps[base].split('cv-'+base).join('cv-'+nuevo);
+  }
+  return maps[id] || maps['h1'];
+}
+
+function mostrarCV() {
+  const html = buildCV(selTpl);
+  document.getElementById('cvFinal').innerHTML = html;
+  document.getElementById('selectorPage').style.display = 'none';
+  document.getElementById('cvResult').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function volverSelector() {
+  document.getElementById('cvResult').style.display = 'none';
+  document.getElementById('selectorPage').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+
+// ── P3: CARTA DE PRESENTACIÓN CON IA ──
+async function generarCarta() {
+  const btn = document.getElementById('btnCarta');
+  btn.disabled = true;
+  btn.textContent = LANG==='en' ? '⏳ Writing your cover letter...' : '⏳ Redactando tu carta...';
+  let cvTexto = sessionStorage.getItem('cvTexto') || '';
+  if (cvTexto.length < 100) {
+    // Reconstruir desde cvData si la sesión no lo tiene
+    cvTexto = `${D.nombre} — ${D.puesto} (${D.pais||''})\n${D.resumen||''}\n` +
+      (D.experiencia||[]).map(j=>`${j.titulo} | ${j.empresa} | ${j.periodo}\n${(j.bullets||[]).join('\n')}`).join('\n') +
+      `\nEducación: ${(D.educacion||[]).map(e=>e.titulo+' - '+e.institucion).join('; ')}` +
+      `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
+  }
+  const prompt = LANG==='en'
+    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs: hook + value proposition with 2 quantified achievements + culture fit + call to action. No placeholders, no brackets, ready to send. Sign with the candidate name.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
+    : `Eres un ghostwriter élite de cartas de presentación. Con base en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, aplicando como ${D.puesto}. 3-4 párrafos: gancho + propuesta de valor con 2 logros cuantificados + fit cultural + llamado a la acción. Sin corchetes ni placeholders, lista para enviar. Firma con el nombre del candidato.\n\nCV:\n${cvTexto.substring(0,2500)}`;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt})
+    });
+    const data = await res.json();
+    if (!data.cv || data.cv.length < 200) throw new Error('short');
+    mostrarCarta(data.cv.trim());
+  } catch(e) {
+    alert((LANG==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
+  }
+  btn.disabled = false;
+  btn.textContent = LANG==='en' ? '✉️ Generate cover letter (AI)' : '✉️ Generar carta de presentación (IA)';
+}
+
+function mostrarCarta(texto) {
+  const overlay = document.createElement('div');
+  overlay.id = 'cartaOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;max-width:700px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
+        <strong style="font-family:Montserrat,sans-serif">${LANG==='en'?'✉️ Your cover letter':'✉️ Tu carta de presentación'}</strong>
+        <button onclick="document.getElementById('cartaOverlay').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer">✕</button>
+      </div>
+      <div id="cartaBody" contenteditable="true" style="padding:28px 32px;overflow-y:auto;font-family:Georgia,serif;font-size:0.9rem;line-height:1.8;color:#222;white-space:pre-wrap;outline:none">${texto}</div>
+      <div style="padding:14px 24px;border-top:1px solid #eee;display:flex;gap:10px">
+        <button onclick="descargarCartaPDF()" style="flex:1;background:#FFD000;border:none;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">${LANG==='en'?'📄 Download letter PDF':'📄 Descargar carta PDF'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function descargarCartaPDF() {
+  const body = document.getElementById('cartaBody');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:794px;padding:60px 70px;background:#fff;font-family:Georgia,serif;font-size:0.92rem;line-height:1.9;color:#222;white-space:pre-wrap';
+  wrap.textContent = body.textContent;
+  document.body.appendChild(wrap);
+  const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
+  html2pdf().set({margin:0,filename:LANG==='en'?`Cover_Letter_${nombre}.pdf`:`Carta_${nombre}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4'}}).from(wrap).save().then(()=>wrap.remove());
+}
+
+
+// ══ PDF ATS: TEXTO REAL SELECCIONABLE (pasa filtros ATS) ══
+function descargarATS() {
+  const d = D;
+  const A = LANG === 'en'
+    ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
+    : {perfil:'RESUMEN PROFESIONAL', exp:'EXPERIENCIA PROFESIONAL', edu:'EDUCACIÓN', skills:'HABILIDADES', langs:'Idiomas', tec:'Técnicas'};
+
+  const contacto = [d.email, d.telefono, d.pais, d.linkedin].filter(Boolean).join('  |  ');
+  const content = [
+    {text: (d.nombre||'').toUpperCase(), fontSize: 20, bold: true, color: '#0d1b2a'},
+    {text: d.puesto||'', fontSize: 11, color: '#666', margin: [0,2,0,2]},
+    {text: contacto, fontSize: 9, color: '#555', margin: [0,0,0,4]},
+    {canvas: [{type:'line', x1:0, y1:0, x2:515, y2:0, lineWidth:1.5, lineColor:'#0d1b2a'}], margin:[0,4,0,12]},
+  ];
+
+  if (d.resumen) {
+    content.push({text: A.perfil, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,4]});
+    content.push({text: d.resumen, fontSize: 9.5, color: '#333', lineHeight: 1.35, margin: [0,0,0,12]});
+  }
+
+  if (d.experiencia?.length) {
+    content.push({text: A.exp, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,6]});
+    d.experiencia.forEach(j => {
+      content.push({
+        columns: [
+          {text: `${j.titulo||''}${j.empresa?' — '+j.empresa:''}`, fontSize: 10, bold: true, color: '#1a1a1a', width: '*'},
+          {text: j.periodo||'', fontSize: 9, color: '#777', width: 'auto'}
+        ], margin: [0,2,0,3]
+      });
+      content.push({
+        ul: (j.bullets||[]).map(b => ({text: b, fontSize: 9.5, color: '#333', lineHeight: 1.3})),
+        margin: [0,0,0,8]
+      });
+    });
+  }
+
+  if (d.educacion?.length) {
+    content.push({text: A.edu, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,4,0,5]});
+    d.educacion.forEach(e => {
+      content.push({text: `${e.titulo||''} — ${e.institucion||''}${e['año']?' ('+e['año']+')':''}`, fontSize: 9.5, color: '#333', margin: [0,0,0,3]});
+    });
+  }
+
+  const habs = (d.habilidades||[]).map(h => h.nombre||h).filter(Boolean);
+  const idiomas = (d.idiomas||[]).map(l => `${l.nombre}${l.nivel?' ('+l.nivel+')':''}`).join(', ');
+  if (habs.length || idiomas) {
+    content.push({text: A.skills, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,8,0,5]});
+    if (habs.length) content.push({text: `${A.tec}: ${habs.join(', ')}`, fontSize: 9.5, color: '#333', lineHeight: 1.3, margin: [0,0,0,3]});
+    if (idiomas) content.push({text: `${A.langs}: ${idiomas}`, fontSize: 9.5, color: '#333'});
+  }
+
+  const nombre = (d.nombre||'CV').replace(/\s+/g,'_');
+  pdfMake.createPdf({
+    pageSize: 'A4',
+    pageMargins: [42, 42, 42, 42],
+    content,
+    defaultStyle: {font: 'Roboto'}
+  }).download(LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);
+}
+
+function descargarPDF() {
+  const el = document.getElementById('cvFinal').firstElementChild;
+  if (!el) return;
+  const nombre = (D.nombre||'CV').replace(/\s+/g,'_');
+  html2pdf().set({
+    margin:0,
+    filename:`CV_${nombre}.pdf`,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2,useCORS:true,logging:false},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+  }).from(el).save();
+}
+
+renderTemplates();
+</script>
+</body>
+</html>

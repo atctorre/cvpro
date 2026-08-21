@@ -936,7 +936,7 @@ function autoResize(el) {
 }
 
 function guardarEstado() {
-  localStorage.setItem('cvpro_chat16', JSON.stringify({datos, paso, historial}));
+  localStorage.setItem('cvpro_chat16', JSON.stringify({datos, paso, historial, ts: Date.now()}));
 }
 
 function reiniciar() {
@@ -994,6 +994,55 @@ function verificarIdiomaInicial() {
   return false; // Mostrar selector
 }
 
+
+// ══ RECUPERAR ABANDONOS: PANTALLA DE REGRESO ══
+function mostrarBienvenidaRegreso(s) {
+  const nombre = (s.datos?.nombre || '').split(' ')[0];
+  const faltan = PASOS.length - s.paso;
+  const minutos = Math.max(1, Math.ceil(faltan * 0.6));
+  const pct = Math.round((s.paso / PASOS.length) * 100);
+
+  const ov = document.createElement('div');
+  ov.id = 'regresoOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML = `
+    <div style="background:#141414;border:1px solid #2a2a2a;border-radius:20px;max-width:440px;width:100%;padding:36px 32px;text-align:center;font-family:Inter,sans-serif">
+      <div style="font-size:2.6rem;margin-bottom:10px">👋</div>
+      <h2 style="color:#fff;font-size:1.35rem;margin-bottom:8px">${LANG==='en' ? `Welcome back${nombre?', '+nombre:''}!` : `¡Volviste${nombre?', '+nombre:''}!`}</h2>
+      <p style="color:#aaa;font-size:0.9rem;line-height:1.6;margin-bottom:20px">${LANG==='en'
+        ? `Your resume is <strong style="color:#FFD000">${pct}% done</strong>. Only <strong style="color:#fff">${faltan} questions</strong> left (~${minutos} min) and it's ready.`
+        : `Tu CV está <strong style="color:#FFD000">${pct}% completo</strong>. Te faltan solo <strong style="color:#fff">${faltan} preguntas</strong> (~${minutos} min) y estará listo.`}</p>
+      <div style="height:8px;background:#222;border-radius:4px;overflow:hidden;margin-bottom:24px">
+        <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#FFD000,#ffdf4d);border-radius:4px"></div>
+      </div>
+      <button onclick="continuarDondeQuede()" style="width:100%;background:#FFD000;color:#000;border:none;padding:15px;border-radius:50px;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:Inter,sans-serif">${LANG==='en'?'▶ Continue where I left off':'▶ Continuar donde quedé'}</button>
+      <button onclick="empezarDeNuevo()" style="background:none;border:none;color:#666;font-size:0.78rem;cursor:pointer;margin-top:14px;text-decoration:underline;font-family:Inter,sans-serif">${LANG==='en'?'Start over':'Empezar de nuevo'}</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+function continuarDondeQuede() {
+  document.getElementById('regresoOverlay')?.remove();
+  historial.forEach(m => renderMsg(m.tipo, m.texto, m.opts||[], false));
+  actualizarUI();
+  // Re-mostrar la pregunta actual para retomar el hilo
+  const p = PASOS[paso];
+  if (p) {
+    const preg = typeof p.preg === 'function' ? p.preg(datos) : p.preg;
+    setHint(resolver(p.hint));
+    const ci = document.getElementById('chatInput');
+    if (ci) { ci.placeholder = resolver(p.placeholder)||(LANG==='en'?'Type here...':'Escribe aquí...'); ci.focus(); }
+  }
+  const msgs = document.getElementById('chatMessages');
+  if (msgs) msgs.scrollTop = msgs.scrollHeight;
+}
+
+function empezarDeNuevo() {
+  localStorage.removeItem('cvpro_chat16');
+  document.getElementById('regresoOverlay')?.remove();
+  location.reload();
+}
+
 async function init() {
   // P4: recuperar CV por código en URL
   const codigoURL = new URLSearchParams(window.location.search).get('codigo');
@@ -1011,6 +1060,12 @@ async function init() {
       paso = s.paso || 0;
       historial = s.historial || [];
       if (historial.length > 0) {
+        // ══ RECUPERACIÓN DE ABANDONO: bienvenida motivadora si hay progreso real ══
+        const horasFuera = s.ts ? (Date.now() - s.ts) / 3600000 : 0;
+        if (paso >= 3 && paso < PASOS.length && horasFuera > 0.16) {
+          mostrarBienvenidaRegreso(s);
+          return;
+        }
         historial.forEach(m => renderMsg(m.tipo, m.texto, m.opts||[], false));
         actualizarUI();
         if (paso >= PASOS.length) mostrarGenerando();

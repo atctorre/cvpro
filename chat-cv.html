@@ -1650,7 +1650,7 @@ ${cvTexto.substring(0,12000)}`})
     try {
       await sleep(1500);
       renderMsgAI(LANG==='en' ? '⏳ Retrying AI connection...' : '⏳ Reintentando conexión con la IA...');
-      const res2 = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      const res2 = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method: 'POST',
         headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt})
@@ -1987,10 +1987,10 @@ function revertirAdaptacion() {
 let _prog = {timer: null, pct: 0, objetivo: 0, paso: 0, inicio: 0, tipsTimer: null};
 
 const _PASOS_PROG = {
-  es: ['Analizando tu información', 'Redactando con IA élite', 'Revisión de reclutador',
-       'Auditoría ATS', 'Verificación de veracidad', 'Puliendo el resultado'],
-  en: ['Analyzing your information', 'Writing with elite AI', 'Recruiter review',
-       'ATS audit', 'Truth verification', 'Final polish']
+  es: ['Analizando tu información', 'Redactando con IA élite',
+       'Revisión de reclutador y auditoría ATS', 'Verificación de veracidad', 'Puliendo el resultado'],
+  en: ['Analyzing your information', 'Writing with elite AI',
+       'Recruiter review and ATS audit', 'Truth verification', 'Final polish']
 };
 
 const _TIPS = {
@@ -2061,7 +2061,7 @@ function iniciarProgreso() {
     if (t) {
       const seg = Math.round((Date.now() - _prog.inicio) / 1000);
       t.textContent = (LANG==='en' ? 'Elapsed: ' : 'Transcurrido: ') + seg + 's' +
-        (seg > 75 ? (LANG==='en' ? ' — almost there, do not close this page' : ' — casi listo, no cierres esta página') : '');
+        (seg > 60 ? (LANG==='en' ? ' — almost there, do not close this page' : ' — casi listo, no cierres esta página') : '');
     }
   }, 90);
 
@@ -2111,8 +2111,22 @@ function terminarProgreso(exito) {
   }
 }
 
+
+// Corta cualquier llamada a la IA que se pase del tiempo razonable.
+// Sin esto, una sola petición atascada deja al usuario esperando sin fin
+// mientras la barra de progreso repta hacia el 96% para siempre.
+function fetchIA(url, opciones, segundos) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), (segundos || 45) * 1000);
+  return fetch(url, {...opciones, signal: ctrl.signal})
+    .finally(() => clearTimeout(t));
+}
+
 async function optimizarCVSubido(texto) {
   iniciarProgreso(); marcarPaso(1);
+  // Se dispara YA, sin await: no depende del CV generado, así que corre en
+  // paralelo mientras la IA redacta. Antes esperaba al final y sumaba ~20s.
+  const _promesaHabs = extraerHabilidadesDeFuente().catch(() => []);
   const enIngles = LANG === 'en';
   const prompt = `${enIngles?'IMPORTANT: Write the ENTIRE resume in professional English.':'IMPORTANTE: Escribe todo en español profesional.'}
 Actúas como consultor de RRHH, Executive Recruiter y especialista internacional en ATS con 20+ años evaluando candidatos para procesos altamente competitivos. Tu misión: transformar este CV en un documento de nivel ÉLITE que consiga entrevistas.
@@ -2174,31 +2188,34 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
     const data = await res.json();
     if (!data.cv || data.cv.length < 300) throw new Error('short');
     let cvV1 = data.cv.trim();
-    // ── PASADA 2: AUTOCRÍTICA DE RECLUTADOR ──
+    // ── PASADA 2: RECLUTADOR + ATS EN UNA SOLA LLAMADA ──
+    // Antes eran dos viajes al servidor de ~25s cada uno. Hacen trabajo
+    // complementario sobre el mismo texto, así que se pueden fusionar sin
+    // perder calidad y ahorrando una ronda completa.
     marcarPaso(2);
     try {
       const res2 = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres un Executive Recruiter élite revisando el trabajo de un colega. CRITICA y MEJORA este CV: elimina cualquier bullet débil o genérico que sobreviva, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos, y asegura keywords ATS. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 2 páginas A4 (1000-1500 palabras) con bullets de 25-40 palabras. Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
+Eres un Executive Recruiter élite Y auditor ATS revisando el trabajo de un colega. Haz AMBAS cosas en una sola pasada:
+(A) CRITICA y MEJORA: elimina cualquier bullet débil o genérico, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos.
+(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 2 páginas A4 (1000-1500 palabras) con bullets de 25-40 palabras. Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
 CV A REVISAR:
-${cvV1.substring(0,12000)}`})
+${cvV1.substring(0,9000)}`})
       });
       const d2 = await res2.json();
       if (d2.cv && d2.cv.trim().length > cvV1.length * 0.7) cvV1 = d2.cv.trim();
     } catch(e2) { /* usar v1 si falla */ }
-    cvV1 = await pasadaATS(cvV1, enIngles);
+    // pasadaATS() fusionada en la pasada anterior — se elimina una ronda entera
+    if (typeof marcarPaso === 'function') marcarPaso(3);
     cvV1 = await generarConValidacion(async () => await pasadaVeracidad(cvV1, texto, enIngles), texto, enIngles);
     cvGenerado = cvV1;
 
-    // Antes de construir los datos: si el CV original traía una lista de
-    // competencias, la extraemos con IA. Es una llamada extra que solo ocurre
-    // en modo optimizar y evita entregar 4 habilidades genéricas cuando el
-    // candidato tenía 10 concretas escritas.
+    // La extracción de habilidades se lanzó EN PARALELO al inicio (no depende
+    // del CV generado). Aquí solo recogemos el resultado: cero espera extra.
     try {
-      if (typeof marcarPaso === 'function') marcarPaso(5);
-      const habsIA = await extraerHabilidadesDeFuente();
-      if (habsIA.length) sessionStorage.setItem('cvpro_habs_extra', JSON.stringify(habsIA));
+      const habsIA = await _promesaHabs;
+      if (habsIA && habsIA.length) sessionStorage.setItem('cvpro_habs_extra', JSON.stringify(habsIA));
     } catch(eh) { console.warn('Extracción de habilidades omitida:', eh.message); }
 
     const m = cvGenerado.match(/^([A-ZÁÉÍÓÚÑ ]{5,60})$/m);
@@ -2252,10 +2269,10 @@ CONSERVA intactas las cifras y hechos que SÍ están en la información original
 Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV corregido completo.
 
 INFORMACIÓN ORIGINAL DEL CANDIDATO:
-${sanitizarEntrada(fuenteOriginal, 12000).substring(0,9000)}
+${sanitizarEntrada(fuenteOriginal, 7000).substring(0,7000)}
 
 CV FINAL A VERIFICAR:
-${cvTxt.substring(0,12000)}`})
+${cvTxt.substring(0,9000)}`})
     });
     if (!res.ok) { console.error('❌ Verificación de veracidad falló:', res.status, await res.text()); return cvTxt; }
     const d = await res.json();
@@ -2297,7 +2314,7 @@ VERIFICA Y CORRIGE:
 NO agregues información nueva. Mantén EXACTAMENTE el mismo formato y headers.
 Devuelve SOLO el CV final auditado y completo.
 CV:
-${cvTxt.substring(0,12000)}`})
+${cvTxt.substring(0,9000)}`})
     });
     const d = await res.json();
     if (d.cv && d.cv.trim().length > cvTxt.length * 0.75) return d.cv.trim();
@@ -2864,7 +2881,7 @@ async function extraerHabilidadesDeFuente() {
   const fuente = sessionStorage.getItem('cvpro_fuente_original') || '';
   if (!fuente || fuente.length < 200) return [];
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `Extrae las COMPETENCIAS, HABILIDADES o SKILLS que aparecen listadas en este CV.
@@ -2882,8 +2899,8 @@ REGLAS:
 Ejemplo de salida: ["Medicina Interna","Hospitalización","POCUS","Liderazgo clínico"]
 
 CV:
-${sanitizarEntrada(fuente, 12000).substring(0, 12000)}`})
-    });
+${sanitizarEntrada(fuente, 8000).substring(0, 8000)}`})
+    }, 30);
     if (!res.ok) { console.warn('Extracción de habilidades falló:', res.status); return []; }
     const data = await res.json();
     let txt = (data.cv || data.respuesta || '').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();

@@ -7,7 +7,7 @@
 <meta name="description" content="Crea tu CV profesional con IA en minutos. Solo responde 14 preguntas y descarga tu CV listo para conseguir entrevistas.">
 <meta property="og:title" content="Crear CV con IA | CVPro">
 <meta property="og:description" content="14 preguntas guiadas. IA corrige y mejora tu CV. 10 plantillas profesionales. Descarga en PDF.">
-<meta property="og:image" content="https://atctorre.github.io/cvpro/og-image.png">
+<meta property="og:image" content="https://getcvpro.com/og-image.png">
 <meta name="robots" content="noindex">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -2747,7 +2747,7 @@ REGLAS:
 - ${(localStorage.getItem('cvpro_lang_cv')||'es')==='en' ? 'CRITICAL: Respond ONLY in English, warm and direct' : 'Responde en español, de forma amable y directa'}
 - Máximo 3 líneas por respuesta — sé conciso
 - Precios: Básico $4.99, Estándar $9.99, Premium $14.99 — pago único sin suscripción
-- Si tienen problemas técnicos, sugiere reiniciar el chat o contactar: contacto@cvpro.com
+- Si tienen problemas técnicos, sugiere reiniciar el chat o contactar: hola@getcvpro.com
 - NUNCA digas que eres Claude o una IA de Anthropic — eres el asistente de CVPro
 - Usa emojis con moderación para ser amigable`;
 
@@ -2760,9 +2760,9 @@ REGLAS:
       })
     });
     const data = await res.json();
-    return data.cv || '¡Claro! Para más ayuda escríbenos a contacto@cvpro.com 😊';
+    return data.cv || '¡Claro! Para más ayuda escríbenos a hola@getcvpro.com 😊';
   } catch(e) {
-    return 'En este momento tengo problemas de conexión. Escríbenos a contacto@cvpro.com y te ayudamos de inmediato 😊';
+    return 'En este momento tengo problemas de conexión. Escríbenos a hola@getcvpro.com y te ayudamos de inmediato 😊';
   }
 }
 

@@ -724,6 +724,7 @@ function setGender(g) {
 let cartaGenerada = '';
 
 async function generarCarta() {
+  if (!tieneAcceso('estandar')) { abrirMuroPago('estandar', () => generarCarta()); return; }
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1154,6 +1155,7 @@ function volverSelector() {
 
 // ── P3: CARTA DE PRESENTACIÓN CON IA ──
 async function generarCarta() {
+  if (!tieneAcceso('estandar')) { abrirMuroPago('estandar', () => generarCarta()); return; }
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1223,6 +1225,7 @@ function descargarCartaPDF() {
 
 // ══ PDF ATS: TEXTO REAL SELECCIONABLE (pasa filtros ATS) ══
 function descargarATS() {
+  if (!yaPago()) { abrirMuroPago(null, () => descargarATS()); return; }
   const d = D;
   const A = LANG === 'en'
     ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
@@ -1282,6 +1285,7 @@ function descargarATS() {
 }
 
 function descargarPDF() {
+  if (!yaPago()) { abrirMuroPago(null, () => descargarPDF()); return; }
   const el = document.getElementById('cvFinal').firstElementChild;
   if (!el) return;
   const nombre = (D.nombre||'CV').replace(/\s+/g,'_');
@@ -1355,6 +1359,142 @@ function mostrarBadgeTester() {
     }
   };
   document.body.appendChild(b);
+}
+</script>
+<script>
+// ══════════ SISTEMA DE PAGO PAYPAL ══════════
+const PP_CLIENT_ID = 'BAArSKzmXrrmOvMwGD0gx8etTbUmpdcGvUTGF1sDW43HE5mpa8IiJxZq-xcj-0QOx0NbarG4ynxxtehm94';
+const PP_ENTORNO = 'sandbox'; // cambiar a 'live' con el Client ID de producción
+const PLANES = {
+  basico:   {precio:'4.99',  nombre:{es:'Básico',   en:'Basic'}},
+  estandar: {precio:'9.99',  nombre:{es:'Estándar', en:'Standard'}},
+  premium:  {precio:'14.99', nombre:{es:'Premium',  en:'Premium'}}
+};
+
+function planActual() {
+  return localStorage.getItem('cvpro_plan') || 'basico';
+}
+
+function tieneAcceso(nivelMinimo) {
+  if (typeof esTester === 'function' && esTester()) return true;
+  const orden = ['basico','estandar','premium'];
+  const pagado = JSON.parse(localStorage.getItem('cvpro_pago') || 'null');
+  if (!pagado || !pagado.ok) return false;
+  return orden.indexOf(pagado.plan) >= orden.indexOf(nivelMinimo);
+}
+
+function yaPago() {
+  if (typeof esTester === 'function' && esTester()) return true;
+  const p = JSON.parse(localStorage.getItem('cvpro_pago') || 'null');
+  return !!(p && p.ok);
+}
+
+function cargarSDKPayPal() {
+  return new Promise((resolve, reject) => {
+    if (window.paypal) return resolve();
+    const s = document.createElement('script');
+    s.src = `https://www.paypal.com/sdk/js?client-id=${PP_CLIENT_ID}&currency=USD&intent=capture&disable-funding=paylater`;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('SDK no disponible'));
+    document.head.appendChild(s);
+  });
+}
+
+async function registrarPago(ordenId, plan, monto, detalles) {
+  try {
+    const SB_U = (typeof SUPABASE_URL !== 'undefined') ? SUPABASE_URL : (typeof SUPABASE_URL_C !== 'undefined' ? SUPABASE_URL_C : _SB_U);
+    const SB_K = (typeof SUPABASE_KEY !== 'undefined') ? SUPABASE_KEY : (typeof SUPABASE_KEY_C !== 'undefined' ? SUPABASE_KEY_C : _SB_K);
+    await fetch(`${SB_U}/rest/v1/pagos`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'resolution=ignore-duplicates'},
+      body: JSON.stringify({
+        orden_id: ordenId,
+        codigo_cv: sessionStorage.getItem('cvpro_codigo') || '',
+        plan, monto: parseFloat(monto), moneda: 'USD',
+        email: (detalles && detalles.email) || '',
+        nombre: (detalles && detalles.nombre) || '',
+        estado: 'completado', entorno: PP_ENTORNO
+      })
+    });
+  } catch(e) { console.warn('No se pudo registrar el pago:', e.message); }
+}
+
+async function abrirMuroPago(planSugerido, alPagar) {
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  let planSel = planSugerido || planActual();
+
+  const ov = document.createElement('div');
+  ov.id = 'muroPago';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:28px;font-family:Inter,system-ui,sans-serif;max-height:94vh;overflow-y:auto">
+      <div style="text-align:right;margin-top:-10px"><button onclick="document.getElementById('muroPago').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#999">✕</button></div>
+      <h2 style="font-size:1.25rem;color:#111;margin-bottom:4px">${L==='en'?'Your resume is ready 🎉':'Tu CV está listo 🎉'}</h2>
+      <p style="color:#666;font-size:.87rem;line-height:1.55;margin-bottom:18px">${L==='en'?'One-time payment. No subscriptions, no recurring charges. Download instantly.':'Pago único. Sin suscripciones ni cobros recurrentes. Descarga al instante.'}</p>
+      <div id="planesMuro" style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px"></div>
+      <div id="paypalBtns" style="min-height:52px"></div>
+      <p style="text-align:center;font-size:.72rem;color:#999;margin-top:14px">🔒 ${L==='en'?'Secure payment via PayPal · Card accepted':'Pago seguro con PayPal · Aceptamos tarjeta'}</p>
+      <p style="text-align:center;font-size:.72rem;color:#7dd3a8;margin-top:6px">🛡️ ${L==='en'?'Satisfaction guarantee':'Garantía de satisfacción'}</p>
+    </div>`;
+  document.body.appendChild(ov);
+
+  function pintarPlanes() {
+    const cont = document.getElementById('planesMuro');
+    const desc = {
+      basico:   {es:'CV con IA · 20 plantillas · PDF + versión ATS', en:'AI resume · 20 templates · PDF + ATS version'},
+      estandar: {es:'+ Carta de presentación · Adaptar a 1 vacante · 2 idiomas', en:'+ Cover letter · Tailor to 1 job · 2 languages'},
+      premium:  {es:'+ Adaptaciones ilimitadas · 3 cartas · 6 meses', en:'+ Unlimited tailoring · 3 letters · 6 months'}
+    };
+    cont.innerHTML = Object.entries(PLANES).map(([k,v]) => `
+      <label style="display:flex;align-items:center;gap:11px;border:2px solid ${k===planSel?'#FFD000':'#e5e5e5'};background:${k===planSel?'#fffbe6':'#fff'};border-radius:12px;padding:11px 13px;cursor:pointer">
+        <input type="radio" name="planPago" value="${k}" ${k===planSel?'checked':''} style="accent-color:#FFD000">
+        <span style="flex:1">
+          <b style="font-size:.9rem;color:#111">${v.nombre[L]}</b>
+          <span style="display:block;font-size:.73rem;color:#777;line-height:1.4">${desc[k][L]}</span>
+        </span>
+        <b style="font-size:1.05rem;color:#111">$${v.precio}</b>
+      </label>`).join('');
+    cont.querySelectorAll('input[name=planPago]').forEach(r => {
+      r.onchange = () => { planSel = r.value; localStorage.setItem('cvpro_plan', planSel); pintarPlanes(); renderBotones(); };
+    });
+  }
+
+  async function renderBotones() {
+    const cont = document.getElementById('paypalBtns');
+    cont.innerHTML = '';
+    try {
+      await cargarSDKPayPal();
+      window.paypal.Buttons({
+        style: {layout:'vertical', color:'gold', shape:'pill', label:'pay', height:46},
+        createOrder: (data, actions) => actions.order.create({
+          purchase_units: [{
+            description: `CVPro ${PLANES[planSel].nombre[L]}`,
+            amount: {value: PLANES[planSel].precio, currency_code: 'USD'}
+          }]
+        }),
+        onApprove: async (data, actions) => {
+          const det = await actions.order.capture();
+          const payer = (det && det.payer) || {};
+          localStorage.setItem('cvpro_pago', JSON.stringify({ok:true, plan:planSel, orden:det.id, ts:Date.now()}));
+          await registrarPago(det.id, planSel, PLANES[planSel].precio, {
+            email: payer.email_address || '',
+            nombre: ((payer.name||{}).given_name||'') + ' ' + ((payer.name||{}).surname||'')
+          });
+          document.getElementById('muroPago')?.remove();
+          if (typeof alPagar === 'function') alPagar(planSel);
+        },
+        onError: (err) => {
+          console.error('PayPal error:', err);
+          cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center">${L==='en'?'Payment error. Please try again.':'Error en el pago. Intenta de nuevo.'}</p>`;
+        }
+      }).render('#paypalBtns');
+    } catch(e) {
+      cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center">${L==='en'?'Could not load PayPal. Check your connection.':'No se pudo cargar PayPal. Revisa tu conexión.'}</p>`;
+    }
+  }
+
+  pintarPlanes();
+  renderBotones();
 }
 </script>
 </body>

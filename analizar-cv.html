@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analiza tu CV Gratis con IA — Puntuación en 30 segundos | CVPro</title>
+<meta name="description" content="Sube tu CV en PDF o Word y recibe gratis tu puntuación ATS, problemas detectados y compatibilidad con el puesto que buscas. Sin registro.">
+<link rel="canonical" href="https://atctorre.github.io/cvpro/analizar-cv.html">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0a;color:#eee;line-height:1.6;min-height:100vh}
+.nav{padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #222}
+.logo{font-weight:800;font-size:1.2rem;color:#fff;text-decoration:none}.logo span{color:#FFD000}
+.nav a.cta{background:#FFD000;color:#000;padding:9px 20px;border-radius:50px;text-decoration:none;font-weight:700;font-size:0.82rem}
+.wrap{max-width:760px;margin:0 auto;padding:44px 20px 90px}
+h1{font-size:2rem;color:#fff;text-align:center;line-height:1.25}
+h1 em{color:#FFD000;font-style:normal}
+.sub{color:#999;text-align:center;margin:12px 0 34px;font-size:0.95rem}
+.drop{border:2px dashed #333;border-radius:18px;padding:46px 24px;text-align:center;cursor:pointer;transition:border-color .2s;background:#111}
+.drop:hover,.drop.over{border-color:#FFD000}
+.drop .ic{font-size:2.4rem;margin-bottom:10px}
+.drop p{color:#ccc;font-weight:600}
+.drop small{color:#777;display:block;margin-top:6px}
+#fileInput{display:none}
+.loading{display:none;text-align:center;padding:40px 0}
+.spin{width:44px;height:44px;border:4px solid #222;border-top-color:#FFD000;border-radius:50%;margin:0 auto 16px;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.loading p{color:#aaa;font-size:0.9rem}
+#resultado{display:none}
+.score-hero{text-align:center;margin:30px 0}
+.gauge{width:150px;height:150px;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;position:relative}
+.gauge-inner{width:118px;height:118px;border-radius:50%;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-inner b{font-size:2.2rem;color:#fff;line-height:1}
+.gauge-inner span{font-size:0.65rem;color:#888;letter-spacing:1px}
+.dims{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:28px 0}
+.dim{background:#141414;border:1px solid #222;border-radius:12px;padding:14px 16px}
+.dim .dn{font-size:0.78rem;color:#aaa;display:flex;justify-content:space-between;margin-bottom:7px}
+.dim .dn b{color:#fff}
+.dbar{height:7px;background:#222;border-radius:4px;overflow:hidden}
+.dfill{height:100%;border-radius:4px;transition:width 1s ease}
+.sec-t{font-size:1.05rem;color:#FFD000;margin:32px 0 12px;font-weight:700}
+.prob{background:#141414;border:1px solid #222;border-left:3px solid #e34948;border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.prob b{color:#fff;font-size:0.9rem;display:block;margin-bottom:4px}
+.prob .cita{color:#c98a8a;font-size:0.8rem;font-style:italic;display:block;margin-bottom:6px}
+.prob p{color:#aaa;font-size:0.83rem}
+.fort{background:#141414;border:1px solid #222;border-left:3px solid #1baf7a;border-radius:10px;padding:11px 16px;margin-bottom:8px;font-size:0.85rem;color:#ccc}
+.locked{position:relative;background:#141414;border:1px solid #222;border-radius:12px;padding:22px;text-align:center;margin:24px 0;overflow:hidden}
+.locked::before{content:'';position:absolute;inset:0;backdrop-filter:blur(3px)}
+.locked .lk{position:relative;z-index:2}
+.locked .lk .lock-ic{font-size:1.8rem}
+.locked .lk p{color:#ccc;font-size:0.9rem;margin:8px 0 14px}
+.btn-y{display:inline-block;background:#FFD000;color:#000;padding:14px 30px;border-radius:50px;text-decoration:none;font-weight:800;font-size:0.95rem;border:none;cursor:pointer}
+.btn-o{display:inline-block;background:none;border:1.5px solid #444;color:#ddd;padding:12px 26px;border-radius:50px;text-decoration:none;font-weight:600;font-size:0.85rem;cursor:pointer;margin-left:8px}
+.puesto-box{background:#141414;border:1px solid #333;border-radius:14px;padding:22px;margin:30px 0}
+.puesto-box h3{color:#fff;font-size:1rem;margin-bottom:10px}
+.puesto-box input,.puesto-box textarea{width:100%;background:#0a0a0a;border:1.5px solid #333;border-radius:10px;padding:12px;color:#eee;font-size:0.9rem;font-family:inherit;outline:none;margin-bottom:12px}
+.puesto-box input:focus,.puesto-box textarea:focus{border-color:#FFD000}
+.match{display:none;margin-top:18px}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+.tag{padding:5px 12px;border-radius:50px;font-size:0.75rem;font-weight:600}
+.tag.ok{background:#0e3b2e;color:#7dd3a8}
+.tag.no{background:#3b0e0e;color:#e8a0a0}
+.err{display:none;background:#3b0e0e;color:#e8a0a0;border-radius:10px;padding:14px;text-align:center;margin:20px 0;font-size:0.88rem}
+@media(max-width:600px){.dims{grid-template-columns:1fr}h1{font-size:1.5rem}}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #FFD000;outline-offset:2px}/*a11y-focus*/
+</style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0a0a'/><text y='72' x='50' font-size='60' font-family='sans-serif' font-weight='bold' fill='%23FFD000' text-anchor='middle'>C</text></svg>">
+<meta name="theme-color" content="#0a0a0a">
+</head>
+<body>
+<nav class="nav">
+  <a class="logo" href="index.html">CV<span>Pro</span></a>
+  <a class="cta" href="chat-cv.html" id="navCta">Crear mi CV →</a>
+</nav>
+
+<div class="wrap">
+  <h1 id="h1t">🔎 Analiza tu CV <em>gratis</em> con IA</h1>
+  <p class="sub" id="subT">Sube tu CV y en 30 segundos recibe tu puntuación, los problemas que espantan reclutadores y cómo arreglarlos. Sin registro.</p>
+
+  <div class="drop" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div class="ic">📄</div>
+    <p id="dropT">Arrastra tu CV aquí o haz clic para subirlo</p>
+    <small id="dropS">PDF, Word (.docx) o TXT — máx. 5MB</small>
+    <input type="file" id="fileInput" accept=".pdf,.docx,.txt">
+  </div>
+
+  <div class="err" id="errBox"></div>
+
+  <div class="loading" id="loading">
+    <div class="spin"></div>
+    <p id="loadT">Analizando tu CV como un reclutador élite...</p>
+  </div>
+
+  <div id="resultado">
+    <div class="score-hero">
+      <div class="gauge" id="gauge"><div class="gauge-inner"><b id="scoreNum">0</b><span>CV SCORE</span></div></div>
+      <p id="scoreMsg" style="color:#aaa;font-size:0.9rem"></p>
+    </div>
+
+    <div class="dims" id="dims"></div>
+
+    <div class="sec-t" id="probT">⚠️ Problemas detectados</div>
+    <div id="problemas"></div>
+
+    <div class="sec-t" id="fortT">✅ Fortalezas de tu CV</div>
+    <div id="fortalezas"></div>
+
+    <div class="locked">
+      <div class="lk">
+        <div class="lock-ic">🔒</div>
+        <p id="lockT"><strong id="lockN">5</strong> recomendaciones más + reescritura profesional de tu CV con IA</p>
+        <input type="email" id="leadEmail" placeholder="Tu email para recibir el informe completo" style="width:100%;max-width:340px;background:#0a0a0a;border:1.5px solid #333;border-radius:50px;padding:12px 18px;color:#eee;font-size:0.88rem;margin-bottom:12px;outline:none;text-align:center">
+        <br>
+        <button class="btn-y" onclick="guardarLeadYPlanes()" id="lockBtn">🚀 Optimizar mi CV — desde $4.99</button>
+        <p id="leadOk" style="display:none;color:#7dd3a8;font-size:0.78rem;margin-top:8px">✓</p>
+      </div>
+    </div>
+
+    <div class="puesto-box">
+      <h3 id="puestoT">🎯 ¿Qué puesto quieres conseguir?</h3>
+      <input id="puestoInput" placeholder="Ej: Project Manager, Enfermera UCI, Contador Senior...">
+      <textarea id="vacanteInput" rows="4" placeholder="Opcional: pega aquí la descripción de la vacante para un análisis exacto..."></textarea>
+      <button class="btn-y" onclick="analizarPuesto()" id="puestoBtn" style="width:100%">⚡ Ver mi compatibilidad</button>
+      <div class="match" id="matchBox">
+        <div class="score-hero" style="margin:16px 0">
+          <div class="gauge" id="gauge2" style="width:110px;height:110px"><div class="gauge-inner" style="width:84px;height:84px"><b id="matchNum" style="font-size:1.6rem">0</b><span style="font-size:0.55rem">MATCH</span></div></div>
+        </div>
+        <b style="color:#7dd3a8;font-size:0.85rem" id="mfT">Fortalezas para este puesto:</b>
+        <div class="tags" id="matchFort"></div>
+        <b style="color:#e8a0a0;font-size:0.85rem" id="mmT">Lo que te falta:</b>
+        <div class="tags" id="matchFalt"></div>
+        <div style="text-align:center;margin-top:16px">
+          <button class="btn-y" onclick="irAPlanes()" id="matchBtn">🎯 Optimizar mi CV para este puesto — $14.99</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+const LANG = (new URLSearchParams(location.search).get('lang') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+let cvTextoGlobal = '';
+
+// UI bilingüe
+if (LANG === 'en') {
+  document.documentElement.lang = 'en';
+  document.title = 'Free AI Resume Checker — Score in 30 seconds | CVPro';
+  document.getElementById('h1t').innerHTML = '🔎 Check your resume <em>free</em> with AI';
+  document.getElementById('subT').textContent = 'Upload your resume and get your score, the issues that scare recruiters away, and how to fix them — in 30 seconds. No sign-up.';
+  document.getElementById('dropT').textContent = 'Drag your resume here or click to upload';
+  document.getElementById('dropS').textContent = 'PDF, Word (.docx) or TXT — max 5MB';
+  document.getElementById('navCta').textContent = 'Build my Resume →';
+  document.getElementById('loadT').textContent = 'Analyzing your resume like an elite recruiter...';
+  document.getElementById('probT').textContent = '⚠️ Issues detected';
+  document.getElementById('fortT').textContent = '✅ Your resume strengths';
+  document.getElementById('lockT').innerHTML = '<strong id="lockN">5</strong> more recommendations + professional AI rewrite of your resume';
+  document.getElementById('lockBtn').textContent = '🚀 Optimize my resume — from $4.99';
+  document.getElementById('puestoT').textContent = '🎯 What job are you targeting?';
+  document.getElementById('puestoInput').placeholder = 'E.g.: Project Manager, ICU Nurse, Senior Accountant...';
+  document.getElementById('vacanteInput').placeholder = 'Optional: paste the job description here for an exact analysis...';
+  document.getElementById('puestoBtn').textContent = '⚡ Check my match';
+  document.getElementById('mfT').textContent = 'Strengths for this role:';
+  document.getElementById('mmT').textContent = "What you're missing:";
+  document.getElementById('matchBtn').textContent = '🎯 Optimize my resume for this job — $14.99';
+}
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) procesarArchivo(e.dataTransfer.files[0]); });
+document.getElementById('fileInput').addEventListener('change', e => { if (e.target.files[0]) procesarArchivo(e.target.files[0]); });
+
+function err(msg) {
+  const eb = document.getElementById('errBox');
+  eb.textContent = msg; eb.style.display = 'block';
+  document.getElementById('loading').style.display = 'none';
+  dz.style.display = 'block';
+  document.getElementById('fileInput').value = '';
+}
+
+async function procesarArchivo(file) {
+  document.getElementById('errBox').style.display = 'none';
+  if (!limiteDiario()) return err(LANG==='en' ? 'Free limit: 3 scans per day. Come back tomorrow or optimize your resume now.' : 'Límite gratis: 3 análisis por día. Vuelve mañana u optimiza tu CV ahora.');
+  if (file.size > 5 * 1024 * 1024) return err(LANG==='en' ? 'File exceeds 5MB.' : 'El archivo supera 5MB.');
+  dz.style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  try {
+    let texto = '';
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'pdf') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
+      for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent();
+        texto += tc.items.map(it => it.str).join(' ') + '\n';
+      }
+    } else if (ext === 'docx') {
+      const res = await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()});
+      texto = res.value;
+    } else if (ext === 'txt') {
+      texto = await file.text();
+    } else {
+      return err(LANG==='en' ? 'Format not supported. Use PDF, DOCX or TXT.' : 'Formato no soportado. Usa PDF, DOCX o TXT.');
+    }
+    texto = texto.replace(/\s+/g, ' ').trim();
+    if (texto.length < 200) return err(LANG==='en' ? 'Could not read enough text. If your PDF is a scanned image, export it as text PDF.' : 'No se pudo leer suficiente texto. Si tu PDF es una imagen escaneada, expórtalo como PDF de texto.');
+    cvTextoGlobal = texto.substring(0, 6000);
+    await analizarCV();
+  } catch(e) {
+    err(LANG==='en' ? 'Error reading the file. Try another format.' : 'Error al leer el archivo. Intenta con otro formato.');
+    dz.style.display = 'block';
+  }
+}
+
+async function llamarIA(prompt) {
+  const res = await fetch(`${SB_URL}/functions/v1/super-service`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},
+    body: JSON.stringify({prompt})
+  });
+  const data = await res.json();
+  const raw = (data.cv || '').replace(/```json|```/g, '').trim();
+  return JSON.parse(raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+}
+
+async function analizarCV() {
+  const prompt = `Eres un reclutador ejecutivo y especialista ATS con 20 años de experiencia. Analiza este CV con estándares élite y responde SOLO con JSON válido, sin texto adicional, ${LANG==='en'?'con todos los textos en inglés':'con todos los textos en español'}:
+{"ats":0-100,"contenido":0-100,"experiencia":0-100,"keywords":0-100,"claridad":0-100,"impacto":0-100,"global":0-100,"problemas":[{"titulo":"...","cita":"fragmento textual del CV que ejemplifica el problema","recomendacion":"cómo arreglarlo en 1-2 líneas"}] (exactamente 3),"fortalezas":["..."] (exactamente 3),"extras":número de problemas adicionales detectados pero no listados (3-8)}
+Criterios: penaliza clichés genéricos (responsable, proactivo, comprometido), primera persona, falta de cifras y resultados, ausencia de keywords del sector, estructura confusa. Premia logros cuantificados, verbos de acción, especialización clara.
+CV A ANALIZAR:
+${cvTextoGlobal}`;
+  try {
+    const r = await llamarIA(prompt);
+    mostrarResultado(r);
+  } catch(e) {
+    err(LANG==='en' ? 'Analysis failed. Wait 30 seconds and try again.' : 'El análisis falló. Espera 30 segundos e intenta de nuevo.');
+    dz.style.display = 'block';
+  }
+}
+
+function colorScore(n) { return n >= 80 ? '#1baf7a' : n >= 60 ? '#eda100' : '#e34948'; }
+
+function mostrarResultado(r) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('resultado').style.display = 'block';
+  const g = Math.max(1, Math.min(99, r.global || 60));
+  const col = colorScore(g);
+  document.getElementById('gauge').style.background = `conic-gradient(${col} ${g*3.6}deg, #222 0deg)`;
+  let n = 0;
+  const int = setInterval(() => { n++; document.getElementById('scoreNum').textContent = n; if (n >= g) clearInterval(int); }, 18);
+  const msgs = LANG==='en'
+    ? (g>=80 ? 'Solid resume — small tweaks could make it elite.' : g>=60 ? 'Decent base, but recruiters will spot the weaknesses below.' : 'Your resume is costing you interviews. The good news: everything below is fixable.')
+    : (g>=80 ? 'CV sólido — pequeños ajustes podrían hacerlo élite.' : g>=60 ? 'Base decente, pero los reclutadores notarán las debilidades de abajo.' : 'Tu CV te está costando entrevistas. Lo bueno: todo lo de abajo tiene arreglo.');
+  document.getElementById('scoreMsg').textContent = msgs;
+
+  const nombres = LANG==='en'
+    ? {ats:'ATS Compatibility', contenido:'Content', experiencia:'Experience', keywords:'Keywords', claridad:'Clarity', impacto:'Professional impact'}
+    : {ats:'Compatibilidad ATS', contenido:'Contenido', experiencia:'Experiencia', keywords:'Palabras clave', claridad:'Claridad', impacto:'Impacto profesional'};
+  document.getElementById('dims').innerHTML = Object.entries(nombres).map(([k, nom]) => {
+    const v = Math.max(1, Math.min(99, r[k] || 50));
+    return `<div class="dim"><div class="dn"><span>${nom}</span><b>${v}/100</b></div><div class="dbar"><div class="dfill" style="width:${v}%;background:${colorScore(v)}"></div></div></div>`;
+  }).join('');
+
+  document.getElementById('problemas').innerHTML = (r.problemas || []).slice(0,3).map((p,i) =>
+    `<div class="prob"><b>${i+1}. ${p.titulo}</b>${p.cita?`<span class="cita">"${p.cita}"</span>`:''}<p>💡 ${p.recomendacion}</p></div>`
+  ).join('');
+
+  document.getElementById('fortalezas').innerHTML = (r.fortalezas || []).slice(0,3).map(f =>
+    `<div class="fort">✓ ${f}</div>`
+  ).join('');
+
+  const lockN = document.getElementById('lockN');
+  if (lockN) lockN.textContent = r.extras || 5;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+async function analizarPuesto() {
+  const puesto = document.getElementById('puestoInput').value.trim();
+  if (puesto.length < 3) return;
+  const vacante = document.getElementById('vacanteInput').value.trim();
+  const btn = document.getElementById('puestoBtn');
+  btn.disabled = true;
+  btn.textContent = LANG==='en' ? '⏳ Analyzing match...' : '⏳ Analizando compatibilidad...';
+  const prompt = `Eres reclutador ejecutivo. Evalúa la compatibilidad de este CV con el puesto "${puesto}"${vacante?` y esta vacante: ${vacante.substring(0,1200)}`:''}. Responde SOLO JSON válido ${LANG==='en'?'en inglés':'en español'}:
+{"match":0-100,"fortalezas":["skill/experiencia que SÍ tiene, máx 4 palabras"] (3-4),"faltantes":["keyword/skill que le falta, máx 4 palabras"] (3-5)}
+CV: ${cvTextoGlobal.substring(0,4000)}`;
+  try {
+    const r = await llamarIA(prompt);
+    const m = Math.max(1, Math.min(99, r.match || 50));
+    document.getElementById('matchBox').style.display = 'block';
+    document.getElementById('gauge2').style.background = `conic-gradient(${colorScore(m)} ${m*3.6}deg, #222 0deg)`;
+    document.getElementById('matchNum').textContent = m;
+    document.getElementById('matchFort').innerHTML = (r.fortalezas||[]).map(f=>`<span class="tag ok">✓ ${f}</span>`).join('');
+    document.getElementById('matchFalt').innerHTML = (r.faltantes||[]).map(f=>`<span class="tag no">✗ ${f}</span>`).join('');
+  } catch(e) {
+    alert(LANG==='en' ? 'Analysis failed, try again.' : 'Falló el análisis, intenta de nuevo.');
+  }
+  btn.disabled = false;
+  btn.textContent = LANG==='en' ? '⚡ Check my match' : '⚡ Ver mi compatibilidad';
+}
+
+async function guardarLeadYPlanes() {
+  const email = (document.getElementById('leadEmail')?.value || '').trim();
+  if (/^[\w.+-]+@[\w.-]+\.\w{2,}$/.test(email)) {
+    try {
+      await fetch(`${SB_URL}/rest/v1/clientes`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`},
+        body: JSON.stringify({email, nombre: 'Lead analizador', pais: LANG})
+      });
+      const ok = document.getElementById('leadOk');
+      ok.textContent = LANG==='en' ? '✓ Report sent to your email' : '✓ Informe enviado a tu email';
+      ok.style.display = 'block';
+    } catch(e) {}
+  }
+  setTimeout(irAPlanes, email ? 900 : 0);
+}
+
+function limiteDiario() {
+  const hoy = new Date().toDateString();
+  const d = JSON.parse(localStorage.getItem('cvpro_scans') || '{}');
+  if (d.dia !== hoy) { localStorage.setItem('cvpro_scans', JSON.stringify({dia: hoy, n: 1})); return true; }
+  if (d.n >= 3) return false;
+  d.n++; localStorage.setItem('cvpro_scans', JSON.stringify(d)); return true;
+}
+
+function irAPlanes() {
+  if (cvTextoGlobal && cvTextoGlobal.length > 100) {
+    localStorage.setItem('cvpro_cv_subido', cvTextoGlobal);
+    localStorage.setItem('cvpro_lang_cv', LANG);
+    window.location = 'chat-cv.html?modo=optimizar&lang=' + LANG;
+  } else {
+    // CV no disponible — ir a chat normal
+    window.location = 'chat-cv.html?lang=' + LANG;
+  }
+}
+</script>
+</body>
+</html>

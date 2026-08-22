@@ -1451,7 +1451,7 @@ async function generarConIA() {
   const idiomaCV = datos.idioma_cv || (LANG === 'en' ? 'English' : 'Español');
   const enIngles = /ingl[eé]s|english/i.test(idiomaCV);
   // Guardarlo para que plantillas y PDF usen el idioma del CV, no el de la UI
-  try { sessionStorage.setItem('cvpro_cv_lang', enIngles ? 'en' : 'es'); } catch(e) {}
+  try { const _cl = enIngles ? 'en' : 'es'; sessionStorage.setItem('cvpro_cv_lang', _cl); localStorage.setItem('cvpro_cvlang_backup', _cl); } catch(e) {}
   const idiomaInstruccion = enIngles
     ? 'IMPORTANT: Write the ENTIRE CV in professional English. Every word, section label, and bullet must be in English.'
     : 'IMPORTANTE: Escribe el CV completo en español profesional.';
@@ -1692,6 +1692,8 @@ async function recuperarCVPorCodigo(codigo) {
     sessionStorage.setItem('cvTexto', cvGenerado);
     sessionStorage.setItem('cvData', JSON.stringify(r.cv_data||{}));
     sessionStorage.setItem('cvpro_codigo', codigo);
+    // Restaurar el idioma del DOCUMENTO (independiente del idioma de la UI)
+    if (r.lang) sessionStorage.setItem('cvpro_cv_lang', r.lang === 'en' ? 'en' : 'es');
     if (r.cv_data) {
       datos.nombre = r.cv_data.nombre || '';
       datos.puesto = r.cv_data.puesto || '';
@@ -1721,7 +1723,7 @@ async function guardarCVConCodigo(cv) {
     await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'resolution=merge-duplicates'},
-      body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:LANG, plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
+      body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:(sessionStorage.getItem('cvpro_cv_lang') || LANG), plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
     });
     // Enviar el código por email si tenemos uno válido
     const emailCliente = (datos.email_tel || D_EMAIL_FALLBACK()).match(/[\w.+-]+@[\w.-]+\.\w{2,}/);

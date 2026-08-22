@@ -721,7 +721,7 @@ const CLONES = {h6:'h1', h7:'h3', h8:'h2', h9:'h5', h10:'h4', m6:'m2', m7:'m1', 
 // LANG = idioma de la INTERFAZ (botones, avisos)
 const LANG = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
 // CV_LANG = idioma del DOCUMENTO (headers del CV, nombre del PDF). Independiente de la UI.
-const CV_LANG = (sessionStorage.getItem('cvpro_cv_lang') || LANG) === 'en' ? 'en' : 'es';
+const CV_LANG = (sessionStorage.getItem('cvpro_cv_lang') || localStorage.getItem('cvpro_cvlang_backup') || LANG) === 'en' ? 'en' : 'es';
 const T = CV_LANG === 'en' ? {
   perfil:'Profile', habilidades:'Skills', idiomas:'Languages', educacion:'Education',
   experiencia:'Professional experience', logros:'Achievements', certificaciones:'Certifications',

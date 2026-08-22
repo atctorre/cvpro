@@ -916,21 +916,26 @@ if (LANG === 'en') {
   // En EE.UU. un resume con foto se descarta por cumplimiento
   // antidiscriminación. Advertirlo no bastaba: el usuario la subía igual.
   // En el flujo en inglés ocultamos el bloque de foto por completo.
-  document.querySelectorAll('.foto-box, #fotoBox, .foto-zone, #fotoInput').forEach(el => {
-    const cont = el.closest('.foto-box, .foto-zone, section, div');
-    if (cont) cont.style.display = 'none';
-  });
-  if (!document.getElementById('fotoAvisoEN')) {
-    const anclas = Array.from(document.querySelectorAll('h2,h3,p,div,label'))
-      .filter(el => el.children.length === 0 && /Add your photo|Agrega tu foto/i.test(el.textContent));
-    if (anclas.length) {
-      const p = document.createElement('p');
-      p.id = 'fotoAvisoEN';
-      p.style.cssText = 'color:#ffb020;background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:11px 15px;font-size:0.82rem;line-height:1.55;max-width:440px;margin:10px auto 0;text-align:center';
-      p.textContent = T.fotoAviso || '⚠️ US resumes normally have NO photo — many recruiters discard them for anti-discrimination compliance. We recommend continuing without one.';
-      anclas[0].parentNode.insertBefore(p, anclas[0].nextSibling);
-    }
+  // La clase real del bloque es .foto-section (antes buscaba .foto-box, que
+  // no existe). En EE.UU. un resume con foto se descarta por cumplimiento
+  // antidiscriminación, así que en el flujo en inglés el bloque desaparece
+  // y se explica por qué, en vez de dejar que el usuario se dispare al pie.
+  const secFoto = document.querySelector('.foto-section');
+  if (secFoto && !document.getElementById('fotoAvisoEN')) {
+    secFoto.innerHTML = '';
+    const aviso = document.createElement('div');
+    aviso.id = 'fotoAvisoEN';
+    aviso.style.cssText = 'background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.28);border-radius:14px;padding:16px 20px;max-width:560px;margin:0 auto;text-align:center';
+    aviso.innerHTML = '<div style="font-size:1.4rem;margin-bottom:6px">🇺🇸</div>' +
+      '<p style="color:#ffb020;font-weight:700;font-size:0.9rem;margin-bottom:6px">No photo on US resumes</p>' +
+      '<p style="color:#aaa;font-size:0.8rem;line-height:1.55;margin:0">Most US employers discard resumes with photos for anti-discrimination compliance. ' +
+      'We build your resume without one — that is what recruiters there expect.</p>';
+    secFoto.appendChild(aviso);
+    // Sin foto seleccionada, las plantillas se renderizan sin hueco de imagen
+    if (typeof fotoAjustada !== 'undefined') fotoAjustada = null;
+    if (typeof fotoOriginal !== 'undefined') fotoOriginal = null;
   }
+
   document.querySelectorAll('button,a,div,h2,h3,p,span,label').forEach(el => {
     if (el.children.length === 0) {
       const t = el.textContent.trim();
@@ -1306,6 +1311,12 @@ REGLAS ESTRICTAS:
 - NO traduzcas: nombres de personas, nombres de empresas, ciudades, países, URLs, emails ni teléfonos.
 - SÍ traduce: puesto, resumen, títulos de cargo, bullets de logros, títulos académicos, nombres de habilidades e idiomas.
 - Adapta los títulos de cargo al uso real del mercado destino (ej: "Jefe de Ventas" → "Sales Manager", no traducción literal).
+- CUIDADO CON EL RANGO: adaptar no es degradar ni inflar. El cargo traducido debe reflejar el MISMO nivel jerárquico que el original.
+  · "Profesor/a Titular" (cargo permanente de plantilla en LATAM) → "Professor" o "Tenured Professor". NUNCA "Adjunct Professor" ni "Associate Professor": en EE.UU. "adjunct" es profesorado por horas sin plaza y "associate" es un rango intermedio — ambos degradan el puesto.
+  · "Jefe de Residentes" → "Chief Resident" (correcto, es el término estándar).
+  · "Coordinador/a de Turnos" → "Shift Coordinator" o "Scheduling Coordinator".
+  · "Servicio Social" (obligatorio en LATAM) → "Social Service Physician", y añade una aclaración breve si el lector estadounidense no lo reconocería.
+  · Si dudas entre dos rangos, elige el término NEUTRO y descriptivo antes que uno que altere la jerarquía en cualquier dirección.
 - Mantén los verbos de acción fuertes y el tono profesional de reclutamiento.
 - No inventes, no añadas y no elimines información.
 

@@ -1149,6 +1149,10 @@ async function init() {
   // Modo OPTIMIZAR: CV subido desde el analizador
   const modoOpt = new URLSearchParams(location.search).get('modo') === 'optimizar';
   const cvSubido = localStorage.getItem('cvpro_cv_subido');
+  // Conservamos una copia en sessionStorage: el original se borra de
+  // localStorage, pero lo necesitamos después para rescatar competencias que
+  // la IA haya resumido de más.
+  if (cvSubido) sessionStorage.setItem('cvpro_fuente_original', cvSubido);
   if (modoOpt && cvSubido && cvSubido.length > 100) {
     // Setear LANG desde URL
     const langParam2 = new URLSearchParams(location.search).get('lang');
@@ -1990,7 +1994,13 @@ ${enIngles?'CERTIFICATIONS':'CERTIFICACIONES'}
 ${enIngles?'SKILLS':'HABILIDADES'}
 ───────────
 ${enIngles?'Technical':'Técnicas'}: skill1, skill2, ... (8-12 habilidades CORTAS de 1-4 palabras cada una, nunca frases largas)
-REGLA CRÍTICA DE HABILIDADES: extrae las competencias que YA aparecen en el CV original — busca secciones tituladas COMPETENCIAS, HABILIDADES, APTITUDES o SKILLS, y también las herramientas y técnicas que el candidato menciona dentro de su experiencia. NUNCA copies títulos de sección (INVESTIGACIÓN, MEMBRESÍAS, REFERENCIAS, EDUCACIÓN...) como si fueran habilidades. Si el CV original lista competencias, respétalas todas.
+REGLA CRÍTICA DE HABILIDADES (la sección que más se degrada — léela entera):
+1. MÍNIMO 8, idealmente 10-12. Devolver 4 es un ERROR.
+2. Copia TODAS las competencias que ya aparecen en el CV original. Si el candidato lista 10, devuelve esas 10 — no las resumas, no las agrupes, no elijas las que te parezcan mejores.
+3. Prioriza las TÉCNICAS y específicas del oficio sobre las genéricas. "POCUS", "Medicina Interna", "Medicina de Emergencias", "Ecocardiografía focalizada" valen más que "Comunicación clínica" o "Trabajo en equipo": son las que busca un filtro ATS.
+4. Añade además las herramientas, técnicas, procedimientos, software y metodologías que el candidato mencione dentro de su experiencia, aunque no estén en la sección de competencias.
+5. NUNCA copies títulos de sección (INVESTIGACIÓN, MEMBRESÍAS, REFERENCIAS, EDUCACIÓN, CERTIFICACIONES...) como si fueran habilidades.
+6. No inventes ninguna: solo lo que el candidato haya escrito.
 ${enIngles?'Soft skills':'Blandas'}: ...
 ${enIngles?'Languages':'Idiomas'}: Idioma1 (nivel), Idioma2 (nivel) — TODOS los idiomas del candidato en UNA línea
 
@@ -2666,6 +2676,35 @@ function habilidadesDeRespaldo() {
   }).slice(0, 8).map((nombre, i) => ({ nombre, nivel: Math.max(65, 92 - i * 4) }));
 }
 
+
+// La IA a veces devuelve 4 habilidades genéricas cuando el CV original lista
+// 10 concretas. Este rescate NO inventa nada: solo recupera competencias que
+// ya estaban escritas en el CV que subió el candidato.
+function rescatarCompetenciasOriginales(actuales) {
+  if (actuales.length >= 8) return actuales;
+  const fuente = sessionStorage.getItem('cvpro_fuente_original') || '';
+  if (!fuente) return actuales;
+
+  const bloques = [];
+  const re = /(?:COMPETENCIAS|HABILIDADES|APTITUDES|SKILLS|COMPETENCIES|CONOCIMIENTOS)[^\n]*\n([\s\S]{0,700}?)(?=\n[ \t]*[A-ZÁÉÍÓÚÑ]{4,}|$)/gi;
+  let m;
+  while ((m = re.exec(fuente)) !== null) bloques.push(m[1]);
+
+  const candidatas = bloques.join('\n').split(/[\n,;·•]/)
+    .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').replace(/[.,;]+$/, '').trim())
+    .filter(s => s.length > 2 && s.length < 40 && !esRuido(s));
+
+  const vistas = new Set(actuales.map(h => h.nombre.toLowerCase()));
+  const nuevas = [];
+  candidatas.forEach(s => {
+    const k = s.toLowerCase();
+    if (!vistas.has(k)) { vistas.add(k); nuevas.push(s); }
+  });
+
+  if (nuevas.length) console.debug(`🔧 Rescatadas ${nuevas.length} competencias del CV original`);
+  return actuales.concat(nuevas.map((nombre, i) => ({nombre, nivel: Math.max(60, 85 - i * 3)}))).slice(0, 12);
+}
+
 function construirCVData() {
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
@@ -2972,7 +3011,8 @@ function sinDuplicados(arr, clave) {
     .filter(h => h.nombre && h.nombre.length > 2 && h.nombre.length < 35 && !esRuido(h.nombre))
     .slice(0, 4);
 
-  const todasHabs = sinDuplicados([...habsTec, ...habsBlan], 'nombre').slice(0, 10);
+  let todasHabs = sinDuplicados([...habsTec, ...habsBlan], 'nombre').slice(0, 12);
+  todasHabs = sinDuplicados(rescatarCompetenciasOriginales(todasHabs), 'nombre').slice(0, 12);
 
   // ── IDIOMAS ──
   let idiomasTexto = '';
@@ -3239,6 +3279,7 @@ window.addEventListener('load', () => {
   const _urlP = new URLSearchParams(window.location.search);
   if (_urlP.get('modo') === 'optimizar') {
     const _cvSubido = localStorage.getItem('cvpro_cv_subido');
+    if (_cvSubido) sessionStorage.setItem('cvpro_fuente_original', _cvSubido);
     if (_cvSubido && _cvSubido.length > 100) {
       const _lang = _urlP.get('lang') || 'es';
       LANG = _lang === 'en' ? 'en' : 'es';

@@ -167,6 +167,16 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <div class="loading" id="loading">
     <div class="spin"></div>
     <p id="loadT">Analizando tu CV como un reclutador élite...</p>
+    <div style="max-width:420px;margin:18px auto 0">
+      <div style="display:flex;justify-content:space-between;font-size:0.74rem;color:#888;margin-bottom:6px">
+        <span id="anEtapa">Leyendo tu CV</span>
+        <span id="anPct" style="color:#FFD000;font-weight:700">0%</span>
+      </div>
+      <div style="background:#1e1e1e;border-radius:50px;height:6px;overflow:hidden">
+        <div id="anBar" style="height:100%;width:0%;border-radius:50px;background:linear-gradient(90deg,#FFD000,#ffe566);transition:width .5s ease"></div>
+      </div>
+      <p id="anTip" style="color:#777;font-size:0.74rem;line-height:1.5;margin-top:14px;transition:opacity .4s">💡 El 75% de los CVs son descartados por un filtro ATS antes de que un humano los lea.</p>
+    </div>
   </div>
 
   <div id="resultado">
@@ -252,6 +262,7 @@ dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over
 document.getElementById('fileInput').addEventListener('change', e => { if (e.target.files[0]) procesarArchivo(e.target.files[0]); });
 
 function err(msg) {
+  if (typeof terminarProgresoAnalisis === 'function') terminarProgresoAnalisis();
   const eb = document.getElementById('errBox');
   eb.innerHTML = msg; eb.style.display = 'block';
   document.getElementById('loading').style.display = 'none';
@@ -357,6 +368,65 @@ async function analizarTextoPegado() {
   await analizarCV();
 }
 
+
+// Progreso del analizador: 30 segundos con un spinner mudo hacen que la
+// gente cierre la pestaña creyendo que se colgó.
+let _an = {t:null, tips:null, pct:0, obj:0};
+const _AN_ETAPAS = {
+  es: ['Leyendo tu CV', 'Evaluando estructura y ATS', 'Analizando contenido y logros', 'Detectando problemas', 'Preparando tu informe'],
+  en: ['Reading your resume', 'Checking structure and ATS', 'Analyzing content and achievements', 'Detecting issues', 'Preparing your report']
+};
+const _AN_TIPS = {
+  es: ['El 75% de los CVs son descartados por un filtro ATS antes de que un humano los lea.',
+       'Un reclutador dedica unos 7 segundos a la primera revisión.',
+       'Los CVs con columnas y tablas suelen confundir a los filtros automáticos.',
+       'Las palabras clave de tu sector son lo primero que busca el sistema.',
+       'Los verbos de acción al inicio de cada línea mejoran la legibilidad.'],
+  en: ['75% of resumes are rejected by an ATS filter before a human reads them.',
+       'A recruiter spends about 7 seconds on the first pass.',
+       'Resumes with columns and tables often confuse automated filters.',
+       'Industry keywords are the first thing the system looks for.',
+       'Action verbs at the start of each line improve readability.']
+};
+
+function iniciarProgresoAnalisis() {
+  const L = LANG === 'en' ? 'en' : 'es';
+  _an.pct = 0; _an.obj = 15;
+  let idx = 0, ti = 0;
+  const setEt = (i) => {
+    const e = document.getElementById('anEtapa');
+    if (e) e.textContent = _AN_ETAPAS[L][i];
+    _an.obj = Math.min(93, Math.round(((i + 1) / _AN_ETAPAS[L].length) * 100) - 7);
+  };
+  setEt(0);
+  const avanzarEtapa = setInterval(() => {
+    idx = Math.min(_AN_ETAPAS[L].length - 1, idx + 1);
+    setEt(idx);
+    if (idx >= _AN_ETAPAS[L].length - 1) clearInterval(avanzarEtapa);
+  }, 5200);
+  _an.t = setInterval(() => {
+    if (_an.pct < _an.obj) _an.pct = Math.min(_an.obj, _an.pct + 0.7);
+    else if (_an.pct < 95) _an.pct = Math.min(95, _an.pct + 0.08);
+    const b = document.getElementById('anBar'), p = document.getElementById('anPct');
+    if (b) b.style.width = _an.pct + '%';
+    if (p) p.textContent = Math.round(_an.pct) + '%';
+  }, 90);
+  _an.tips = setInterval(() => {
+    const el = document.getElementById('anTip');
+    if (!el) return;
+    ti = (ti + 1) % _AN_TIPS[L].length;
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = '💡 ' + _AN_TIPS[L][ti]; el.style.opacity = '1'; }, 400);
+  }, 6000);
+}
+
+function terminarProgresoAnalisis() {
+  clearInterval(_an.t); clearInterval(_an.tips);
+  const b = document.getElementById('anBar'), p = document.getElementById('anPct');
+  if (b) b.style.width = '100%';
+  if (p) p.textContent = '100%';
+}
+
 async function procesarArchivo(file) {
   document.getElementById('errBox').style.display = 'none';
   // Primero validamos el archivo. Antes el contador subía ANTES de estas
@@ -368,6 +438,7 @@ async function procesarArchivo(file) {
   if (!cuposDisponibles()) return err(LANG==='en' ? 'Free limit: 3 scans per day. Come back tomorrow or optimize your resume now.' : 'Límite gratis: 3 análisis por día. Vuelve mañana u optimiza tu CV ahora.');
   dz.style.display = 'none';
   document.getElementById('loading').style.display = 'block';
+  iniciarProgresoAnalisis();
   try {
     let texto = '';
     const ext = file.name.split('.').pop().toLowerCase();
@@ -493,6 +564,8 @@ function mostrarResultado(r) {
         : 'Reescribe tu CV con IA a nivel profesional — listo para ATS y para reclutadores';
     }
   }
+  terminarProgresoAnalisis();
+  window._ultimoAnalisis = r;   // guardado para poder enviarlo por email
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
@@ -522,18 +595,58 @@ CV: ${cvTextoGlobal.substring(0,4000)}`;
 }
 
 async function guardarLeadYPlanes() {
+  // ⚠️ Antes esta función guardaba el email en la tabla 'clientes' y mostraba
+  // "✓ Informe enviado a tu email" SIN ENVIAR NADA. Era una afirmación falsa
+  // al usuario. Ahora se envía de verdad y el mensaje refleja el resultado.
   const email = (document.getElementById('leadEmail')?.value || '').trim();
+  const ok = document.getElementById('leadOk');
+
   if (/^[\w.+-]+@[\w.-]+\.\w{2,}$/.test(email)) {
+    // 1) Registrar el lead (no bloquea el envío si falla)
     try {
-      await fetch(`${SB_URL}/rest/v1/clientes`, {
+      const rLead = await fetch(`${SB_URL}/rest/v1/clientes`, {
         method: 'POST',
-        headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`},
+        headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Prefer':'return=minimal'},
         body: JSON.stringify({email, nombre: 'Lead analizador', pais: LANG})
       });
-      const ok = document.getElementById('leadOk');
-      ok.textContent = LANG==='en' ? '✓ Report sent to your email' : '✓ Informe enviado a tu email';
-      ok.style.display = 'block';
-    } catch(e) {}
+      if (!rLead.ok) console.warn('Lead no registrado:', rLead.status, await rLead.text());
+    } catch(e) { console.warn('Lead no registrado:', e.message); }
+
+    // 2) Enviar el informe de verdad
+    try {
+      const resumenInforme = (window._ultimoAnalisis || null);
+      const rMail = await fetch(`${SB_URL}/functions/v1/enviar-informe`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`},
+        body: JSON.stringify({email, lang: LANG, analisis: resumenInforme})
+      });
+      const cuerpo = await rMail.text();
+      if (rMail.ok) {
+        if (ok) {
+          ok.textContent = LANG==='en' ? '✓ Report sent to your email' : '✓ Informe enviado a tu email';
+          ok.style.display = 'block';
+        }
+        ev('report_email_sent');
+      } else {
+        console.error('❌ INFORME NO ENVIADO —', rMail.status, cuerpo);
+        ev('report_email_failed', {status: rMail.status});
+        if (ok) {
+          ok.textContent = LANG==='en'
+            ? '✓ Email saved — continuing to your resume'
+            : '✓ Email guardado — seguimos con tu CV';
+          ok.style.display = 'block';
+        }
+      }
+    } catch(e) {
+      console.error('❌ INFORME NO ENVIADO —', e.message);
+      ev('report_email_failed', {error: e.message});
+      if (ok) {
+        ok.textContent = LANG==='en'
+          ? '✓ Email saved — continuing to your resume'
+          : '✓ Email guardado — seguimos con tu CV';
+        ok.style.display = 'block';
+      }
+    }
   }
   setTimeout(irAPlanes, email ? 900 : 0);
 }

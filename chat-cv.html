@@ -1472,6 +1472,7 @@ function _limiteIA() {
 
 async function generarConIA() {
   ev('ai_started');
+  iniciarProgreso(); marcarPaso(1);
   if (!_limiteIA()) throw new Error(LANG==='en' ? 'Daily limit reached (8 generations). Try again tomorrow.' : 'Límite diario alcanzado (8 generaciones). Vuelve mañana.');
   // Parsear contacto
   const ct = datos.email_tel || '';
@@ -1625,7 +1626,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     console.log('✅ CV generado correctamente:', cvTexto.substring(0,150));
     // ── PASADA 2: AUTOCRÍTICA ──
     try {
-      renderMsgAI(LANG==='en' ? '🔍 Elite recruiter review pass...' : '🔍 Pasada de revisión de reclutador élite...');
+      marcarPaso(2);
       const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -1679,6 +1680,7 @@ Your answers are saved — you will not lose anything.`
 • Si el problema persiste, escríbenos
 
 Tus respuestas están guardadas — no perderás nada al reiniciar.`);
+    terminarProgreso(false);
     throw new Error('Generación fallida — no mostrar fallback');
   }
 }
@@ -1794,11 +1796,33 @@ async function guardarCVConCodigo(cv) {
     // Enviar el código por email si tenemos uno válido
     const emailCliente = (datos.email_tel || D_EMAIL_FALLBACK()).match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
     if (emailCliente) {
-      fetch(`${SUPABASE_URL}/functions/v1/enviar-codigo`, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-        body: JSON.stringify({email: emailCliente[0], nombre: datos.nombre || '', codigo, lang: LANG})
-      }).then(() => console.log('📧 Código enviado por email')).catch(()=>{});
+      // Antes: .then(() => console.log('enviado')) se ejecutaba AUNQUE el
+      // servidor devolviera 500, y el .catch estaba vacío. Decía "enviado"
+      // pasara lo que pasara. Ahora comprobamos la respuesta de verdad.
+      (async () => {
+        try {
+          const rEmail = await fetch(`${SUPABASE_URL}/functions/v1/enviar-codigo`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+            body: JSON.stringify({email: emailCliente[0], nombre: datos.nombre || '', codigo, lang: LANG})
+          });
+          const cuerpo = await rEmail.text();
+          if (rEmail.ok) {
+            console.log('📧 Código enviado por email a', emailCliente[0]);
+            ev('code_email_sent');
+          } else {
+            console.error('❌ EMAIL NO ENVIADO —', rEmail.status, cuerpo);
+            ev('code_email_failed', {status: rEmail.status});
+            // El usuario debe saberlo: su código está en pantalla, no en su correo
+            renderMsgAI(LANG==='en'
+              ? `⚠️ We could not email your code. Write it down now: **${codigo}**`
+              : `⚠️ No pudimos enviarte el código por email. Anótalo ahora: **${codigo}**`);
+          }
+        } catch(e) {
+          console.error('❌ EMAIL NO ENVIADO —', e.message);
+          ev('code_email_failed', {error: e.message});
+        }
+      })();
     }
   } catch(e) { console.warn('No se pudo guardar código:', e.message); }
 }
@@ -1953,8 +1977,140 @@ function revertirAdaptacion() {
 }
 
 
+
+// ══════════ PANEL DE PROGRESO DE LA GENERACIÓN ══════════
+// Los mensajes de etapa se acumulaban como burbujas de chat y entre una y
+// otra la pantalla quedaba muerta 20-30 segundos. Sin señal de avance el
+// usuario cree que se colgó y abandona justo antes de ver su CV.
+let _prog = {timer: null, pct: 0, objetivo: 0, paso: 0, inicio: 0, tipsTimer: null};
+
+const _PASOS_PROG = {
+  es: ['Analizando tu información', 'Redactando con IA élite', 'Revisión de reclutador',
+       'Auditoría ATS', 'Verificación de veracidad', 'Puliendo el resultado'],
+  en: ['Analyzing your information', 'Writing with elite AI', 'Recruiter review',
+       'ATS audit', 'Truth verification', 'Final polish']
+};
+
+const _TIPS = {
+  es: ['El 75% de los CVs son descartados por un filtro ATS antes de que un humano los lea.',
+       'Un reclutador dedica unos 7 segundos a la primera revisión de tu CV.',
+       'Los verbos de acción al inicio de cada línea aumentan la legibilidad para el reclutador.',
+       'Nunca inventamos cifras: todo lo que aparece en tu CV sale de lo que tú nos diste.',
+       'Las palabras clave de tu sector son lo que busca el filtro automático.',
+       'Un CV de dos páginas está bien si tienes más de 10 años de experiencia.'],
+  en: ['75% of resumes are rejected by an ATS filter before a human reads them.',
+       'A recruiter spends about 7 seconds on the first pass of your resume.',
+       'Action verbs at the start of each line improve readability for recruiters.',
+       'We never invent numbers: everything in your resume comes from what you told us.',
+       'Industry keywords are exactly what the automated filter looks for.',
+       'A two-page resume is fine if you have more than 10 years of experience.']
+};
+
+function iniciarProgreso() {
+  if (document.getElementById('progresoPanel')) return;
+  const L = LANG === 'en' ? 'en' : 'es';
+  const pasos = _PASOS_PROG[L];
+  _prog.inicio = Date.now();
+  _prog.pct = 0; _prog.objetivo = 8; _prog.paso = 0;
+
+  const cont = document.getElementById('chatMessages') || document.querySelector('.chat-messages');
+  if (!cont) return;
+
+  const div = document.createElement('div');
+  div.id = 'progresoPanel';
+  div.style.cssText = 'background:#111;border:1px solid #262626;border-radius:16px;padding:20px;margin:8px 0';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+      <span style="color:#fff;font-weight:700;font-size:0.92rem">${L==='en'?'Building your resume':'Creando tu CV'}</span>
+      <span id="progPct" style="color:#FFD000;font-weight:800;font-size:1.05rem">0%</span>
+    </div>
+    <div style="background:#1e1e1e;border-radius:50px;height:8px;overflow:hidden;margin-bottom:16px">
+      <div id="progBar" style="height:100%;width:0%;border-radius:50px;background:linear-gradient(90deg,#FFD000,#ffe566);transition:width .6s ease"></div>
+    </div>
+    <div id="progPasos" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px">
+      ${pasos.map((p,i)=>`
+        <div class="prog-paso" data-i="${i}" style="display:flex;align-items:center;gap:9px;font-size:0.8rem;color:#555;transition:color .3s">
+          <span class="prog-ic" style="width:16px;display:inline-block;text-align:center">○</span>
+          <span>${p}</span>
+        </div>`).join('')}
+    </div>
+    <div style="border-top:1px solid #222;padding-top:12px;display:flex;gap:9px;align-items:flex-start">
+      <span style="font-size:0.9rem">💡</span>
+      <span id="progTip" style="color:#888;font-size:0.76rem;line-height:1.5;transition:opacity .4s">${_TIPS[L][0]}</span>
+    </div>
+    <div id="progTiempo" style="color:#555;font-size:0.7rem;margin-top:10px;text-align:center"></div>`;
+  cont.appendChild(div);
+  cont.scrollTop = cont.scrollHeight;
+
+  marcarPaso(0);
+
+  // Avance continuo: nunca se queda quieto, aunque la IA tarde
+  _prog.timer = setInterval(() => {
+    if (_prog.pct < _prog.objetivo) {
+      _prog.pct = Math.min(_prog.objetivo, _prog.pct + 0.4);
+    } else if (_prog.pct < 96) {
+      _prog.pct = Math.min(96, _prog.pct + 0.06);   // reptado lento, nunca llega a 100
+    }
+    const b = document.getElementById('progBar');
+    const p = document.getElementById('progPct');
+    if (b) b.style.width = _prog.pct + '%';
+    if (p) p.textContent = Math.round(_prog.pct) + '%';
+    const t = document.getElementById('progTiempo');
+    if (t) {
+      const seg = Math.round((Date.now() - _prog.inicio) / 1000);
+      t.textContent = (LANG==='en' ? 'Elapsed: ' : 'Transcurrido: ') + seg + 's' +
+        (seg > 75 ? (LANG==='en' ? ' — almost there, do not close this page' : ' — casi listo, no cierres esta página') : '');
+    }
+  }, 90);
+
+  // Rotar consejos para que haya algo que leer
+  let ti = 0;
+  _prog.tipsTimer = setInterval(() => {
+    const el = document.getElementById('progTip');
+    if (!el) return;
+    ti = (ti + 1) % _TIPS[L].length;
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = _TIPS[L][ti]; el.style.opacity = '1'; }, 400);
+  }, 6500);
+}
+
+function marcarPaso(i) {
+  const L = LANG === 'en' ? 'en' : 'es';
+  const total = _PASOS_PROG[L].length;
+  _prog.paso = i;
+  _prog.objetivo = Math.min(94, Math.round(((i + 1) / total) * 100) - 6);
+  document.querySelectorAll('#progresoPanel .prog-paso').forEach(el => {
+    const n = +el.dataset.i;
+    const ic = el.querySelector('.prog-ic');
+    if (n < i)      { el.style.color = '#1baf7a'; ic.textContent = '✓'; }
+    else if (n === i){ el.style.color = '#fff';    ic.textContent = '◉'; el.style.fontWeight = '600'; }
+    else            { el.style.color = '#555';    ic.textContent = '○'; el.style.fontWeight = '400'; }
+  });
+}
+
+function terminarProgreso(exito) {
+  clearInterval(_prog.timer); clearInterval(_prog.tipsTimer);
+  const panel = document.getElementById('progresoPanel');
+  if (!panel) return;
+  if (exito !== false) {
+    const b = document.getElementById('progBar');
+    const p = document.getElementById('progPct');
+    if (b) b.style.width = '100%';
+    if (p) p.textContent = '100%';
+    document.querySelectorAll('#progresoPanel .prog-paso').forEach(el => {
+      el.style.color = '#1baf7a';
+      el.querySelector('.prog-ic').textContent = '✓';
+    });
+    const t = document.getElementById('progTiempo');
+    if (t) t.textContent = LANG==='en' ? '✅ Resume ready' : '✅ CV listo';
+    setTimeout(() => panel.remove(), 1200);
+  } else {
+    panel.remove();
+  }
+}
+
 async function optimizarCVSubido(texto) {
-  renderMsgAI(LANG==='en' ? '🚀 Optimizing your uploaded resume with elite AI... (20-30s)' : '🚀 Optimizando tu CV subido con IA élite... (20-30s)');
+  iniciarProgreso(); marcarPaso(1);
   const enIngles = LANG === 'en';
   const prompt = `${enIngles?'IMPORTANT: Write the ENTIRE resume in professional English.':'IMPORTANTE: Escribe todo en español profesional.'}
 Actúas como consultor de RRHH, Executive Recruiter y especialista internacional en ATS con 20+ años evaluando candidatos para procesos altamente competitivos. Tu misión: transformar este CV en un documento de nivel ÉLITE que consiga entrevistas.
@@ -2016,7 +2172,7 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
     if (!data.cv || data.cv.length < 300) throw new Error('short');
     let cvV1 = data.cv.trim();
     // ── PASADA 2: AUTOCRÍTICA DE RECLUTADOR ──
-    renderMsgAI(LANG==='en' ? '🔍 Elite recruiter review pass — polishing every line...' : '🔍 Pasada de revisión de reclutador élite — puliendo cada línea...');
+    marcarPaso(2);
     try {
       const res2 = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
@@ -2041,8 +2197,11 @@ ${cvV1.substring(0,12000)}`})
       sessionStorage.setItem('cvData', JSON.stringify({nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}));
     }
     try { guardarCVConCodigo(cvGenerado); } catch(eg) { console.warn(eg); }
+    terminarProgreso(true);
     mostrarResultado(cvGenerado);
   } catch(e) {
+    terminarProgreso(false);
+    console.error('Optimización fallida:', e);
     renderMsgAI(LANG==='en' ? '❌ Optimization failed. Wait 30s and reload.' : '❌ Falló la optimización. Espera 30s y recarga.');
   }
 }
@@ -2060,7 +2219,7 @@ function _fuenteRespuestas() {
 async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng) {
   if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
   try {
-    renderMsgAI(enIng ? '🛡️ Truth check — verifying every fact against your data...' : '🛡️ Verificación de veracidad — contrastando cada dato con tu información...');
+    if (typeof marcarPaso === 'function') marcarPaso(4);
     const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -2108,7 +2267,7 @@ async function pasadaATS(cvTxt, enIng) {
   const FECHA_ACTUAL = `${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][_h.getMonth()]} ${_h.getFullYear()}`;
   const ANIO_ACTUAL = _h.getFullYear();
   try {
-    renderMsgAI(enIng ? '🎯 Final ATS audit — keywords, structure and consistency...' : '🎯 Auditoría ATS final — keywords, estructura y coherencia...');
+    if (typeof marcarPaso === 'function') marcarPaso(3);
     const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -2224,7 +2383,7 @@ async function generarConValidacion(fnGenerar, fuente, enIng) {
   const graves = probs.filter(p => ['cv_corto','pocos_bullets','bullets_pobres','perfil_debil'].includes(p));
   if (graves.length) {
     console.warn('⚠️ CV pobre, regenerando:', graves);
-    renderMsgAI(enIng ? '⚡ Reinforcing content depth...' : '⚡ Reforzando la profundidad del contenido...');
+    if (typeof marcarPaso === 'function') marcarPaso(5);
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
@@ -2311,6 +2470,7 @@ function restaurarBackupEditor() {
 
 // ── RESULTADO ──
 function mostrarResultado(cv) {
+  if (typeof terminarProgreso === "function") terminarProgreso(true);
   cvGenerado = cv;
   const cvData = construirCVData();
 

@@ -777,6 +777,21 @@ let selTpl = 'h1';
 let fotoOriginal = null;
 let fotoAjustada = null;
 
+// ══ ESTADO GLOBAL — DEBE declararse ANTES de renderTemplates() (línea ~978) ══
+// Lección aprendida: estas variables vivían en la línea ~1330, DESPUÉS de la
+// llamada top-level a renderTemplates(). Como ph() las lee durante el render
+// inicial, el script moría con "Cannot access before initialization" (zona
+// muerta temporal de let/const — ni siquiera `typeof` protege contra ella),
+// abortando TODO el código posterior: la foto salía en negro, _ajustePrev
+// nunca se inicializaba, etc. NUNCA declarar estado con let/const después
+// de una llamada de nivel superior que lo consuma.
+let _cvOriginalIdioma = null;   // copia del CV antes de traducir
+let _idiomaActual = null;       // 'es' | 'en'
+let _fotoRespaldo = null;       // foto guardada al convertir a resume EE.UU.
+// Recuerda el último encuadre de la foto: al pulsar "Reajustar" los
+// deslizadores volvían a 130/0/0 y había que recolocarla desde cero.
+let _ajustePrev = {z:130, x:0, y:0};
+
 // Cargar datos del sessionStorage
 
 // ══ SEGURIDAD XSS: escapar todo dato del usuario antes de insertarlo en el DOM ══
@@ -1105,9 +1120,7 @@ function activarDragFoto() {
   }, {passive:false});
 }
 
-// Recuerda el último encuadre: al pulsar "Reajustar" los deslizadores
-// volvían a 130/0/0 y había que recolocar la foto desde cero.
-let _ajustePrev = {z:130, x:0, y:0};
+// (_ajustePrev se declara en el bloque de estado global, arriba)
 
 function mostrarAjuste() {
   const ajuste = document.getElementById('fotoAjuste');
@@ -1327,9 +1340,8 @@ function volverSelector() {
 
 
 // ══════════ TRADUCCIÓN DEL CV AL OTRO IDIOMA ══════════
-let _cvOriginalIdioma = null;   // copia del CV antes de traducir
-let _idiomaActual = null;       // 'es' | 'en'
-let _fotoRespaldo = null;       // foto guardada al convertir a resume EE.UU.
+// (_cvOriginalIdioma, _idiomaActual y _fotoRespaldo se declaran en el
+//  bloque de estado global, arriba — moverlas aquí de vuelta ROMPE la página)
 
 async function traducirCV() {
   ev('translate_clicked');

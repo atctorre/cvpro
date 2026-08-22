@@ -3049,7 +3049,10 @@ function sinDuplicados(arr, clave) {
         .map(tr => {
           const mm = tr.match(/^\s*([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s*[\(\[:\-–]?\s*([A-Za-zÁÉÍÓÚÑáéíóúñ\s]*?)\s*[\)\]]?\s*$/);
           if (!mm) return null;
-          return {nombre: mm[1].trim(), nivel: (mm[2] || '').trim()};
+          // El nivel llegaba con sus propios paréntesis y la plantilla añadía
+          // otros: salía "Español ((nativo))". Los quitamos aquí.
+          const niv = (mm[2] || '').trim().replace(/^[\(\[]+|[\)\]]+$/g, '').trim();
+          return {nombre: mm[1].trim(), nivel: niv};
         })
         .filter(x => x && /^(espa|ingl|fran|portu|alem|ital|spanish|english|french|german|portuguese|italian)/i.test(x.nombre));
       if (pares.length) idiomas = pares;
@@ -3064,7 +3067,10 @@ function sinDuplicados(arr, clave) {
     }).filter(Boolean).slice(0,5);
   }
 
-  idiomas = sinDuplicados((idiomas || []).filter(i => i && i.nombre && !esRuido(i.nombre)), 'nombre').slice(0, 6);
+  idiomas = sinDuplicados((idiomas || []).filter(i => i && i.nombre && !esRuido(i.nombre)), 'nombre')
+    .map(i => ({nombre: String(i.nombre).replace(/^[\(\[]+|[\)\]]+$/g,'').trim(),
+                nivel:  String(i.nivel || '').replace(/^[\(\[]+|[\)\]]+$/g,'').trim()}))
+    .slice(0, 6);
 
   // Limpieza final de markdown en todo lo que se imprime.
   // "*Cum Honorifico*" salía con asteriscos en el PDF que paga el cliente.

@@ -708,6 +708,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar PDF</button>
     <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
     <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
+    <button class="btn-carta" id="btnCartaOtro" style="background:#6b4fa8" onclick="generarCarta((_idiomaActual||LANG)==='en'?'es':'en')">✉️ Carta en el otro idioma</button>
     <button class="btn-carta" id="btnTraducir" style="background:#2563eb" onclick="traducirCV()">🌎 Traducir al inglés</button>
     <button class="btn-volver" onclick="volverSelector()">← Cambiar plantilla</button>
   </div>
@@ -860,9 +861,16 @@ function limpiarCarta(t) {
 }
 
 function descargarCartaWord() {
-  const el = document.getElementById('cartaFinal');
-  const texto = limpiarCarta((el ? el.textContent : cartaGenerada) || '');
-  if (!texto.trim()) return;
+  // Leía #cartaFinal, pero mostrarCarta() pinta la carta en #cartaBody.
+  // Encontraba el elemento vacío y hacía return en silencio: el botón
+  // parecía roto porque no pasaba absolutamente nada.
+  const el = document.getElementById('cartaBody') || document.getElementById('cartaFinal');
+  const texto = limpiarCarta((el && el.textContent) || '');
+  if (!texto.trim()) {
+    alert(LANG==='en' ? 'Generate the cover letter first.' : 'Genera primero la carta de presentación.');
+    return;
+  }
+  ev('cover_letter_word_downloaded');
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
   const parrafos = texto.split(/\n{1,}/).map(l => l.trim())
     .map(l => l ? `<p style="margin:0 0 12pt 0;text-align:justify">${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>` : '<p style="margin:0 0 12pt 0">&nbsp;</p>')
@@ -1210,19 +1218,19 @@ function buildCV(id) {
 
     h2:`<div class="cv-h2"><div class="hdr">${ph('cv-h2',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="gl"></div><div class="ct">${ct('cv-h2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jh"><div class="jt">${esc(j.titulo)}</div><div class="jd">${esc(j.periodo)}</div></div><div class="jm">${esc(j.empresa)}</div>${bls('cv-h2',j.bullets)}</div>`).join('')}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p>${logrosHtml}</div><div class="sb"><div class="st">${T.habilidades}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">${d.habilidades.map(s=>`<div class="tg">${esc(s.nombre)}</div>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${(d.idiomas||[]).map(l=>`<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px"><span>${esc(l.nombre)}</span><span style="color:#FFD000;font-weight:700">${esc(l.nivel)}</span></div>`).join('')}</div></div></div>`,
 
-    h3:`<div class="cv-h3"><div class="hdr"><div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct"><span class="ci">✉ ${d.email}</span>${d.telefono?`<span class="ci">📱 ${d.telefono}</span>`:''}</div></div>${ph('cv-h3',false)}</div><div class="bd"><div class="col"><div class="st">Experiencia</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)} · ${esc(j.periodo)}</div>${bls('cv-h3',j.bullets)}</div>`).join('')}</div><div class="col"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${d.habilidades.map(s=>`<div class="dr"><span class="dn">${esc(s.nombre)}</span><div class="ds">${[1,2,3,4,5].map(i=>`<div class="dot ${s.nivel>=i*20?'f':''}"></div>`).join('')}</div></div>`).join('')}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+    h3:`<div class="cv-h3"><div class="hdr"><div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct"><span class="ci">✉ ${d.email}</span>${d.telefono?`<span class="ci">📱 ${d.telefono}</span>`:''}</div></div>${ph('cv-h3',false)}</div><div class="bd"><div class="col"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)} · ${esc(j.periodo)}</div>${bls('cv-h3',j.bullets)}</div>`).join('')}</div><div class="col"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${d.habilidades.map(s=>`<div class="dr"><span class="dn">${esc(s.nombre)}</span><div class="ds">${[1,2,3,4,5].map(i=>`<div class="dot ${s.nivel>=i*20?'f':''}"></div>`).join('')}</div></div>`).join('')}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
 
     h4:`<div class="cv-h4"><div class="hdr">${ph('cv-h4',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h4',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h4',d.experiencia)}${logrosHtml}</div></div></div>`,
 
-    h5:`<div class="cv-h5"><div class="hdr">${ph('cv-h5',true)}<div class="hdr-info"><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h5')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h5',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-h5',d.habilidades)}<div class="st" style="margin-top:12px">Stack</div><div style="margin-bottom:14px">${d.habilidades.map(s=>`<span class="tg">${esc(s.nombre)}</span>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+    h5:`<div class="cv-h5"><div class="hdr">${ph('cv-h5',true)}<div class="hdr-info"><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h5')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h5',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-h5',d.habilidades)}<div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
 
     m1:`<div class="cv-m1"><div class="hdr">${ph('cv-m1',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="gl"></div><div class="ct">${ct('cv-m1')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px;font-family:'Montserrat',sans-serif">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m1',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m1',d.experiencia)}${logrosHtml}</div></div></div>`,
 
-    m2:`<div class="cv-m2"><div class="hdr">${ph('cv-m2',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m2',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-m2',d.habilidades)}<div class="st" style="margin-top:12px">Competencias</div><div style="margin-bottom:12px">${d.habilidades.map(s=>`<span class="tg">${esc(s.nombre)}</span>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+    m2:`<div class="cv-m2"><div class="hdr">${ph('cv-m2',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m2',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-m2',d.habilidades)}<div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
 
-    m3:`<div class="cv-m3"><div class="hdr">${ph('cv-m3',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m3')}</div></div></div><div class="bd"><div class="sb"><div class="st">Sobre mí</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m3',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">Experiencia</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jd">${esc(j.periodo)}</div><div class="jm">${esc(j.empresa)}</div>${bls('cv-m3',j.bullets)}</div>`).join('')}${logrosHtml}</div></div></div>`,
+    m3:`<div class="cv-m3"><div class="hdr">${ph('cv-m3',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m3')}</div></div></div><div class="bd"><div class="sb"><div class="st">Sobre mí</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m3',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jd">${esc(j.periodo)}</div><div class="jm">${esc(j.empresa)}</div>${bls('cv-m3',j.bullets)}</div>`).join('')}${logrosHtml}</div></div></div>`,
 
-    m4:`<div class="cv-m4"><div class="hdr">${ph('cv-m4',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m4',d.habilidades)}<div class="st" style="margin-top:12px">Competencias</div><div style="margin-bottom:12px">${d.habilidades.map(s=>`<span class="tg">${esc(s.nombre)}</span>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m4',d.experiencia)}${logrosHtml}</div></div></div>`,
+    m4:`<div class="cv-m4"><div class="hdr">${ph('cv-m4',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m4',d.habilidades)}<div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m4',d.experiencia)}${logrosHtml}</div></div></div>`,
 
     m5:`<div class="cv-m5"><div class="hdr">${ph('cv-m5',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m5')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m5',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${(d.idiomas||[]).map(l=>`<div class="lb"><span style="font-size:0.72rem;font-weight:700">${esc(l.nombre)}</span><span class="lbg">${esc(l.nivel)}</span></div>`).join('')}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m5',d.experiencia)}${logrosHtml}</div></div></div>`
   };
@@ -1348,6 +1356,11 @@ function aplicarEtiquetasIdioma(l) {
 }
 
 function actualizarBotonTraducir() {
+  const bc = document.getElementById('btnCartaOtro');
+  if (bc) {
+    const otro = (_idiomaActual || LANG) === 'en' ? 'es' : 'en';
+    bc.textContent = otro === 'en' ? '✉️ Cover letter in English' : '✉️ Carta en español';
+  }
   const btn = document.getElementById('btnTraducir');
   if (!btn) return;
   const actual = _idiomaActual || LANG;
@@ -1366,8 +1379,12 @@ function mostrarToast(msg) {
 }
 
 // ── P3: CARTA DE PRESENTACIÓN CON IA ──
-async function generarCarta() {
+async function generarCarta(idiomaForzado) {
   ev('cover_letter_clicked');
+  // La carta seguía el LANG de carga de página, así que tras traducir el CV
+  // al inglés la carta se generaba igual en español. Ahora sigue el idioma
+  // actual del CV, y admite forzarlo desde el botón de idioma.
+  const LC = idiomaForzado || _idiomaActual || LANG;
   if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => generarCarta()); return; }
   // Solo comprobamos. El cupo se descuenta cuando la carta existe de verdad.
   const _cupo = await verificarCupo('carta');
@@ -1375,14 +1392,14 @@ async function generarCarta() {
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const FECHA_HOY = LANG==='en'
+  const FECHA_HOY = LC==='en'
     ? `${_mesesEN[_hoy.getMonth()]} ${_hoy.getDate()}, ${_hoy.getFullYear()}`
     : `${_hoy.getDate()} de ${_mesesES[_hoy.getMonth()]} de ${_hoy.getFullYear()}`;
   const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
   const btn = document.getElementById('btnCarta');
   btn.disabled = true;
-  btn.textContent = LANG==='en' ? '⏳ Writing your cover letter...' : '⏳ Redactando tu carta...';
+  btn.textContent = LC==='en' ? '⏳ Writing your cover letter...' : '⏳ Redactando tu carta...';
   let cvTexto = sessionStorage.getItem('cvTexto') || '';
   if (cvTexto.length < 100) {
     // Reconstruir desde cvData si la sesión no lo tiene
@@ -1396,7 +1413,7 @@ async function generarCarta() {
   const _contacto = [D.pais, [D.email, D.telefono].filter(Boolean).join(' | ')].filter(Boolean);
   const ENCABEZADO = [FECHA_HOY, '', ...(_contacto.length ? _contacto : [])].join('\n');
 
-  const prompt = LANG==='en'
+  const prompt = LC==='en'
     ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}.
 
 STRUCTURE (follow exactly):
@@ -1436,10 +1453,10 @@ ${cvTexto.substring(0,2500)}`;
     const _uso = await consumirUso('carta');   // ya entregada → ahora sí se descuenta
     ev('cover_letter_consumed', {plan:_uso.plan, usados:_uso.usados});
   } catch(e) {
-    alert((LANG==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
+    alert((LC==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
   }
   btn.disabled = false;
-  btn.textContent = LANG==='en' ? '✉️ Generate cover letter (AI)' : '✉️ Generar carta de presentación (IA)';
+  btn.textContent = LC==='en' ? '✉️ Generate cover letter (AI)' : '✉️ Generar carta de presentación (IA)';
 }
 
 function mostrarCarta(texto) {
@@ -1472,7 +1489,7 @@ function descargarCartaPDF() {
 
   const parrafos = texto.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
   const content = parrafos.map((p, idx) => ({
-    text: p,
+    text: sinLigaduras(p),
     fontSize: 11,
     lineHeight: 1.45,
     alignment: 'left',
@@ -1533,6 +1550,29 @@ function normalizarCVData(d) {
   return rec(d);
 }
 
+// pdfMake/Roboto sustituye "fi", "fl" y "ff" por un glifo de ligadura cuyo
+// mapa ToUnicode apunta solo a "f" — verificado en el PDF generado: el glifo
+// 00ed → 'f'. En pantalla se ve "certificación"; al extraer el texto sale
+// "certifcación". Como el ATS lee la extracción, la palabra clave se pierde.
+// Solución: partir el texto en fragmentos separados justo entre las dos
+// letras. El shaper no forma ligaduras a través de fragmentos distintos y la
+// extracción los concatena sin añadir ningún carácter invisible.
+function sinLigaduras(s) {
+  const t = normalizarTipografia(s);
+  if (!/f[ifl]/i.test(t)) return t;
+  const partes = [];
+  let ini = 0;
+  for (let i = 0; i < t.length - 1; i++) {
+    if (/f/i.test(t[i]) && /[ifl]/i.test(t[i + 1])) {
+      partes.push(t.slice(ini, i + 1));
+      ini = i + 1;
+    }
+  }
+  partes.push(t.slice(ini));
+  return partes.filter(p => p !== '');
+}
+
+
 async function descargarATS() {
   if (!_lock('ats')) return;
   ev('ats_download_clicked');
@@ -1544,35 +1584,35 @@ async function descargarATS() {
 
   const contacto = [d.email, d.telefono, d.pais, d.linkedin].filter(Boolean).join('  |  ');
   const content = [
-    {text: (d.nombre||'').toUpperCase(), fontSize: 20, bold: true, color: '#0d1b2a'},
-    {text: d.puesto||'', fontSize: 11, color: '#666', margin: [0,2,0,2]},
-    {text: contacto, fontSize: 9, color: '#555', margin: [0,0,0,4]},
+    {text: sinLigaduras((d.nombre||'').toUpperCase()), fontSize: 20, bold: true, color: '#0d1b2a'},
+    {text: sinLigaduras(d.puesto||''), fontSize: 11, color: '#666', margin: [0,2,0,2]},
+    {text: sinLigaduras(contacto), fontSize: 9, color: '#555', margin: [0,0,0,4]},
     {canvas: [{type:'line', x1:0, y1:0, x2:515, y2:0, lineWidth:1.5, lineColor:'#0d1b2a'}], margin:[0,4,0,12]},
   ];
 
   if (d.resumen) {
-    content.push({text: A.perfil, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,4]});
-    content.push({text: d.resumen, fontSize: 9.5, color: '#333', lineHeight: 1.35, margin: [0,0,0,12]});
+    content.push({text: sinLigaduras(A.perfil), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,4]});
+    content.push({text: sinLigaduras(d.resumen), fontSize: 9.5, color: '#333', lineHeight: 1.35, margin: [0,0,0,12]});
   }
 
   if (d.experiencia?.length) {
-    content.push({text: A.exp, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,6]});
+    content.push({text: sinLigaduras(A.exp), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,6]});
     d.experiencia.forEach(j => {
       content.push({
         columns: [
           {text: `${j.titulo||''}${j.empresa?' — '+j.empresa:''}`, fontSize: 10, bold: true, color: '#1a1a1a', width: '*'},
-          {text: j.periodo||'', fontSize: 9, color: '#777', width: 'auto'}
+          {text: sinLigaduras(j.periodo||''), fontSize: 9, color: '#777', width: 'auto'}
         ], margin: [0,2,0,3], unbreakable: true
       });
       content.push({
-        ul: (j.bullets||[]).map(b => ({text: b, fontSize: 9.5, color: '#333', lineHeight: 1.3})),
+        ul: (j.bullets||[]).map(b => ({text: sinLigaduras(b), fontSize: 9.5, color: '#333', lineHeight: 1.3})),
         margin: [0,0,0,8]
       });
     });
   }
 
   if (d.educacion?.length) {
-    content.push({text: A.edu, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,4,0,5]});
+    content.push({text: sinLigaduras(A.edu), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,4,0,5]});
     d.educacion.forEach(e => {
       content.push({text: `${e.titulo||''} — ${e.institucion||''}${e['año']?' ('+e['año']+')':''}`, fontSize: 9.5, color: '#333', margin: [0,0,0,3]});
     });
@@ -1581,7 +1621,7 @@ async function descargarATS() {
   const habs = (d.habilidades||[]).map(h => h.nombre||h).filter(Boolean);
   const idiomas = (d.idiomas||[]).map(l => `${esc(l.nombre)}${l.nivel?' ('+l.nivel+')':''}`).join(', ');
   if (habs.length || idiomas) {
-    content.push({text: A.skills, fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,8,0,5]});
+    content.push({text: sinLigaduras(A.skills), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,8,0,5]});
     if (habs.length) content.push({text: `${A.tec}: ${habs.join(', ')}`, fontSize: 9.5, color: '#333', lineHeight: 1.3, margin: [0,0,0,3]});
     if (idiomas) content.push({text: `${A.langs}: ${idiomas}`, fontSize: 9.5, color: '#333'});
   }

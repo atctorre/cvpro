@@ -1418,6 +1418,7 @@ async function mostrarGenerando() {
 }
 
 function _limiteIA() {
+  if (typeof esTester === 'function' && esTester()) return true;   // tester sin tope
   const hoy = new Date().toDateString();
   const d = _jsonSeguro(localStorage.getItem('cvpro_gen'), '{}');
   if (d.dia !== hoy) { localStorage.setItem('cvpro_gen', JSON.stringify({dia:hoy,n:1})); return true; }
@@ -1643,15 +1644,16 @@ Tus respuestas están guardadas — no perderás nada al reiniciar.`);
 // ── P4: RECUPERAR CV CON CÓDIGO ──
 
 async function recuperarCVPorCodigo(codigo) {
-  // Anti fuerza bruta: máx 5 intentos por hora
+  // Anti fuerza bruta: máx 5 intentos por hora (el tester queda exento)
+  const _esT = (typeof esTester === 'function' && esTester());
   const ahora = Date.now();
   const bf = _jsonSeguro(localStorage.getItem('cvpro_bf'), '{"n":0,"t":0}');
   if (ahora - bf.t > 3600000) { bf.n = 0; bf.t = ahora; }
-  if (bf.n >= 5) {
+  if (!_esT && bf.n >= 5) {
     alert(LANG==='en' ? 'Too many attempts. Try again in an hour.' : 'Demasiados intentos. Vuelve a intentar en una hora.');
     return false;
   }
-  bf.n++; localStorage.setItem('cvpro_bf', JSON.stringify(bf));
+  if (!_esT) bf.n++; localStorage.setItem('cvpro_bf', JSON.stringify(bf));
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/recuperar_cv`, {
       method: 'POST',

@@ -389,6 +389,9 @@ async function guardarLeadYPlanes() {
 }
 
 function limiteDiario() {
+  // El modo tester no consume cupo: sin esto, probar el producto agotaba
+  // el mismo límite de 3 análisis diarios que tiene un visitante anónimo.
+  if (typeof esTester === 'function' && esTester()) return true;
   const hoy = new Date().toDateString();
   const d = JSON.parse(localStorage.getItem('cvpro_scans') || '{}');
   if (d.dia !== hoy) { localStorage.setItem('cvpro_scans', JSON.stringify({dia: hoy, n: 1})); return true; }

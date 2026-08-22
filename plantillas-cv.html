@@ -718,8 +718,11 @@ const TPLS = {
 // Clonado de layouts base para las 10 nuevas plantillas
 const CLONES = {h6:'h1', h7:'h3', h8:'h2', h9:'h5', h10:'h4', m6:'m2', m7:'m1', m8:'m3', m9:'m5', m10:'m4'};
 
+// LANG = idioma de la INTERFAZ (botones, avisos)
 const LANG = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
-const T = LANG === 'en' ? {
+// CV_LANG = idioma del DOCUMENTO (headers del CV, nombre del PDF). Independiente de la UI.
+const CV_LANG = (sessionStorage.getItem('cvpro_cv_lang') || LANG) === 'en' ? 'en' : 'es';
+const T = CV_LANG === 'en' ? {
   perfil:'Profile', habilidades:'Skills', idiomas:'Languages', educacion:'Education',
   experiencia:'Professional experience', logros:'Achievements', certificaciones:'Certifications',
   descargarPDF:'📄 Download PDF', volver:'← Back to templates', elegir:'Choose this template',
@@ -788,7 +791,7 @@ async function generarCarta() {
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const FECHA_HOY = LANG==='en'
+  const FECHA_HOY = CV_LANG==='en'
     ? `${_mesesEN[_hoy.getMonth()]} ${_hoy.getDate()}, ${_hoy.getFullYear()}`
     : `${_hoy.getDate()} de ${_mesesES[_hoy.getMonth()]} de ${_hoy.getFullYear()}`;
   const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
@@ -810,7 +813,7 @@ async function generarCarta() {
       `\nEducación: ${(D.educacion||[]).map(e=>e.titulo+' - '+e.institucion).join('; ')}` +
       `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
   }
-  const prompt = LANG==='en'
+  const prompt = CV_LANG==='en'
     ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs, confident tone, mention 2-3 concrete achievements from the resume, no placeholders or brackets, ready to send. DATE: if you include a date line, use EXACTLY "${FECHA_HOY}" — never invent another date. MANDATORY FORMAT: plain text only — NO markdown whatsoever (no #, no **, no ---, no bullets, no titles). Start directly with "Dear Hiring Manager," then 3-4 body paragraphs, then "Sincerely," and the candidate name on its own line.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
     : `Eres un ghostwriter élite de cartas de presentación. Basándote en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, que aplica como ${D.puesto}. 3-4 párrafos, tono seguro y profesional, menciona 2-3 logros concretos del CV, sin corchetes ni placeholders, lista para enviar. FECHA: si incluyes línea de fecha, usa EXACTAMENTE "${FECHA_HOY}" — nunca inventes otra fecha. FORMATO OBLIGATORIO: texto plano — PROHIBIDO markdown (nada de #, **, ---, viñetas ni títulos). Empieza directamente con "Estimado equipo de selección," luego 3-4 párrafos de cuerpo, después "Atentamente," y el nombre del candidato en su propia línea.\n\nCV:\n${cvTexto.substring(0,2500)}`;
 
@@ -844,7 +847,7 @@ function corregirFechaCarta(t) {
   const h = new Date();
   const mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const esEN = (typeof LANG !== 'undefined' && LANG === 'en');
+  const esEN = (typeof CV_LANG !== 'undefined' ? CV_LANG === 'en' : (typeof LANG !== 'undefined' && LANG === 'en'));
   const fechaOK = esEN
     ? `${mesesEN[h.getMonth()]} ${h.getDate()}, ${h.getFullYear()}`
     : `${h.getDate()} de ${mesesES[h.getMonth()]} de ${h.getFullYear()}`;
@@ -893,7 +896,7 @@ function descargarCartaWord() {
   const blob = new Blob(['\ufeff', doc], {type: 'application/msword'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `${LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.doc`;
+  a.download = `${CV_LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.doc`;
   document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
@@ -905,7 +908,7 @@ function descargarCartaPDF() {
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
   html2pdf().set({
     margin:[18,18,18,18],
-    filename:`${LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.pdf`,
+    filename:`${CV_LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.pdf`,
     image:{type:'jpeg',quality:0.98},
     html2canvas:{scale:2,useCORS:true,logging:false},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
@@ -1242,7 +1245,7 @@ async function generarCarta() {
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const FECHA_HOY = LANG==='en'
+  const FECHA_HOY = CV_LANG==='en'
     ? `${_mesesEN[_hoy.getMonth()]} ${_hoy.getDate()}, ${_hoy.getFullYear()}`
     : `${_hoy.getDate()} de ${_mesesES[_hoy.getMonth()]} de ${_hoy.getFullYear()}`;
   const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
@@ -1258,7 +1261,7 @@ async function generarCarta() {
       `\nEducación: ${(D.educacion||[]).map(e=>e.titulo+' - '+e.institucion).join('; ')}` +
       `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
   }
-  const prompt = LANG==='en'
+  const prompt = CV_LANG==='en'
     ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs: hook + value proposition with 2 quantified achievements + culture fit + call to action. No placeholders, no brackets, ready to send. Sign with the candidate name.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
     : `Eres un ghostwriter élite de cartas de presentación. Con base en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, aplicando como ${D.puesto}. 3-4 párrafos: gancho + propuesta de valor con 2 logros cuantificados + fit cultural + llamado a la acción. Sin corchetes ni placeholders, lista para enviar. Firma con el nombre del candidato.\n\nCV:\n${cvTexto.substring(0,2500)}`;
   try {
@@ -1312,7 +1315,7 @@ async function descargarATS() {
   ev('ats_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('ats'); abrirMuroPago(null, () => descargarATS()); return; }
   const d = D;
-  const A = LANG === 'en'
+  const A = CV_LANG === 'en'
     ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
     : {perfil:'RESUMEN PROFESIONAL', exp:'EXPERIENCIA PROFESIONAL', edu:'EDUCACIÓN', skills:'HABILIDADES', langs:'Idiomas', tec:'Técnicas'};
 
@@ -1367,7 +1370,7 @@ async function descargarATS() {
     footer: (cur, tot) => tot > 1 ? {text: `${cur} / ${tot}`, alignment:'center', fontSize:8, color:'#999', margin:[0,12,0,0]} : null,
     content,
     defaultStyle: {font: 'Roboto'}
-  }).download(LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);
+  }).download(CV_LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);
   toast(LANG==='en' ? '✅ ATS version downloaded' : '✅ Versión ATS descargada');
 }
 

@@ -874,6 +874,7 @@ function toggleLang() {
 
 
 function elegirPlan(plan) {
+  ev('plan_selected', {plan});
   localStorage.setItem('cvpro_plan', plan);
   const isEN = (localStorage.getItem('cvpro_lang')||'es') === 'en';
   window.location = 'chat-cv.html' + (isEN ? '?lang=en' : '?lang=es');
@@ -1422,6 +1423,20 @@ function mostrarBadgeTester() {
     }
   };
   document.body.appendChild(b);
+}
+</script>
+<script>
+// ══ ANALYTICS: eventos del funnel (se envían a Supabase, sin cookies de terceros) ══
+function ev(nombre, extra) {
+  try {
+    const d = {evento: nombre, pagina: location.pathname, lang: (localStorage.getItem('cvpro_lang_cv')||'es'), ts: new Date().toISOString(), extra: extra||null};
+    const cola = JSON.parse(localStorage.getItem('cvpro_eventos') || '[]');
+    cola.push(d);
+    if (cola.length > 40) cola.shift();
+    localStorage.setItem('cvpro_eventos', JSON.stringify(cola));
+    if (window.gtag) window.gtag('event', nombre, extra || {});
+    console.debug('📊', nombre, extra || '');
+  } catch(e) {}
 }
 </script>
 </body>

@@ -240,6 +240,7 @@ async function llamarIA(prompt) {
 }
 
 async function analizarCV() {
+  ev('free_analysis_started');
   const prompt = `Eres un reclutador ejecutivo y especialista ATS con 20 años de experiencia. Analiza este CV con estándares élite y responde SOLO con JSON válido, sin texto adicional, ${LANG==='en'?'con todos los textos en inglés':'con todos los textos en español'}:
 {"ats":0-100,"contenido":0-100,"experiencia":0-100,"keywords":0-100,"claridad":0-100,"impacto":0-100,"global":0-100,"problemas":[{"titulo":"...","cita":"fragmento textual del CV que ejemplifica el problema","recomendacion":"cómo arreglarlo en 1-2 líneas"}] (exactamente 3),"fortalezas":["..."] (exactamente 3),"extras":número de problemas adicionales detectados pero no listados (3-8)}
 Criterios: penaliza clichés genéricos (responsable, proactivo, comprometido), primera persona, falta de cifras y resultados, ausencia de keywords del sector, estructura confusa. Premia logros cuantificados, verbos de acción, especialización clara.
@@ -258,6 +259,7 @@ ${cvTextoGlobal}`;
 function colorScore(n) { return n >= 80 ? '#1baf7a' : n >= 60 ? '#eda100' : '#e34948'; }
 
 function mostrarResultado(r) {
+  ev('free_analysis_completed', {score: r.global});
   document.getElementById('loading').style.display = 'none';
   document.getElementById('resultado').style.display = 'block';
   const g = Math.max(1, Math.min(99, r.global || 60));
@@ -411,6 +413,20 @@ function mostrarBadgeTester() {
     }
   };
   document.body.appendChild(b);
+}
+</script>
+<script>
+// ══ ANALYTICS: eventos del funnel (se envían a Supabase, sin cookies de terceros) ══
+function ev(nombre, extra) {
+  try {
+    const d = {evento: nombre, pagina: location.pathname, lang: (localStorage.getItem('cvpro_lang_cv')||'es'), ts: new Date().toISOString(), extra: extra||null};
+    const cola = JSON.parse(localStorage.getItem('cvpro_eventos') || '[]');
+    cola.push(d);
+    if (cola.length > 40) cola.shift();
+    localStorage.setItem('cvpro_eventos', JSON.stringify(cola));
+    if (window.gtag) window.gtag('event', nombre, extra || {});
+    console.debug('📊', nombre, extra || '');
+  } catch(e) {}
 }
 </script>
 </body>

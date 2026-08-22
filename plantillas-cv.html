@@ -724,7 +724,8 @@ function setGender(g) {
 let cartaGenerada = '';
 
 async function generarCarta() {
-  if (!tieneAcceso('estandar')) { abrirMuroPago('estandar', () => generarCarta()); return; }
+  ev('cover_letter_clicked');
+  if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => generarCarta()); return; }
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1155,7 +1156,8 @@ function volverSelector() {
 
 // ── P3: CARTA DE PRESENTACIÓN CON IA ──
 async function generarCarta() {
-  if (!tieneAcceso('estandar')) { abrirMuroPago('estandar', () => generarCarta()); return; }
+  ev('cover_letter_clicked');
+  if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => generarCarta()); return; }
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1224,8 +1226,9 @@ function descargarCartaPDF() {
 
 
 // ══ PDF ATS: TEXTO REAL SELECCIONABLE (pasa filtros ATS) ══
-function descargarATS() {
-  if (!yaPago()) { abrirMuroPago(null, () => descargarATS()); return; }
+async function descargarATS() {
+  ev('ats_download_clicked');
+  if (!(await accesoVerificado('basico'))) { abrirMuroPago(null, () => descargarATS()); return; }
   const d = D;
   const A = LANG === 'en'
     ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
@@ -1284,8 +1287,9 @@ function descargarATS() {
   }).download(LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);
 }
 
-function descargarPDF() {
-  if (!yaPago()) { abrirMuroPago(null, () => descargarPDF()); return; }
+async function descargarPDF() {
+  ev('pdf_download_clicked');
+  if (!(await accesoVerificado('basico'))) { abrirMuroPago(null, () => descargarPDF()); return; }
   const el = document.getElementById('cvFinal').firstElementChild;
   if (!el) return;
   const nombre = (D.nombre||'CV').replace(/\s+/g,'_');
@@ -1441,7 +1445,45 @@ async function registrarPago(ordenId, plan, monto, detalles) {
   }
 }
 
+
+// ══ VALIDACIÓN DE PAGO CONTRA EL SERVIDOR (no confiar en localStorage) ══
+async function verificarPagoServidor() {
+  const codigo = sessionStorage.getItem('cvpro_codigo') || '';
+  if (!codigo) return null;
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_U}/rest/v1/rpc/verificar_pago`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`},
+      body: JSON.stringify({p_codigo: codigo})
+    });
+    const rows = await res.json();
+    const r = Array.isArray(rows) ? rows[0] : rows;
+    if (r && r.pagado) {
+      localStorage.setItem('cvpro_pago', JSON.stringify({ok:true, plan:r.plan, verificado:true, ts:Date.now()}));
+      return r.plan;
+    }
+    // El servidor dice que NO hay pago → limpiar cualquier localStorage falsificado
+    const local = JSON.parse(localStorage.getItem('cvpro_pago') || 'null');
+    if (local && local.ok && !(typeof esTester === 'function' && esTester())) {
+      localStorage.removeItem('cvpro_pago');
+      console.warn('Pago no verificado en servidor — acceso revocado');
+    }
+    return null;
+  } catch(e) { console.warn('No se pudo verificar el pago:', e.message); return null; }
+}
+
+async function accesoVerificado(nivelMinimo) {
+  if (typeof esTester === 'function' && esTester()) return true;
+  const planSrv = await verificarPagoServidor();
+  if (!planSrv) return false;
+  const orden = ['basico','estandar','premium'];
+  return orden.indexOf(planSrv) >= orden.indexOf(nivelMinimo || 'basico');
+}
+
 async function abrirMuroPago(planSugerido, alPagar) {
+  ev('checkout_started', {plan: planSugerido || planActual()});
   const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
   let planSel = planSugerido || planActual();
 
@@ -1502,6 +1544,7 @@ async function abrirMuroPago(planSugerido, alPagar) {
             email: payer.email_address || '',
             nombre: ((payer.name||{}).given_name||'') + ' ' + ((payer.name||{}).surname||'')
           });
+          ev('payment_success', {plan: planSel, monto: PLANES[planSel].precio});
           document.getElementById('muroPago')?.remove();
           if (typeof alPagar === 'function') alPagar(planSel);
         },
@@ -1517,6 +1560,20 @@ async function abrirMuroPago(planSugerido, alPagar) {
 
   pintarPlanes();
   renderBotones();
+}
+</script>
+<script>
+// ══ ANALYTICS: eventos del funnel (se envían a Supabase, sin cookies de terceros) ══
+function ev(nombre, extra) {
+  try {
+    const d = {evento: nombre, pagina: location.pathname, lang: (localStorage.getItem('cvpro_lang_cv')||'es'), ts: new Date().toISOString(), extra: extra||null};
+    const cola = JSON.parse(localStorage.getItem('cvpro_eventos') || '[]');
+    cola.push(d);
+    if (cola.length > 40) cola.shift();
+    localStorage.setItem('cvpro_eventos', JSON.stringify(cola));
+    if (window.gtag) window.gtag('event', nombre, extra || {});
+    console.debug('📊', nombre, extra || '');
+  } catch(e) {}
 }
 </script>
 </body>

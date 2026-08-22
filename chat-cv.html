@@ -2192,7 +2192,17 @@ function construirCVData() {
   const email = emailM ? emailM[0] : '';
   const telefono = telM ? telM[0].trim() : '';
 
-  const cv = cvGenerado || '';
+  // Normalizar: quitar markdown y homogeneizar headers para que el parser siempre encuentre las secciones
+  const cv = (cvGenerado || '')
+    .replace(/\*\*/g, '')
+    .replace(/^#{1,4}\s*/gm, '')
+    .replace(/^\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ\s]{4,40})\s*$/gm, (m, h) => {
+      const t = h.trim();
+      return /^(RESUMEN|PERFIL|PROFESSIONAL|EXPERIENCIA|EXPERIENCE|WORK|EDUCACIÓN|EDUCACION|EDUCATION|HABILIDADES|SKILLS|COMPETENCIAS|CERTIFICACIONES|CERTIFICATIONS|IDIOMAS|LANGUAGES|LOGROS|INFORMACIÓN)/i.test(t)
+        ? t + '\n───────────────'
+        : m;
+    })
+    .replace(/(───────────────)\s*\n\s*[─-]{3,}/g, '$1');
 
   // ── HELPER: extraer sección del CV ──
   function extraerSeccion(patron) {
@@ -2219,13 +2229,13 @@ function construirCVData() {
   }
 
   // ── RESUMEN ──
-  let resumen = extraerSeccion(/(?:RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY)[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
+  let resumen = extraerSeccion(/(?:RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY|PERFIL PROFESIONAL|PERFIL)[^\n]*\n(?:[─\-═]+\s*\n)?([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
   if (!resumen) resumen = datos.resumen_personal || '';
   resumen = resumen.replace(/\n+/g, ' ').trim();
 
   // ── EXPERIENCIA ──
   const experiencia = [];
-  const expRaw = extraerSeccion(/(?:EXPERIENCIA PROFESIONAL|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
+  const expRaw = extraerSeccion(/(?:EXPERIENCIA PROFESIONAL|EXPERIENCIA|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)[^\n]*\n(?:[─\-═]+\s*\n)?([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
 
   if (expRaw) {
     // Detectar bloques por separador de cargo (línea sin bullet que tiene | o mayúsculas)

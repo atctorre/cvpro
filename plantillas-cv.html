@@ -1227,8 +1227,9 @@ function descargarCartaPDF() {
 
 // ══ PDF ATS: TEXTO REAL SELECCIONABLE (pasa filtros ATS) ══
 async function descargarATS() {
+  if (!_lock('ats')) return;
   ev('ats_download_clicked');
-  if (!(await accesoVerificado('basico'))) { abrirMuroPago(null, () => descargarATS()); return; }
+  if (!(await accesoVerificado('basico'))) { _unlock('ats'); abrirMuroPago(null, () => descargarATS()); return; }
   const d = D;
   const A = LANG === 'en'
     ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
@@ -1288,8 +1289,9 @@ async function descargarATS() {
 }
 
 async function descargarPDF() {
+  if (!_lock('pdf')) return;
   ev('pdf_download_clicked');
-  if (!(await accesoVerificado('basico'))) { abrirMuroPago(null, () => descargarPDF()); return; }
+  if (!(await accesoVerificado('basico'))) { _unlock('pdf'); abrirMuroPago(null, () => descargarPDF()); return; }
   const el = document.getElementById('cvFinal').firstElementChild;
   if (!el) return;
   const nombre = (D.nombre||'CV').replace(/\s+/g,'_');
@@ -1379,13 +1381,8 @@ function planActual() {
   return localStorage.getItem('cvpro_plan') || 'basico';
 }
 
-function tieneAcceso(nivelMinimo) {
-  if (typeof esTester === 'function' && esTester()) return true;
-  const orden = ['basico','estandar','premium'];
-  const pagado = JSON.parse(localStorage.getItem('cvpro_pago') || 'null');
-  if (!pagado || !pagado.ok) return false;
-  return orden.indexOf(pagado.plan) >= orden.indexOf(nivelMinimo);
-}
+// tieneAcceso() ELIMINADA: solo se permite accesoVerificado() contra el servidor
+
 
 function yaPago() {
   if (typeof esTester === 'function' && esTester()) return true;
@@ -1482,7 +1479,14 @@ async function accesoVerificado(nivelMinimo) {
   return orden.indexOf(planSrv) >= orden.indexOf(nivelMinimo || 'basico');
 }
 
+
+// ══ Anti doble-click / race conditions ══
+const _enCurso = {};
+function _lock(k) { if (_enCurso[k]) return false; _enCurso[k] = true; setTimeout(()=>{_enCurso[k]=false;}, 4000); return true; }
+function _unlock(k) { _enCurso[k] = false; }
+
 async function abrirMuroPago(planSugerido, alPagar) {
+  if (document.getElementById('muroPago')) return;
   ev('checkout_started', {plan: planSugerido || planActual()});
   const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
   let planSel = planSugerido || planActual();

@@ -3200,13 +3200,8 @@ function planActual() {
   return localStorage.getItem('cvpro_plan') || 'basico';
 }
 
-function tieneAcceso(nivelMinimo) {
-  if (typeof esTester === 'function' && esTester()) return true;
-  const orden = ['basico','estandar','premium'];
-  const pagado = JSON.parse(localStorage.getItem('cvpro_pago') || 'null');
-  if (!pagado || !pagado.ok) return false;
-  return orden.indexOf(pagado.plan) >= orden.indexOf(nivelMinimo);
-}
+// tieneAcceso() ELIMINADA: solo se permite accesoVerificado() contra el servidor
+
 
 function yaPago() {
   if (typeof esTester === 'function' && esTester()) return true;
@@ -3394,6 +3389,20 @@ function ev(nombre, extra) {
     console.debug('📊', nombre, extra || '');
   } catch(e) {}
 }
+</script>
+<script>
+// ══ PRIVACIDAD: purgar datos personales viejos del navegador (>7 días) ══
+(function purgarDatosViejos() {
+  try {
+    const s = JSON.parse(localStorage.getItem('cvpro_chat16') || 'null');
+    if (s && s.ts && (Date.now() - s.ts) > 7*86400000) {
+      localStorage.removeItem('cvpro_chat16');
+      console.debug('Datos de sesión antiguos purgados por privacidad');
+    }
+    const ev = JSON.parse(localStorage.getItem('cvpro_eventos') || '[]');
+    if (ev.length > 40) localStorage.setItem('cvpro_eventos', JSON.stringify(ev.slice(-40)));
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>

@@ -1325,9 +1325,40 @@ async function generarCarta() {
       `\nEducación: ${(D.educacion||[]).map(e=>e.titulo+' - '+e.institucion).join('; ')}` +
       `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
   }
+  // El encabezado (fecha y datos de contacto) lo componemos NOSOTROS, no la IA:
+  // así garantizamos que siempre esté y con el formato correcto del idioma.
+  const _contacto = [D.pais, [D.email, D.telefono].filter(Boolean).join(' | ')].filter(Boolean);
+  const ENCABEZADO = [FECHA_HOY, '', ...(_contacto.length ? _contacto : [])].join('\n');
+
   const prompt = LANG==='en'
-    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs: hook + value proposition with 2 quantified achievements + culture fit + call to action. No placeholders, no brackets, ready to send. Sign with the candidate name.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
-    : `Eres un ghostwriter élite de cartas de presentación. Con base en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, aplicando como ${D.puesto}. 3-4 párrafos: gancho + propuesta de valor con 2 logros cuantificados + fit cultural + llamado a la acción. Sin corchetes ni placeholders, lista para enviar. Firma con el nombre del candidato.\n\nCV:\n${cvTexto.substring(0,2500)}`;
+    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}.
+
+STRUCTURE (follow exactly):
+- Do NOT write a date or contact header — that is added separately. Start directly at the greeting.
+- Greeting: "Dear Hiring Team," (or the company name if the resume names a target employer)
+- 3-4 paragraphs: hook + value proposition + culture fit + call to action
+- Closing: "Sincerely," then the candidate's name and professional title on separate lines
+
+STRICT RULES:
+- Never invent numbers, percentages or metrics. Quantify ONLY with figures that appear in the resume. If there are none, express impact qualitatively.
+- No placeholders, no brackets, nothing left to fill in. Ready to send as-is.
+
+RESUME:
+${cvTexto.substring(0,2500)}`
+    : `Eres un ghostwriter élite de cartas de presentación. Con base en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, aplicando como ${D.puesto}.
+
+ESTRUCTURA (síguela exactamente):
+- NO escribas fecha ni encabezado de contacto — eso se añade aparte. Empieza directamente por el saludo.
+- Saludo: "Estimado equipo de selección:" (o el nombre de la empresa si el CV menciona un destinatario)
+- 3-4 párrafos: gancho + propuesta de valor + fit cultural + llamado a la acción
+- Cierre: "Atentamente," y después el nombre del candidato y su cargo profesional en líneas separadas
+
+REGLAS ESTRICTAS:
+- Nunca inventes cifras, porcentajes ni métricas. Cuantifica SOLO con datos que aparezcan en el CV. Si no hay ninguno, expresa el impacto de forma cualitativa.
+- Sin corchetes ni placeholders, nada por rellenar. Lista para enviar tal cual.
+
+CV:
+${cvTexto.substring(0,2500)}`;
   try {
     const res = await fetch(`${SUPABASE_URL_C}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY_C}`},
@@ -1335,7 +1366,7 @@ async function generarCarta() {
     });
     const data = await res.json();
     if (!data.cv || data.cv.length < 200) throw new Error('short');
-    mostrarCarta(limpiarCarta(data.cv));
+    mostrarCarta(ENCABEZADO + '\n\n' + limpiarCarta(data.cv));
   } catch(e) {
     alert((LANG==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
   }
@@ -1367,9 +1398,24 @@ function descargarCartaPDF() {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'width:794px;padding:60px 70px;background:#fff;font-family:Georgia,serif;font-size:0.92rem;line-height:1.9;color:#222;white-space:pre-wrap';
   wrap.textContent = limpiarCarta(body.textContent);
+  // Fuera del flujo y pegado al origen: evita que la captura salga desplazada
+  wrap.style.position = 'absolute';
+  wrap.style.left = '0';
+  wrap.style.top = '0';
+  wrap.style.zIndex = '-1';
   document.body.appendChild(wrap);
+  const _sx = window.scrollX, _sy = window.scrollY;
+  window.scrollTo(0, 0);
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
-  html2pdf().set({margin:0,filename:LANG==='en'?`Cover_Letter_${nombre}.pdf`:`Carta_${nombre}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4'}}).from(wrap).save().then(()=>wrap.remove());
+  html2pdf().set({
+    margin:0,
+    filename: LANG==='en' ? `Cover_Letter_${nombre}.pdf` : `Carta_${nombre}.pdf`,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2, useCORS:true, backgroundColor:'#ffffff', scrollX:0, scrollY:0, x:0, y:0, windowWidth:1000},
+    jsPDF:{unit:'mm',format:'a4'}
+  }).from(wrap).save()
+    .then(()=>{ wrap.remove(); window.scrollTo(_sx,_sy); })
+    .catch(e=>{ wrap.remove(); window.scrollTo(_sx,_sy); console.error('Fallo PDF carta:', e); });
 }
 
 
@@ -1443,16 +1489,54 @@ async function descargarPDF() {
   ev('pdf_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('pdf'); abrirMuroPago(null, () => descargarPDF()); return; }
   const el = document.getElementById('cvFinal').firstElementChild;
-  if (!el) return;
+  if (!el) { _unlock('pdf'); return; }
   const nombre = (D.nombre||'CV').replace(/\s+/g,'_');
+
+  // El CV mide 794px de ancho fijo. Si la ventana está scrolleada o el
+  // contenedor lo recorta, html2canvas capturaba desplazado y el PDF salía
+  // cortado por la izquierda. Llevamos el scroll a 0 y normalizamos el
+  // documento clonado antes de capturar.
+  const _sx = window.scrollX, _sy = window.scrollY;
+  window.scrollTo(0, 0);
+
   html2pdf().set({
     margin:0,
     filename:`CV_${nombre}.pdf`,
     image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2,useCORS:true,logging:false,scrollY:0,windowWidth:794},
+    html2canvas:{
+      scale:2, useCORS:true, logging:false,
+      backgroundColor:'#ffffff',
+      scrollX:0, scrollY:0, x:0, y:0,
+      windowWidth:1000, windowHeight:Math.max(el.scrollHeight + 80, 1123),
+      onclone: (doc) => {
+        doc.documentElement.style.overflow = 'visible';
+        doc.documentElement.style.maxWidth = 'none';
+        doc.body.style.overflow = 'visible';
+        doc.body.style.maxWidth = 'none';
+        doc.body.style.margin = '0';
+        doc.body.style.padding = '0';
+        const res = doc.querySelector('.cv-result');
+        if (res) { res.style.maxWidth = 'none'; res.style.padding = '0'; res.style.margin = '0'; }
+        const acc = doc.querySelector('.cv-actions');
+        if (acc) acc.style.display = 'none';
+        // El CV debe quedar pegado al origen del lienzo
+        const cv = doc.getElementById('cvFinal');
+        if (cv) { cv.style.margin = '0'; cv.style.padding = '0'; }
+      }
+    },
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
     pagebreak:{mode:['css','legacy'], avoid:['.jb','.sk','.li','.edu-item','.bl']}
-  }).from(el).save().then(() => toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'));
+  }).from(el).save()
+    .then(() => {
+      window.scrollTo(_sx, _sy);
+      toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas');
+    })
+    .catch(e => {
+      window.scrollTo(_sx, _sy);
+      console.error('Fallo al generar el PDF:', e);
+      alert(LANG==='en' ? 'Could not generate the PDF. Try the ATS version.' : 'No se pudo generar el PDF. Prueba la versión ATS.');
+    })
+    .finally(() => _unlock('pdf'));
 }
 
 renderTemplates();

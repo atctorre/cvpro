@@ -2582,6 +2582,40 @@ function nuevoCV() {
   location.reload();
 }
 
+
+// Último recurso para las habilidades: antes se imprimía "Por definir" en el
+// PDF que el cliente pagaba. Ahora buscamos en las respuestas del chat y en el
+// propio texto del CV; si aun así no hay nada, devolvemos vacío para que la
+// plantilla oculte la sección — mejor omitirla que rellenarla con un marcador.
+function habilidadesDeRespaldo() {
+  const fuentes = [
+    datos.habilidades_tecnicas || '',
+    datos.info_extra || '',
+    datos.puesto || ''
+  ].join(', ');
+
+  let items = fuentes.split(/[,;\/\n]/)
+    .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').trim())
+    .filter(s => s.length > 2 && s.length < 40 && !/^(no|ninguna|n\/a|none|sin )/i.test(s));
+
+  // Si el chat no dio nada, intentamos rescatar de las secciones del CV generado
+  if (!items.length) {
+    const m = (cvGenerado || '').match(/(?:HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES)[^\n]*\n[─\-═]*\s*\n([\s\S]{5,400}?)(?=\n[A-ZÁÉÍÓÚ]{4,}|$)/i);
+    if (m) {
+      items = m[1].split(/[,;\/\n]/)
+        .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').replace(/^(Técnicas?|Technical|Blandas?|Soft)\s*:/i, '').trim())
+        .filter(s => s.length > 2 && s.length < 40);
+    }
+  }
+
+  const vistos = new Set();
+  return items.filter(s => {
+    const k = s.toLowerCase();
+    if (vistos.has(k)) return false;
+    vistos.add(k); return true;
+  }).slice(0, 8).map((nombre, i) => ({ nombre, nivel: Math.max(65, 92 - i * 4) }));
+}
+
 function construirCVData() {
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
@@ -2895,7 +2929,7 @@ function construirCVData() {
     resumen,
     experiencia,
     educacion,
-    habilidades: todasHabs.length ? todasHabs : [{ nombre: 'Por definir', nivel: 70 }],
+    habilidades: todasHabs.length ? todasHabs : habilidadesDeRespaldo(),
     idiomas: idiomas.length ? idiomas : [{ nombre: 'Español', nivel: 'Nativo' }],
     logros
   });

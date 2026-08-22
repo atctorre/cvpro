@@ -658,7 +658,7 @@ LO QUE ESCRIBIÓ: "${texto}"
 ${instruccion}
 
 VERBOS ÉLITE para ${puesto}: usa los más específicos del sector.
-Si el texto es escaso, enriquece con conocimiento experto del sector "${puesto}".
+Si el texto es escaso, enriquece SOLO la redacción y el contexto verificable del sector "${puesto}" — jamás añadas cifras, clientes, herramientas ni logros que el candidato no mencionó.
 Sin explicaciones, sin saludos, solo el resultado.
 IDIOMA: ${LANG==='en' ? 'Respond ENTIRELY in English.' : 'Responde en español.'}`;
 
@@ -1434,8 +1434,8 @@ REGLAS (estándar de reclutador ejecutivo élite):
 1. RESUMEN: 4-5 líneas densas y potentes. Quién es + años + especialización + logro diferenciador + valor que aporta. Sin "yo/soy/tengo". Modelo: "${ejemplo}"
 2. EXPERIENCIA: 5-7 bullets RICOS por trabajo (25-40 palabras c/u), desarrollados con contexto, alcance y escala del sector. CV final: mínimo 2 páginas A4 (1000-1500 palabras) con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. Bullets cortos o planos = trabajo rechazado.
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
-4. CUANTIFICA con los datos REALES del candidato (horas, %, montos, personas). Si falta una cifra, redacta el logro con alcance concreto SIN fabricar números que el candidato no dio.
-5. NUNCA inventes cargos, empresas, certificaciones, títulos ni idiomas. Mejora la redacción, no los hechos.
+4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
+5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
 7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis
 
@@ -1507,7 +1507,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
       const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 2 páginas A4 (1000-1500 palabras), bullets de 25-40 palabras. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
+Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 2 páginas A4 (1000-1500 palabras), bullets de 25-40 palabras. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
 CV:
 ${cvTexto.substring(0,5500)}`})
       });
@@ -1688,7 +1688,7 @@ ${texto.substring(0, 2000)}
 
 MISIÓN: Reescribe el CV adaptándolo a esta vacante específica con profundidad de Executive Recruiter: CV final de 2 páginas A4 (1000-1500 palabras), bullets de 25-40 palabras con contexto, alcance y resultado.
 REGLAS ESTRICTAS:
-1. NO INVENTES experiencia, títulos ni certificaciones que no estén en el CV original
+1. NO INVENTES experiencia, títulos, certificaciones NI CIFRAS que no estén en el CV original. Reordenar y reformular sí; añadir hechos nuevos jamás.
 2. REORDENA y REFORMULA los bullets para destacar lo más relevante a la vacante
 3. USA las palabras clave exactas de la vacante donde el candidato realmente tenga esa experiencia (ATS matching)
 4. ADAPTA el resumen profesional para responder directamente al perfil buscado
@@ -1750,7 +1750,7 @@ PROCESO: 1) ANALIZA profesión, nivel, años, industrias, logros, diferenciadore
 EXTENSIÓN OBLIGATORIA: el CV final debe llenar MÍNIMO 2 páginas A4 completas (1000-1500 palabras). Expande cada experiencia con profundidad de consultor: contexto institucional, alcance, equipos, procesos, impacto. Si el original es corto, DESARROLLA cada función con el conocimiento experto del sector — sin inventar hechos, cargos ni cifras.
 REGLAS ESTRICTAS:
 - PERFIL: 5-7 líneas potentes → quién es + experiencia + en qué destaca + valor que aporta. PROHIBIDO: "responsable", "proactivo", "comprometido", "dinámico", primera persona.
-- EXPERIENCIA: CADA puesto con 4-6 bullets ricos de 15-30 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Transforma funciones planas en logros con contexto, alcance y escala. Usa las cifras del CV; si no hay, describe alcance concreto SIN inventar números.
+- EXPERIENCIA: CADA puesto con 4-6 bullets ricos de 15-30 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe alcance, complejidad y contexto verificables — está PROHIBIDO estimar o inferir números del promedio del sector. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
 - PRESERVA TODAS las secciones del original: certificaciones, membresías, investigación, publicaciones, educación continua, referencias — nada se pierde, todo se profesionaliza.
 - NUNCA inventes cargos, empresas, títulos, certificaciones ni cifras.
 - ATS: integra keywords naturales del sector detectado.
@@ -1801,7 +1801,7 @@ ${texto.substring(0,5000)}`;
       const res2 = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres un Executive Recruiter élite revisando el trabajo de un colega. CRITICA y MEJORA este CV: elimina cualquier bullet débil o genérico que sobreviva, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos, y asegura keywords ATS. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 2 páginas A4 (1000-1500 palabras) con bullets de 25-40 palabras. Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
+Eres un Executive Recruiter élite revisando el trabajo de un colega. CRITICA y MEJORA este CV: elimina cualquier bullet débil o genérico que sobreviva, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos, y asegura keywords ATS. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 2 páginas A4 (1000-1500 palabras) con bullets de 25-40 palabras. Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
 CV A REVISAR:
 ${cvV1.substring(0,5500)}`})
       });

@@ -706,17 +706,20 @@ const D = JSON.parse(sessionStorage.getItem('cvData') || 'null') || {
 
 if (D.nombre) D.nombre = capitalizar(D.nombre);
 
-// ── GENDER & TEMPLATES
-function setGender(g) {
-  gender = g;
-  selTpl = g === 'h' ? 'h1' : 'm1';
-  document.querySelectorAll('.gender-tab').forEach((t,i) => t.classList.toggle('active',(g==='h'&&i===0)||(g==='m'&&i===1)));
-  
 // ── CARTA DE PRESENTACIÓN CON IA ──
 const SUPABASE_URL_C = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
 const SUPABASE_URL = SUPABASE_URL_C;
 const SUPABASE_KEY_C = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
 const SUPABASE_KEY = SUPABASE_KEY_C;
+
+// ── GENDER & TEMPLATES
+function setGender(g) {
+  gender = g;
+  selTpl = g === 'h' ? 'h1' : 'm1';
+  document.querySelectorAll('.gender-tab').forEach((t,i) => t.classList.toggle('active',(g==='h'&&i===0)||(g==='m'&&i===1)));
+  renderTemplates();
+}
+
 let cartaGenerada = '';
 
 async function generarCarta() {
@@ -841,7 +844,6 @@ if (LANG === 'en') {
   document.title = 'Choose your template | CVPro';
 }
 renderTemplates();
-}
 
 function renderTemplates() {
   const grid = document.getElementById('templatesGrid');

@@ -2171,6 +2171,22 @@ function limpiarFormatoCV(cv) {
 }
 
 function validarContacto(d) {
+  // En "modo optimizar" el contacto viene del PDF subido, no del chat. Si no
+  // llegó, lo rescatamos del propio texto del CV: sin email el documento es
+  // inservible, y salía con el icono de sobre vacío.
+  const fuente = [cvGenerado || '', sessionStorage.getItem('cvTexto') || ''].join('\n');
+  if (!d.email) {
+    const em = fuente.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+    if (em) d.email = em[0];
+  }
+  if (!d.telefono) {
+    const te = fuente.match(/(?:\+\d{1,3}[\s-]?)?(?:\(\d{1,4}\)[\s-]?)?\d[\d\s-]{6,14}\d/);
+    if (te && te[0].replace(/\D/g,'').length >= 8) d.telefono = te[0].trim();
+  }
+  if (!d.pais) {
+    const pa = fuente.match(/\b(El Salvador|Guatemala|Honduras|Nicaragua|Costa Rica|Panamá|México|Colombia|Perú|Chile|Argentina|Ecuador|Bolivia|Uruguay|Paraguay|Venezuela|República Dominicana|España|United States|USA)\b/i);
+    if (pa) d.pais = pa[0];
+  }
   const cap = (s) => String(s||'').trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
   if (d.nombre) d.nombre = cap(d.nombre);
   if (d.email && !/^[\w.+-]+@[\w.-]+\.\w{2,}$/.test(d.email)) d.email = '';
@@ -2675,6 +2691,37 @@ function construirCVData() {
     return m ? m[1].trim() : '';
   }
 
+  // Extrae una sección hasta el SIGUIENTE encabezado conocido, sin exigir que
+  // venga acompañado de una línea de guiones. Ese requisito era el origen del
+  // bug: si la IA omitía los guiones bajo un encabezado, el extractor seguía
+  // leyendo y se tragaba el resto del CV. Por eso el "PERFIL" contenía toda
+  // la experiencia, HABILIDADES salía vacío y el CV ocupaba 5 páginas.
+  function seccionHasta(nombres) {
+    const pat = new RegExp(
+      '(?:^|\\n)[ \\t]*(?:' + nombres + ')[^\\n]*\\n' +      // encabezado
+      '(?:[─\\-═_]{3,}[ \\t]*\\n)?' +                          // guiones opcionales
+      '([\\s\\S]*?)' +                                           // contenido
+      '(?=\\n[ \\t]*(?:' + _HEADERS_CV + ')\\b|\\n══|$)',    // corta en el siguiente header
+      'i');
+    const m = cv.match(pat);
+    if (!m) return '';
+    return m[1].split('\n')
+      .filter(l => !/^[─═_\-]{3,}\s*$/.test(l.trim()))
+      .join('\n').trim();
+  }
+
+  // Quita restos de markdown que la IA deja y que salen impresos en el PDF:
+  // *Cum Honorifico* aparecía con asteriscos en el documento final.
+  function limpiarMarkdown(t) {
+    return String(t || '')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/\*(.+?)\*/g, '$1')
+      .replace(/__(.+?)__/g, '$1')
+      .replace(/^#{1,6}\s*/gm, '')
+      .replace(/[*_`]{1,3}/g, '')
+      .trim();
+  }
+
   // FIX 2 — Limpiar markdown en TODO el texto
   function limpiarMd(txt) {
     return (txt||'')
@@ -2739,13 +2786,21 @@ function sinDuplicados(arr, clave) {
   }
 
   // ── RESUMEN ──
-  let resumen = extraerSeccion(/(?:RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY|PERFIL PROFESIONAL|PERFIL)[^\n]*\n(?:[─\-═]+\s*\n)?([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
+  let resumen = seccionHasta('RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY|PERFIL PROFESIONAL|RESUMEN|PERFIL|SUMMARY|PROFILE');
   if (!resumen) resumen = datos.resumen_personal || '';
-  resumen = resumen.replace(/\n+/g, ' ').trim();
+  resumen = limpiarMarkdown(resumen.replace(/\n+/g, ' ')).trim();
+  // Red de seguridad: un resumen profesional nunca pasa de ~1200 caracteres.
+  // Si el extractor falla otra vez, cortamos en la última frase completa en
+  // vez de imprimir el CV entero dentro del perfil.
+  if (resumen.length > 1200) {
+    const corte = resumen.lastIndexOf('.', 1200);
+    resumen = resumen.substring(0, corte > 400 ? corte + 1 : 1200).trim();
+    console.warn('⚠️ Resumen recortado: el extractor capturó de más');
+  }
 
   // ── EXPERIENCIA ──
   const experiencia = [];
-  const expRaw = extraerSeccion(/(?:EXPERIENCIA PROFESIONAL|EXPERIENCIA|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)[^\n]*\n(?:[─\-═]+\s*\n)?([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══)/i);
+  const expRaw = seccionHasta('EXPERIENCIA PROFESIONAL|EXPERIENCIA|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE');
 
   if (expRaw) {
     // Detectar bloques por separador de cargo (línea sin bullet que tiene | o mayúsculas)
@@ -2810,8 +2865,7 @@ function sinDuplicados(arr, clave) {
   // El lookahead solo se detenía en 4 encabezados, así que IDIOMAS,
   // COMPETENCIAS, MEMBRESÍAS e INVESTIGACIÓN se colaban como si fueran
   // estudios. Ahora corta ante CUALQUIER encabezado conocido.
-  const eduRaw = extraerSeccion(new RegExp(
-    '(?:EDUCACI[ÓO]N|EDUCATION|FORMACI[ÓO]N)[^\\n]*\\n[─\\-═]+\\s*\\n([\\s\\S]*?)(?=\\n[ \\t]*(?:' + _HEADERS_CV + ')\\b|\\n══|$)', 'i'));
+  const eduRaw = seccionHasta('EDUCACI[ÓO]N|EDUCATION|FORMACI[ÓO]N');
 
   if (eduRaw) {
     eduRaw.split('\n').forEach(l => {
@@ -2842,7 +2896,7 @@ function sinDuplicados(arr, clave) {
   // 1. Del CV generado
   const habsM = cv.match(/(?:Técnicas?|Technical(?: skills)?):\s*([^\n]+)/i);
   const habsM2 = cv.match(/HABILIDADES[^\n]*\n[─\-═]+[\s\S]*?Técnicas?:\s*([^\n]+)/i);
-  const habsM3 = cv.match(/(?:HABILIDADES|COMPETENCIAS|SKILLS)[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══|$)/i);
+  const habsM3 = [seccionHasta('HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES|APTITUDES')].filter(Boolean).map(s => [null, s])[0] || null;
   if (habsM) habsTexto = habsM[1];
   else if (habsM2) habsTexto = habsM2[1];
   else if (habsM3) habsTexto = habsM3[1].split('\n').map(l=>l.replace(/^[\s•·▸▪\-\*]+/,'').trim()).filter(l=>l&&l.length<60&&!/^(Blandas|Idiomas|Soft|Languages)/i.test(l)).slice(0,14).join(', ');
@@ -2936,7 +2990,7 @@ function sinDuplicados(arr, clave) {
 
   // ── LOGROS / CERTIFICACIONES ──
   const logros = [];
-  const certRaw = extraerSeccion(/(?:CERTIFICACIONES|CERTIFICATIONS)[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\nHABILIDADES|\nINFORMACIÓN|\n══)/i);
+  const certRaw = seccionHasta('CERTIFICACIONES|CERTIFICATIONS|CURSOS|COURSES');
   if (certRaw) {
     certRaw.split('\n').forEach(l => {
       const b = limpiarBullet(l);
@@ -2984,6 +3038,23 @@ function sinDuplicados(arr, clave) {
       return {titulo: p[0]||t, institucion: p[1]||'', 'año': p[2]||''};
     }).filter(Boolean).slice(0,6);
   }
+  // El formato "Español (nativo) | Inglés (avanzado)" se partía mal y salía
+  // como "SpanishNative) | English (Advanced". Lo parseamos aparte.
+  if ((!idiomas || idiomas.length < 2)) {
+    const linea = (cv.match(/(?:Idiomas?|Languages?)\s*:\s*([^\n]+)/i) || [])[1] || '';
+    if (linea) {
+      // Separamos primero por | ; , y luego cada trozo en idioma + nivel.
+      // Un solo regex global partía "Español: nativo" en "Espa"/"ñol".
+      const pares = linea.split(/\s*[|;,]\s*/)
+        .map(tr => {
+          const mm = tr.match(/^\s*([A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s*[\(\[:\-–]?\s*([A-Za-zÁÉÍÓÚÑáéíóúñ\s]*?)\s*[\)\]]?\s*$/);
+          if (!mm) return null;
+          return {nombre: mm[1].trim(), nivel: (mm[2] || '').trim()};
+        })
+        .filter(x => x && /^(espa|ingl|fran|portu|alem|ital|spanish|english|french|german|portuguese|italian)/i.test(x.nombre));
+      if (pares.length) idiomas = pares;
+    }
+  }
   if (!idiomas || !idiomas.length) {
     idiomas = (datos.idiomas_nivel || '').split(/[,;\n]/).map(l => {
       const t = l.replace(/^[\s•·▸▪\-\*]+/,'').trim();
@@ -2994,6 +3065,13 @@ function sinDuplicados(arr, clave) {
   }
 
   idiomas = sinDuplicados((idiomas || []).filter(i => i && i.nombre && !esRuido(i.nombre)), 'nombre').slice(0, 6);
+
+  // Limpieza final de markdown en todo lo que se imprime.
+  // "*Cum Honorifico*" salía con asteriscos en el PDF que paga el cliente.
+  const _lm = (s) => limpiarMarkdown(s);
+  educacion = (educacion||[]).map(e => ({titulo:_lm(e.titulo), institucion:_lm(e.institucion), 'año':_lm(e['año']||e.anio||'')}));
+  todasHabs.forEach(h => { h.nombre = _lm(h.nombre); });
+  logros.forEach((l,ix) => { logros[ix] = _lm(l); });
 
   return validarContacto({
     nombre: datos.nombre || '',

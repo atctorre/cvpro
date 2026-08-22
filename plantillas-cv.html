@@ -757,14 +757,14 @@ const CLONES = {h6:'h1', h7:'h3', h8:'h2', h9:'h5', h10:'h4', m6:'m2', m7:'m1', 
 const LANG = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
 const T = LANG === 'en' ? {
   perfil:'Profile', habilidades:'Skills', idiomas:'Languages', educacion:'Education',
-  experiencia:'Professional experience', logros:'Achievements', certificaciones:'Certifications',
+  experiencia:'Professional experience', logros:'Certifications', certificaciones:'Certifications',
   descargarPDF:'📄 Download PDF', volver:'← Back to templates', elegir:'Choose this template',
   generar:'⚡ Generate my resume', titulo:'Choose your template', subtitulo:'10 professional designs — pick yours and download instantly',
   fotoTitulo:'Add your photo (optional)', fotoAviso:'⚠️ US resumes normally have NO photo — recruiters often discard them for anti-discrimination compliance. We recommend continuing without one.', fotoOk:'✓ Use this photo', fotoSaltar:'Continue without photo',
   hombre:'Men styles', mujer:'Women styles', cargando:'Generating your resume...'
 } : {
   perfil:'Perfil', habilidades:'Habilidades', idiomas:'Idiomas', educacion:'Educación',
-  experiencia:'Experiencia profesional', logros:'Logros', certificaciones:'Certificaciones',
+  experiencia:'Experiencia profesional', logros:'Certificaciones', certificaciones:'Certificaciones',
   descargarPDF:'📄 Descargar PDF', volver:'← Volver a plantillas', elegir:'Elegir esta plantilla',
   generar:'⚡ Generar mi CV', titulo:'Elige tu plantilla', subtitulo:'10 diseños profesionales — elige el tuyo y descarga al instante',
   fotoTitulo:'Agrega tu foto (opcional)', fotoAviso:'', fotoOk:'✓ Usar esta foto', fotoSaltar:'Continuar sin foto',
@@ -905,6 +905,13 @@ if (LANG === 'en') {
   // ⚠️ Convención de EE.UU.: un resume NO lleva foto. Muchos reclutadores lo
   // descartan por cumplimiento antidiscriminación. Advertirlo evita entregar
   // un documento que no pasa el primer filtro.
+  // En EE.UU. un resume con foto se descarta por cumplimiento
+  // antidiscriminación. Advertirlo no bastaba: el usuario la subía igual.
+  // En el flujo en inglés ocultamos el bloque de foto por completo.
+  document.querySelectorAll('.foto-box, #fotoBox, .foto-zone, #fotoInput').forEach(el => {
+    const cont = el.closest('.foto-box, .foto-zone, section, div');
+    if (cont) cont.style.display = 'none';
+  });
   if (!document.getElementById('fotoAvisoEN')) {
     const anclas = Array.from(document.querySelectorAll('h2,h3,p,div,label'))
       .filter(el => el.children.length === 0 && /Add your photo|Agrega tu foto/i.test(el.textContent));
@@ -1334,9 +1341,9 @@ ${JSON.stringify(D)}`;
 // Cambia las etiquetas de sección (Perfil/Profile, Habilidades/Skills...)
 function aplicarEtiquetasIdioma(l) {
   const ES = {perfil:'Perfil', habilidades:'Habilidades', idiomas:'Idiomas', educacion:'Educación',
-              experiencia:'Experiencia profesional', logros:'Logros', certificaciones:'Certificaciones'};
+              experiencia:'Experiencia profesional', logros:'Certificaciones', certificaciones:'Certificaciones'};
   const EN = {perfil:'Profile', habilidades:'Skills', idiomas:'Languages', educacion:'Education',
-              experiencia:'Professional experience', logros:'Achievements', certificaciones:'Certifications'};
+              experiencia:'Professional experience', logros:'Certifications', certificaciones:'Certifications'};
   Object.assign(T, l === 'en' ? EN : ES);
 }
 
@@ -1455,37 +1462,82 @@ function mostrarCarta(texto) {
 }
 
 function descargarCartaPDF() {
+  // Antes se generaba con html2canvas: el PDF salía como IMAGEN, sin texto
+  // seleccionable. El reclutador no podía copiar nada y ningún ATS podía
+  // leerla. Ahora usamos pdfMake, igual que la versión ATS del CV.
   const body = document.getElementById('cartaBody');
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'width:794px;padding:60px 70px;background:#fff;font-family:Georgia,serif;font-size:0.92rem;line-height:1.9;color:#222;white-space:pre-wrap';
-  wrap.textContent = limpiarCarta(body.textContent);
-  // Fuera del flujo y pegado al origen: evita que la captura salga desplazada
-  wrap.style.position = 'absolute';
-  wrap.style.left = '0';
-  wrap.style.top = '0';
-  wrap.style.zIndex = '-1';
-  document.body.appendChild(wrap);
-  const _sx = window.scrollX, _sy = window.scrollY;
-  window.scrollTo(0, 0);
-  const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
-  html2pdf().set({
-    margin:0,
-    filename: LANG==='en' ? `Cover_Letter_${nombre}.pdf` : `Carta_${nombre}.pdf`,
-    image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2, useCORS:true, backgroundColor:'#ffffff', scrollX:0, scrollY:0, x:0, y:0, windowWidth:1000},
-    jsPDF:{unit:'mm',format:'a4'}
-  }).from(wrap).save()
-    .then(()=>{ wrap.remove(); window.scrollTo(_sx,_sy); })
-    .catch(e=>{ wrap.remove(); window.scrollTo(_sx,_sy); console.error('Fallo PDF carta:', e); });
+  if (!body) return;
+  const texto = normalizarTipografia(limpiarCarta(body.textContent || ''));
+  if (!texto.trim()) { alert(LANG==='en' ? 'The letter is empty.' : 'La carta está vacía.'); return; }
+
+  const parrafos = texto.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const content = parrafos.map((p, idx) => ({
+    text: p,
+    fontSize: 11,
+    lineHeight: 1.45,
+    alignment: 'left',
+    margin: [0, idx === 0 ? 0 : 10, 0, 0]
+  }));
+
+  const nombre = normalizarTipografia(D.nombre || 'Carta').replace(/\s+/g, '_');
+  try {
+    pdfMake.createPdf({
+      pageSize: 'A4',
+      pageMargins: [64, 64, 64, 64],
+      content,
+      defaultStyle: { font: 'Roboto' }
+    }).download(LANG === 'en' ? `Cover_Letter_${nombre}.pdf` : `Carta_${nombre}.pdf`);
+    ev('cover_letter_downloaded');
+    toast(LANG === 'en' ? '✅ Cover letter downloaded (selectable text)' : '✅ Carta descargada (texto seleccionable)');
+  } catch (e) {
+    console.error('Fallo al generar la carta:', e);
+    alert(LANG === 'en' ? 'Could not generate the PDF.' : 'No se pudo generar el PDF.');
+  }
 }
 
 
 // ══ PDF ATS: TEXTO REAL SELECCIONABLE (pasa filtros ATS) ══
+
+// ══════════ NORMALIZACIÓN TIPOGRÁFICA PARA PDF ══════════
+// La fuente Roboto de pdfMake no tiene glifos para las ligaduras tipográficas
+// (ﬁ ﬂ ﬀ...). Cuando el texto las contiene, pdfMake las OMITE: el ATS leía
+// "Perfl" en vez de "Perfil" y "certifcación" en vez de "certificación".
+// En pantalla se veía bien; el daño solo aparecía en la extracción.
+function normalizarTipografia(s) {
+  return String(s == null ? '' : s)
+    .replace(/\uFB00/g, 'ff').replace(/\uFB01/g, 'fi').replace(/\uFB02/g, 'fl')
+    .replace(/\uFB03/g, 'ffi').replace(/\uFB04/g, 'ffl').replace(/\uFB05/g, 'st')
+    .replace(/\u00A0/g, ' ')                 // espacio duro
+    .replace(/[\u2018\u2019]/g, "'")        // comillas curvas
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2026/g, '...')
+    .replace(/[\u2013\u2014]/g, '-')        // guiones largos
+    .replace(/\u2212/g, '-')
+    .replace(/\*\*(.+?)\*\*/g, '$1')        // markdown residual
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/[*_`]/g, '');
+}
+
+// Aplica la normalización a todo un objeto de CV, recursivamente
+function normalizarCVData(d) {
+  const rec = (v) => {
+    if (typeof v === 'string') return normalizarTipografia(v);
+    if (Array.isArray(v)) return v.map(rec);
+    if (v && typeof v === 'object') {
+      const o = {};
+      for (const k in v) o[k] = rec(v[k]);
+      return o;
+    }
+    return v;
+  };
+  return rec(d);
+}
+
 async function descargarATS() {
   if (!_lock('ats')) return;
   ev('ats_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('ats'); abrirMuroPago(null, () => descargarATS()); return; }
-  const d = D;
+  const d = normalizarCVData(D);
   const A = LANG === 'en'
     ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
     : {perfil:'RESUMEN PROFESIONAL', exp:'EXPERIENCIA PROFESIONAL', edu:'EDUCACIÓN', skills:'HABILIDADES', langs:'Idiomas', tec:'Técnicas'};

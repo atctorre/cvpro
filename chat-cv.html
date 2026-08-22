@@ -1153,6 +1153,7 @@ async function init() {
   // localStorage, pero lo necesitamos después para rescatar competencias que
   // la IA haya resumido de más.
   if (cvSubido) sessionStorage.setItem('cvpro_fuente_original', cvSubido);
+  sessionStorage.removeItem('cvpro_habs_extra');   // no arrastrar el CV anterior
   if (modoOpt && cvSubido && cvSubido.length > 100) {
     // Setear LANG desde URL
     const langParam2 = new URLSearchParams(location.search).get('lang');
@@ -1572,6 +1573,7 @@ ${enIngles?'PROFESSIONAL SUMMARY':'RESUMEN PROFESIONAL'}
 
 ${enIngles?'PROFESSIONAL EXPERIENCE':'EXPERIENCIA PROFESIONAL'}
 ───────────────────────
+ORDEN OBLIGATORIO: cronológico inverso estricto, del puesto con fecha de inicio MÁS RECIENTE al más antiguo. Si dos puestos se solapan porque son simultáneos, primero el de mayor responsabilidad. Un orden incoherente hace que el reclutador no entienda la trayectoria.
 [${enIngles?'Full Job Title':'Cargo Completo'}] | [${enIngles?'Company':'Empresa/Institución'}] | [${enIngles?'Period':'Período'}]
 • [${enIngles?'verb + quantified achievement':'verbo + logro cuantificado'}]
 • [${enIngles?'verb + specific responsibility':'verbo + responsabilidad específica'}]
@@ -2146,6 +2148,7 @@ Título | Institución | Año
 ${enIngles?'CERTIFICATIONS':'CERTIFICACIONES'}
 ───────────────
 • cert 1
+REGLA: lista TODAS las certificaciones, cursos, congresos y membresías profesionales que aparezcan en el CV original — no elijas las más importantes, no resumas. Si el candidato tiene 9, van las 9. Un filtro ATS busca estas siglas exactas (BLS, ACLS, ATLS, PALS, POCUS...) y cada una que omitas es una coincidencia que pierde.
 
 ${enIngles?'SKILLS':'HABILIDADES'}
 ───────────
@@ -2187,6 +2190,17 @@ ${cvV1.substring(0,12000)}`})
     cvV1 = await pasadaATS(cvV1, enIngles);
     cvV1 = await generarConValidacion(async () => await pasadaVeracidad(cvV1, texto, enIngles), texto, enIngles);
     cvGenerado = cvV1;
+
+    // Antes de construir los datos: si el CV original traía una lista de
+    // competencias, la extraemos con IA. Es una llamada extra que solo ocurre
+    // en modo optimizar y evita entregar 4 habilidades genéricas cuando el
+    // candidato tenía 10 concretas escritas.
+    try {
+      if (typeof marcarPaso === 'function') marcarPaso(5);
+      const habsIA = await extraerHabilidadesDeFuente();
+      if (habsIA.length) sessionStorage.setItem('cvpro_habs_extra', JSON.stringify(habsIA));
+    } catch(eh) { console.warn('Extracción de habilidades omitida:', eh.message); }
+
     const m = cvGenerado.match(/^([A-ZÁÉÍÓÚÑ ]{5,60})$/m);
     datos.nombre = m ? m[1].trim() : (datos.nombre||'');
     sessionStorage.setItem('cvTexto', cvGenerado);
@@ -2840,17 +2854,70 @@ function habilidadesDeRespaldo() {
 // La IA a veces devuelve 4 habilidades genéricas cuando el CV original lista
 // 10 concretas. Este rescate NO inventa nada: solo recupera competencias que
 // ya estaban escritas en el CV que subió el candidato.
+
+// Extrae la lista de competencias del CV original usando la IA.
+// Los PDFs a dos columnas (Canva, InDesign) entrelazan las columnas al
+// extraer el texto: "• Medicina Interna Trabajo conjunto con jefaturas..."
+// mezcla la habilidad con la columna de al lado. Ningún regex lo resuelve
+// de forma fiable; la IA sí sabe separarlo. Solo se ejecuta si hacen falta.
+async function extraerHabilidadesDeFuente() {
+  const fuente = sessionStorage.getItem('cvpro_fuente_original') || '';
+  if (!fuente || fuente.length < 200) return [];
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt: `Extrae las COMPETENCIAS, HABILIDADES o SKILLS que aparecen listadas en este CV.
+
+CONTEXTO: el texto viene de un PDF a dos columnas, así que las líneas pueden estar mezcladas. Por ejemplo "• Medicina Interna Trabajo conjunto con jefaturas" contiene la habilidad "Medicina Interna" pegada a texto de otra columna. Separa correctamente.
+
+REGLAS:
+- Devuelve SOLO un array JSON de strings. Sin explicaciones, sin markdown, sin \`\`\`.
+- Cada habilidad: 1 a 4 palabras. Nada de frases largas.
+- Incluye también herramientas, técnicas, procedimientos y metodologías que el candidato mencione (POCUS, ecocardiografía, SAP, Excel, etc.).
+- NO incluyas títulos de sección (INVESTIGACIÓN, MEMBRESÍAS, REFERENCIAS, EDUCACIÓN, CERTIFICACIONES).
+- NO inventes ninguna. Solo lo que esté escrito en el CV.
+- Máximo 14.
+
+Ejemplo de salida: ["Medicina Interna","Hospitalización","POCUS","Liderazgo clínico"]
+
+CV:
+${sanitizarEntrada(fuente, 12000).substring(0, 12000)}`})
+    });
+    if (!res.ok) { console.warn('Extracción de habilidades falló:', res.status); return []; }
+    const data = await res.json();
+    let txt = (data.cv || data.respuesta || '').trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
+    const ini = txt.indexOf('['), fin = txt.lastIndexOf(']');
+    if (ini < 0 || fin < 0) return [];
+    const arr = JSON.parse(txt.slice(ini, fin + 1));
+    if (!Array.isArray(arr)) return [];
+    const limpias = arr.map(s => String(s).trim())
+      .filter(s => s.length > 2 && s.length < 45 && s.split(/\s+/).length <= 5);
+    console.debug(`🔧 IA extrajo ${limpias.length} competencias del CV original`);
+    return limpias;
+  } catch(e) {
+    console.warn('Extracción de habilidades falló:', e.message);
+    return [];
+  }
+}
+
 function rescatarCompetenciasOriginales(actuales) {
   if (actuales.length >= 8) return actuales;
   const fuente = sessionStorage.getItem('cvpro_fuente_original') || '';
   if (!fuente) return actuales;
+
+  // Primero, lo que la IA extrajo del CV original (ver extraerHabilidadesDeFuente)
+  const porIA = (() => {
+    try { return JSON.parse(sessionStorage.getItem('cvpro_habs_extra') || '[]'); }
+    catch(e) { return []; }
+  })();
 
   const bloques = [];
   const re = /(?:COMPETENCIAS|HABILIDADES|APTITUDES|SKILLS|COMPETENCIES|CONOCIMIENTOS)[^\n]*\n([\s\S]{0,700}?)(?=\n[ \t]*[A-ZÁÉÍÓÚÑ]{4,}|$)/gi;
   let m;
   while ((m = re.exec(fuente)) !== null) bloques.push(m[1]);
 
-  const candidatas = bloques.join('\n').split(/[\n,;·•]/)
+  const candidatas = porIA.concat(bloques.join('\n').split(/[\n,;·•]/))
     .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').replace(/[.,;]+$/, '').trim())
     .filter(s => s.length > 2 && s.length < 40 && !esRuido(s));
 
@@ -2863,6 +2930,29 @@ function rescatarCompetenciasOriginales(actuales) {
 
   if (nuevas.length) console.debug(`🔧 Rescatadas ${nuevas.length} competencias del CV original`);
   return actuales.concat(nuevas.map((nombre, i) => ({nombre, nivel: Math.max(60, 85 - i * 3)}))).slice(0, 12);
+}
+
+
+// Red de seguridad: la IA a veces devuelve la experiencia desordenada
+// (2024 → 2025 → 2026 → 2024). Reordenamos por año de inicio descendente,
+// que es lo que espera cualquier reclutador y cualquier ATS.
+function ordenarExperiencia(exp) {
+  const anio = (p) => {
+    const m = String(p || '').match(/(19|20)\d{2}/g);
+    return m ? Math.max(...m.map(Number)) : 0;
+  };
+  const inicio = (p) => {
+    const m = String(p || '').match(/(19|20)\d{2}/);
+    return m ? Number(m[0]) : 0;
+  };
+  const vigente = (p) => /actualidad|present|actual|current/i.test(String(p || ''));
+  return (exp || []).slice().sort((a, b) => {
+    const va = vigente(a.periodo), vb = vigente(b.periodo);
+    if (va !== vb) return va ? -1 : 1;          // los puestos vigentes primero
+    const d = inicio(b.periodo) - inicio(a.periodo);
+    if (d !== 0) return d;
+    return anio(b.periodo) - anio(a.periodo);
+  });
 }
 
 function construirCVData() {
@@ -3287,7 +3377,7 @@ function sinDuplicados(arr, clave) {
     linkedin: datos.linkedin?.toLowerCase().includes('no') ? '' : (datos.linkedin || ''),
     puesto: datos.puesto || '',
     resumen,
-    experiencia,
+    experiencia: ordenarExperiencia(experiencia),
     educacion,
     habilidades: todasHabs.length ? todasHabs : habilidadesDeRespaldo(),
     idiomas: idiomas.length ? idiomas : [{ nombre: 'Español', nivel: 'Nativo' }],

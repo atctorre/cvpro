@@ -828,7 +828,10 @@ function corregirFechaCarta(t) {
   const h = new Date();
   const mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const esEN = (typeof LANG !== 'undefined' && LANG === 'en');
+  // Usaba LANG (fijo al cargar la página): reescribía la fecha en español
+  // encima de una carta en inglés, deshaciendo el encabezado correcto.
+  const _l = (typeof _idiomaActual !== 'undefined' && _idiomaActual) ? _idiomaActual : LANG;
+  const esEN = _l === 'en';
   const fechaOK = esEN
     ? `${mesesEN[h.getMonth()]} ${h.getDate()}, ${h.getFullYear()}`
     : `${h.getDate()} de ${mesesES[h.getMonth()]} de ${h.getFullYear()}`;
@@ -839,8 +842,16 @@ function corregirFechaCarta(t) {
   // Inglés: "Month DD, YYYY" o "Month YYYY"
   const reEN = new RegExp('(' + mesesEN.join('|') + ')\\s+\\d{0,2},?\\s*(19|20)\\d{2}', 'gi');
   out = out.replace(reEN, fechaOK);
-  // Cualquier año suelto posterior al actual
-  out = out.replace(/\b(19|20)\d{2}\b/g, (m) => Number(m) > h.getFullYear() ? String(h.getFullYear()) : m);
+  // ⚠️ Aquí había un bug silencioso: esta línea reemplazaba CUALQUIER año
+  // posterior al actual en todo el texto de la carta. Si el candidato tiene
+  // un puesto "2026 – Actualidad" y el año en curso fuera menor, le
+  // reescribía las fechas de su propia trayectoria sin avisar.
+  // Ahora solo se aplica al bloque de encabezado (primeras 3 líneas),
+  // que es donde vive la fecha de la carta.
+  const lineas = out.split('\n');
+  const cabecera = lineas.slice(0, 3).join('\n')
+    .replace(/\b(19|20)\d{2}\b/g, (m) => Number(m) > h.getFullYear() ? String(h.getFullYear()) : m);
+  out = [cabecera, ...lineas.slice(3)].join('\n');
   return out;
 }
 
@@ -1197,6 +1208,13 @@ async function confirmarFoto() {
 
 // ── CONSTRUIR CV
 function ph(cls, isRect) {
+  // Bloqueo duro: en un resume estadounidense NUNCA se pinta la foto, sin
+  // importar si el usuario la había subido antes de convertir el documento.
+  const _lang = (typeof _idiomaActual !== 'undefined' && _idiomaActual) ? _idiomaActual : LANG;
+  if (_lang === 'en') {
+    const ini0 = (D.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    return isRect ? `<div class="ph-rect">${ini0}</div>` : `<div class="ph">${ini0}</div>`;
+  }
   if (fotoAjustada) {
     if (isRect) return `<div class="ph-rect"><img src="${fotoAjustada}"></div>`;
     return `<div class="ph"><img src="${fotoAjustada}"></div>`;
@@ -1216,7 +1234,9 @@ function buildCV(id) {
   const d = D;
   const resumen = d.resumen || '';
   const logrosHtml = d.logros?.length ? `<div style="margin-top:14px"><div class="cv-${id} st">${T.logros}</div>${d.logros.map(l=>`<div class="cv-${id} bl">${esc(l)}</div>`).join('')}</div>` : '';
-  const langHtml = (d.idiomas||[]).map(l=>`<div class="li"><span>${esc(l.nombre)}</span><span style="color:#888;text-align:right;max-width:60%;overflow-wrap:break-word">${esc(l.nivel)}</span></div>`).join('');
+  // Salía "EspañolNativo" pegado: los dos <span> quedaban sin separación
+  // visual porque .li no siempre aplica space-between en todas las plantillas.
+  const langHtml = (d.idiomas||[]).map(l=>`<div class="li" style="display:flex;justify-content:space-between;gap:10px"><span>${esc(l.nombre)}</span><span style="color:#888;text-align:right;max-width:60%;overflow-wrap:break-word">${l.nivel?'· '+esc(l.nivel):''}</span></div>`).join('');
 
   const maps = {
     h1:`<div class="cv-h1"><div class="hdr">${ph('cv-h1',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h1')}</div></div></div><div class="bd"><div class="sb"><div class="st" style="margin-top:0">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:14px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h1',d.habilidades)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h1',d.experiencia)}${logrosHtml}</div></div></div>`,
@@ -1647,7 +1667,11 @@ async function descargarATS() {
   ev('ats_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('ats'); abrirMuroPago(null, () => descargarATS()); return; }
   const d = normalizarCVData(D);
-  const A = LANG === 'en'
+  // Usaba LANG (fijo al cargar la página), así que tras convertir a resume
+  // los encabezados seguían en español: "EXPERIENCIA PROFESIONAL" dentro de
+  // un documento en inglés. Mezcla de idiomas = descarte inmediato en EE.UU.
+  const _LA = (typeof _idiomaActual !== 'undefined' && _idiomaActual) ? _idiomaActual : LANG;
+  const A = _LA === 'en'
     ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
     : {perfil:'RESUMEN PROFESIONAL', exp:'EXPERIENCIA PROFESIONAL', edu:'EDUCACIÓN', skills:'HABILIDADES', langs:'Idiomas', tec:'Técnicas'};
 
@@ -1669,7 +1693,7 @@ async function descargarATS() {
     d.experiencia.forEach(j => {
       content.push({
         columns: [
-          {text: `${j.titulo||''}${j.empresa?' — '+j.empresa:''}`, fontSize: 10, bold: true, color: '#1a1a1a', width: '*'},
+          {text: sinLigaduras(`${j.titulo||''}${j.empresa?' — '+j.empresa:''}`), fontSize: 10, bold: true, color: '#1a1a1a', width: '*'},
           {text: sinLigaduras(j.periodo||''), fontSize: 9, color: '#777', width: 'auto'}
         ], margin: [0,2,0,3], unbreakable: true
       });
@@ -1683,7 +1707,7 @@ async function descargarATS() {
   if (d.educacion?.length) {
     content.push({text: sinLigaduras(A.edu), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,4,0,5]});
     d.educacion.forEach(e => {
-      content.push({text: `${e.titulo||''} — ${e.institucion||''}${e['año']?' ('+e['año']+')':''}`, fontSize: 9.5, color: '#333', margin: [0,0,0,3]});
+      content.push({text: sinLigaduras(`${e.titulo||''} — ${e.institucion||''}${e['año']?' ('+e['año']+')':''}`), fontSize: 9.5, color: '#333', margin: [0,0,0,3]});
     });
   }
 
@@ -1691,15 +1715,15 @@ async function descargarATS() {
   const idiomas = (d.idiomas||[]).map(l => `${esc(l.nombre)}${l.nivel?' ('+l.nivel+')':''}`).join(', ');
   if (habs.length || idiomas) {
     content.push({text: sinLigaduras(A.skills), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,8,0,5]});
-    if (habs.length) content.push({text: `${A.tec}: ${habs.join(', ')}`, fontSize: 9.5, color: '#333', lineHeight: 1.3, margin: [0,0,0,3]});
-    if (idiomas) content.push({text: `${A.langs}: ${idiomas}`, fontSize: 9.5, color: '#333'});
+    if (habs.length) content.push({text: sinLigaduras(`${A.tec}: ${habs.join(', ')}`), fontSize: 9.5, color: '#333', lineHeight: 1.3, margin: [0,0,0,3]});
+    if (idiomas) content.push({text: sinLigaduras(`${A.langs}: ${idiomas}`), fontSize: 9.5, color: '#333'});
   }
 
   const nombre = (d.nombre||'CV').replace(/\s+/g,'_');
   pdfMake.createPdf({
     pageSize: 'A4',
     pageMargins: [42, 42, 42, 50],
-    footer: (cur, tot) => tot > 1 ? {text: `${cur} / ${tot}`, alignment:'center', fontSize:8, color:'#999', margin:[0,12,0,0]} : null,
+    footer: (cur, tot) => tot > 1 ? {text: sinLigaduras(`${cur} / ${tot}`), alignment:'center', fontSize:8, color:'#999', margin:[0,12,0,0]} : null,
     content,
     defaultStyle: {font: 'Roboto'}
   }).download(LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);

@@ -723,6 +723,8 @@ function setGender(g) {
 let cartaGenerada = '';
 
 async function generarCarta() {
+  const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
   const btn = document.getElementById('btnCarta');
   if (cartaGenerada) {
     document.getElementById('cartaWrap').style.display = 'block';
@@ -745,9 +747,9 @@ async function generarCarta() {
     : `Eres un ghostwriter élite de cartas de presentación. Basándote en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, que aplica como ${D.puesto}. 3-4 párrafos, tono seguro y profesional, menciona 2-3 logros concretos del CV, sin corchetes ni placeholders, lista para enviar. Empieza con "Estimado equipo de selección," y termina con firma profesional con el nombre del candidato.\n\nCV:\n${cvTexto.substring(0,2500)}`;
 
   try {
-    const res = await fetch(`${SUPABASE_URL_C}/functions/v1/super-service`, {
+    const res = await fetch(`${SB_URL}/functions/v1/super-service`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY_C}`},
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},
       body: JSON.stringify({prompt})
     });
     const data = await res.json();
@@ -1104,6 +1106,8 @@ function volverSelector() {
 
 // ── P3: CARTA DE PRESENTACIÓN CON IA ──
 async function generarCarta() {
+  const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
   const btn = document.getElementById('btnCarta');
   btn.disabled = true;
   btn.textContent = LANG==='en' ? '⏳ Writing your cover letter...' : '⏳ Redactando tu carta...';

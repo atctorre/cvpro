@@ -1570,9 +1570,19 @@ async function recuperarCVPorCodigo(codigo) {
       headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({p_codigo: String(codigo).trim()})
     });
-    const rows = await res.json();
-    if (!rows || !rows.length) {
-      alert(LANG==='en' ? 'Code not found. Check and try again.' : 'Código no encontrado. Verifica e intenta de nuevo.');
+    let rows = await res.json();
+    if (rows && rows.message) {
+      console.error('RPC error:', rows);
+      // Fallback: intento directo por si la función aún no está en caché
+      const res2 = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados?codigo=eq.${encodeURIComponent(String(codigo).trim())}&select=*&limit=1`, {
+        headers: {'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}
+      });
+      rows = await res2.json();
+    }
+    if (!Array.isArray(rows) || !rows.length) {
+      alert(LANG==='en'
+        ? 'Code not found. Make sure it is the 6-digit code from your resume or email.'
+        : 'Código no encontrado. Verifica que sea el código de 6 dígitos de tu CV o de tu email.');
       return false;
     }
     const r = rows[0];
@@ -2310,7 +2320,12 @@ function construirCVData() {
   const habsM3 = cv.match(/(?:HABILIDADES|COMPETENCIAS|SKILLS)[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n[─\-═]+|\n══|$)/i);
   if (habsM) habsTexto = habsM[1];
   else if (habsM2) habsTexto = habsM2[1];
-  else if (habsM3) habsTexto = habsM3[1].split('\n').map(l=>l.replace(/^[\s•·▸▪\-\*]+/,'').trim()).filter(l=>l&&l.length<60&&!/^(Blandas|Idiomas|Soft|Languages)/i.test(l)).slice(0,12).join(', ');
+  else if (habsM3) habsTexto = habsM3[1].split('\n').map(l=>l.replace(/^[\s•·▸▪\-\*]+/,'').trim()).filter(l=>l&&l.length<60&&!/^(Blandas|Idiomas|Soft|Languages)/i.test(l)).slice(0,14).join(', ');
+  // Fallback final: cualquier sección de competencias sin línea divisoria
+  if (!habsTexto) {
+    const m4 = cv.match(/(?:HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES)[^\n]*\n([\s\S]{20,700}?)(?=\n[A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚ\s]{4,}\n|\n══|$)/i);
+    if (m4) habsTexto = m4[1].split(/\n|,/).map(l=>l.replace(/^[\s•·▸▪\-\*]+/,'').replace(/^(Técnicas?|Technical|Blandas?|Soft)\s*:/i,'').trim()).filter(l=>l&&l.length>2&&l.length<60&&!/^(Idiomas|Languages)/i.test(l)).slice(0,14).join(', ');
+  }
   // 2. De datos enriquecidos
   else if (datos.habilidades_tecnicas_enriquecido) habsTexto = datos.habilidades_tecnicas_enriquecido;
   // 3. De datos crudos — pero limpiar si son demasiado largos (texto de resumen colado)

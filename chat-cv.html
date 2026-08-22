@@ -3298,6 +3298,57 @@ async function accesoVerificado(nivelMinimo) {
   return orden.indexOf(planSrv) >= orden.indexOf(nivelMinimo || 'basico');
 }
 
+// ══ P0 FIX: garantizar código de CV antes de cobrar (nunca cobrar sin poder entregar) ══
+async function asegurarCodigoCV() {
+  let cod = sessionStorage.getItem('cvpro_codigo');
+  if (cod && cod.length >= 6) return cod;
+  // No hay código: generar uno y guardar el CV ahora mismo
+  const buf = new Uint32Array(2);
+  (window.crypto || window.msCrypto).getRandomValues(buf);
+  const ALF = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  cod = Array.from({length:8}, (_,i) => ALF[(buf[i%2] >>> (i*4)) % ALF.length]).join('');
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    await fetch(`${SB_U}/rest/v1/cvs_guardados`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        codigo: cod, nombre: (datos && datos.nombre) || '', email: ((datos && datos.email_tel) || '').split(',')[0].trim(),
+        cv_texto: sessionStorage.getItem('cvTexto') || '',
+        cv_data: (function(){ try { return JSON.parse(sessionStorage.getItem('cvData')||'{}'); } catch(e){ return {}; } })(), lang: LANG,
+        expira_en: new Date(Date.now() + 90*86400000).toISOString()
+      })
+    });
+  } catch(e) { console.warn('No se pudo guardar el CV antes del pago:', e.message); }
+  sessionStorage.setItem('cvpro_codigo', cod);
+  return cod;
+}
+
+// ══ P1 FIX: reintentar pagos que no llegaron a Supabase ══
+async function reintentarPagosPendientes() {
+  let pend = [];
+  try { pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]'); } catch(e) { return; }
+  if (!pend.length) return;
+  const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+  const quedan = [];
+  for (const pago of pend) {
+    try {
+      const r = await fetch(`${SB_U}/rest/v1/pagos`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
+        body: JSON.stringify(pago)
+      });
+      if (!r.ok && r.status !== 409) quedan.push(pago);
+      else console.log('✅ Pago pendiente recuperado:', pago.orden_id);
+    } catch(e) { quedan.push(pago); }
+  }
+  localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(quedan));
+}
+window.addEventListener('load', () => setTimeout(reintentarPagosPendientes, 2500));
+
+
 async function abrirMuroPago(planSugerido, alPagar) {
   const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
   let planSel = planSugerido || planActual();
@@ -3354,13 +3405,22 @@ async function abrirMuroPago(planSugerido, alPagar) {
         onApprove: async (data, actions) => {
           const det = await actions.order.capture();
           const payer = (det && det.payer) || {};
-          localStorage.setItem('cvpro_pago', JSON.stringify({ok:true, plan:planSel, orden:det.id, ts:Date.now()}));
-          await registrarPago(det.id, planSel, PLANES[planSel].precio, {
+          let montoReal = PLANES[planSel].precio;
+          try {
+            const pu = det.purchase_units && det.purchase_units[0];
+            const cap = pu && pu.payments && pu.payments.captures && pu.payments.captures[0];
+            if (cap && cap.amount && cap.amount.value) montoReal = cap.amount.value;
+          } catch(e) {}
+          const planReal = parseFloat(montoReal) >= 14.99 ? 'premium'
+                         : parseFloat(montoReal) >= 9.99 ? 'estandar'
+                         : parseFloat(montoReal) >= 4.99 ? 'basico' : 'ninguno';
+          localStorage.setItem('cvpro_pago', JSON.stringify({ok:true, plan:planReal, orden:det.id, ts:Date.now()}));
+          await registrarPago(det.id, planReal, montoReal, {
             email: payer.email_address || '',
             nombre: ((payer.name||{}).given_name||'') + ' ' + ((payer.name||{}).surname||'')
           });
           document.getElementById('muroPago')?.remove();
-          if (typeof alPagar === 'function') alPagar(planSel);
+          if (typeof alPagar === 'function') alPagar(planReal);
         },
         onError: (err) => {
           console.error('PayPal error:', err);
@@ -3372,6 +3432,7 @@ async function abrirMuroPago(planSugerido, alPagar) {
     }
   }
 
+  await asegurarCodigoCV();
   pintarPlanes();
   renderBotones();
 }

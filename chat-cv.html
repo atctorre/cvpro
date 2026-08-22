@@ -1236,12 +1236,21 @@ function renderMsg(tipo, texto, opts=[], animar=true, pasoIdx=null, chips=null) 
     div.innerHTML = `<div class="ai-avatar">CV</div><div><div class="msg-bubble">${textoLimpio}</div>${optsHtml}${chipsHtml}${ayudaHtml}</div>`;
   } else {
     const editBtn = pasoIdx !== null ? `<div><button class="msg-edit-btn" onclick="editarRespuesta(${pasoIdx})">${LANG==='en'?'✏️ edit':'✏️ editar'}</button></div>` : '';
-    div.innerHTML = `<div><div class="msg-bubble">${texto}</div>${editBtn}</div>`;
+    div.innerHTML = `<div><div class="msg-bubble">${escHtml(texto)}</div>${editBtn}</div>`;
     playSound('send');
   }
 
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
+}
+
+
+// Escapa lo que escribe el usuario antes de insertarlo con innerHTML.
+// Sin esto, un CV o una respuesta con <img src=x onerror=...> ejecuta código.
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function renderMsgAI(texto, opts=[], animar=true, pasoIdx=null, chips=null) {
@@ -1804,9 +1813,11 @@ let cvOriginalBackup = null;
 async function abrirModalVacante() {
   ev('adapt_job_clicked');
   if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => abrirModalVacante()); return; }
-  const _cupo = await consumirUso('vacante');
+  // Solo COMPROBAMOS. El cupo se descuenta al final de adaptarAVacante(),
+  // cuando el CV adaptado ya existe. Antes se gastaba con solo abrir el modal:
+  // si el usuario cerraba sin adaptar, perdía su única adaptación.
+  const _cupo = await verificarCupo('vacante');
   if (!_cupo.permitido) { avisarCupoAgotado('vacante', _cupo); return; }
-  ev('adapt_job_consumed', {plan:_cupo.plan, usados:_cupo.usados});
   const overlay = document.createElement('div');
   overlay.id = 'vacanteOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -1906,6 +1917,9 @@ ${cvAd.substring(0,5500)}`})
     const cvData = construirCVData();
     sessionStorage.setItem('cvData', JSON.stringify(cvData));
     document.getElementById('vacanteOverlay').remove();
+    // Ahora sí: el CV adaptado existe, descontamos el cupo
+    const _uso = await consumirUso('vacante');
+    ev('adapt_job_consumed', {plan:_uso.plan, usados:_uso.usados});
     mostrarResultado(cvGenerado);
     // Banner de éxito + botón revertir
     setTimeout(() => {
@@ -2592,17 +2606,9 @@ function irAPlantillasDesdeEditor() {
 
 // [código muerto eliminado: copiar() no se llamaba desde ningún sitio]
 
-function irPlantillas() {
-  const cvData = construirCVData();
-  sessionStorage.setItem('cvData', JSON.stringify(cvData));
-  sessionStorage.setItem('cvTexto', cvGenerado);
-  window.location.href = 'plantillas-cv.html';
-}
+// [código muerto eliminado: irPlantillas()]
 
-function nuevoCV() {
-  localStorage.removeItem('cvpro_chat16');
-  location.reload();
-}
+// [código muerto eliminado: nuevoCV()]
 
 
 // Último recurso para las habilidades: antes se imprimía "Por definir" en el
@@ -3273,7 +3279,7 @@ function agregarMsgUser(texto) {
   const msgs = document.getElementById('soporteMsgs');
   const div = document.createElement('div');
   div.className = 'smsg user';
-  div.innerHTML = `<div class="smsg-bubble">${texto}</div>`;
+  div.innerHTML = `<div class="smsg-bubble">${escHtml(texto)}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   soporteHistorial.push({role:'user', content:texto});
@@ -3501,11 +3507,7 @@ function planActual() {
 // tieneAcceso() ELIMINADA: solo se permite accesoVerificado() contra el servidor
 
 
-function yaPago() {
-  if (typeof esTester === 'function' && esTester()) return true;
-  const p = _jsonSeguro(localStorage.getItem('cvpro_pago'), 'null');
-  return !!(p && p.ok);
-}
+// [código muerto eliminado: yaPago()]
 
 function cargarSDKPayPal() {
   return new Promise((resolve, reject) => {
@@ -3590,6 +3592,34 @@ async function verificarPagoServidor() {
 
 
 // ══════════ LÍMITES DE USO POR PLAN (verificados en servidor) ══════════
+
+// Comprueba el cupo SIN consumirlo. El cupo solo se descuenta cuando el
+// entregable llega de verdad (ver consumirUso), nunca al abrir un modal ni
+// antes de una llamada a la IA que puede fallar.
+async function verificarCupo(tipo) {
+  if (typeof esTester === 'function' && esTester()) return {permitido:true, plan:'premium', limite:-1, usados:0};
+  const codigo = sessionStorage.getItem('cvpro_codigo') || '';
+  if (!codigo) return {permitido:false, plan:'ninguno', limite:0, usados:0};
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_U}/rest/v1/rpc/consultar_usos`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`},
+      body: JSON.stringify({p_codigo: codigo, p_tipo: tipo})
+    });
+    if (!res.ok) return {permitido:false, plan:'error', limite:0, usados:0};
+    const rows = await res.json();
+    const r = (Array.isArray(rows) ? rows[0] : rows) || {};
+    const limite = Number.isFinite(+r.limite) ? +r.limite : 0;
+    const usados = Number.isFinite(+r.usados) ? +r.usados : 0;
+    return {permitido: limite === -1 || (limite > 0 && usados < limite), plan: r.plan || 'ninguno', limite, usados};
+  } catch(e) {
+    console.warn('No se pudo consultar el cupo:', e.message);
+    return {permitido:false, plan:'error', limite:0, usados:0};
+  }
+}
+
 async function consumirUso(tipo) {
   if (typeof esTester === 'function' && esTester()) return {permitido:true, plan:'premium', limite:-1, usados:0};
   const codigo = sessionStorage.getItem('cvpro_codigo') || '';

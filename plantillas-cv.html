@@ -617,6 +617,10 @@ button, a, .tpl-card { touch-action: manipulation; }
 /* Evitar overflow horizontal en móviles pequeños (320px) */
 html, body { max-width: 100%; overflow-x: hidden; }
 img, svg, canvas, video { max-width: 100%; height: auto; }
+/* Excepción: la foto del recuadro de recorte DEBE poder superar el 100% del
+   contenedor, o el zoom no se ve en la vista previa aunque sí se aplique al
+   PDF — que era justo el desajuste entre lo que veías y lo que descargabas. */
+.foto-crop-wrap img { max-width: none !important; height: auto !important; }
 
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0a0a'/><text y='72' x='50' font-size='60' font-family='sans-serif' font-weight='bold' fill='%23FFD000' text-anchor='middle'>C</text></svg>">
@@ -996,6 +1000,9 @@ function cargarFoto(e) {
 function activarDragFoto() {
   const wrap = document.getElementById('cropWrap');
   if (!wrap || wrap.dataset.drag) return;
+  // Nota: mostrarAjuste() recrea el #cropWrap cada vez, así que dataset.drag
+  // siempre viene vacío y los listeners de window se acumulaban. Los limpiamos.
+  if (window._dragFotoCleanup) window._dragFotoCleanup();
   wrap.dataset.drag = '1';
   wrap.style.cursor = 'grab';
   wrap.style.touchAction = 'none';
@@ -1024,11 +1031,21 @@ function activarDragFoto() {
   wrap.addEventListener('touchstart', down, {passive:false});
   window.addEventListener('touchmove', move, {passive:false});
   window.addEventListener('touchend', up);
+  window._dragFotoCleanup = () => {
+    window.removeEventListener('mousemove', move);
+    window.removeEventListener('mouseup', up);
+    window.removeEventListener('touchmove', move);
+    window.removeEventListener('touchend', up);
+  };
   wrap.addEventListener('wheel', (e) => {
     e.preventDefault();
     if (Z()) { Z().value = Math.max(50, Math.min(250, parseInt(Z().value) + (e.deltaY < 0 ? 6 : -6))); actualizarFoto(); }
   }, {passive:false});
 }
+
+// Recuerda el último encuadre: al pulsar "Reajustar" los deslizadores
+// volvían a 130/0/0 y había que recolocar la foto desde cero.
+let _ajustePrev = {z:130, x:0, y:0};
 
 function mostrarAjuste() {
   const ajuste = document.getElementById('fotoAjuste');
@@ -1040,9 +1057,9 @@ function mostrarAjuste() {
       <img id="cropImg" src="${fotoOriginal}" draggable="false">
     </div>
     <div class="crop-controls">
-      <div class="crop-ctrl"><label>Zoom</label><input type="range" id="zoomCtrl" min="50" max="250" value="130" oninput="actualizarFoto()"></div>
-      <div class="crop-ctrl"><label>Vertical</label><input type="range" id="yCtrl" min="-150" max="150" value="0" oninput="actualizarFoto()"></div>
-      <div class="crop-ctrl"><label>Horizontal</label><input type="range" id="xCtrl" min="-150" max="150" value="0" oninput="actualizarFoto()"></div>
+      <div class="crop-ctrl"><label>Zoom</label><input type="range" id="zoomCtrl" min="50" max="250" value="${_ajustePrev.z}" oninput="actualizarFoto()"></div>
+      <div class="crop-ctrl"><label>Vertical</label><input type="range" id="yCtrl" min="-150" max="150" value="${_ajustePrev.y}" oninput="actualizarFoto()"></div>
+      <div class="crop-ctrl"><label>Horizontal</label><input type="range" id="xCtrl" min="-150" max="150" value="${_ajustePrev.x}" oninput="actualizarFoto()"></div>
     </div>
     <button class="btn-foto-ok" onclick="confirmarFoto()">✅ Confirmar ajuste</button>
   `;
@@ -1079,15 +1096,21 @@ async function confirmarFoto() {
   tmpImg.src = fotoOriginal;
   await new Promise(r => tmpImg.onload = r);
 
-  const zoom = parseFloat(document.getElementById('zoomCtrl').value) / 100;
-  const xOff = parseFloat(document.getElementById('xCtrl').value) * 2;
-  const yOff = parseFloat(document.getElementById('yCtrl').value) * 2;
+  const _z = parseFloat(document.getElementById('zoomCtrl').value);
+  const _x = parseFloat(document.getElementById('xCtrl').value);
+  const _y = parseFloat(document.getElementById('yCtrl').value);
+  _ajustePrev = {z:_z, x:_x, y:_y};
+  const zoom = _z / 100;
+  const xOff = _x * 2;
+  const yOff = _y * 2;
 
-  // Mantener proporción original
+  // La vista previa escala SIEMPRE por ancho (`img.style.width = zoom + '%'`
+  // sobre un recuadro de 200px). El canvas escalaba por ALTO cuando la foto
+  // era apaisada, así que salía `ratio` veces más grande que lo que el usuario
+  // había encuadrado. Ahora replicamos exactamente la vista previa.
   const ratio = tmpImg.naturalWidth / tmpImg.naturalHeight;
-  let iw, ih;
-  if (ratio >= 1) { ih = size * zoom; iw = ih * ratio; }
-  else { iw = size * zoom; ih = iw / ratio; }
+  const iw = size * zoom;
+  const ih = iw / ratio;
   const ix = (size - iw) / 2 + xOff;
   const iy = (size - ih) / 2 + yOff;
 
@@ -1243,7 +1266,9 @@ async function traducirCV() {
     return;
   }
 
-  const cupo = await consumirUso('traduccion');
+  // Solo comprobamos: si la IA falla o devuelve JSON inválido, el cliente no
+  // puede perder su única traducción sin haber recibido nada.
+  const cupo = await verificarCupo('traduccion');
   if (!cupo.permitido) { avisarCupoAgotado('traduccion', cupo); return; }
 
   btn.disabled = true;
@@ -1294,7 +1319,8 @@ ${JSON.stringify(D)}`;
     aplicarEtiquetasIdioma(hacia);
     sessionStorage.setItem('cvData', JSON.stringify(D));
     mostrarCV();
-    ev('translate_completed', {hacia, plan: cupo.plan});
+    const _uso = await consumirUso('traduccion');   // traducción aplicada → se descuenta
+    ev('translate_completed', {hacia, plan: _uso.plan, usados: _uso.usados});
     mostrarToast(hacia === 'en' ? '✅ Resume translated to English' : '✅ CV traducido al español');
   } catch(e) {
     alert((LANG==='en' ? 'Could not translate: ' : 'No se pudo traducir: ') + (e.message||''));
@@ -1336,9 +1362,9 @@ function mostrarToast(msg) {
 async function generarCarta() {
   ev('cover_letter_clicked');
   if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => generarCarta()); return; }
-  const _cupo = await consumirUso('carta');
+  // Solo comprobamos. El cupo se descuenta cuando la carta existe de verdad.
+  const _cupo = await verificarCupo('carta');
   if (!_cupo.permitido) { avisarCupoAgotado('carta', _cupo); return; }
-  ev('cover_letter_consumed', {plan:_cupo.plan, usados:_cupo.usados});
   const _hoy = new Date();
   const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1400,6 +1426,8 @@ ${cvTexto.substring(0,2500)}`;
     const data = await res.json();
     if (!data.cv || data.cv.length < 200) throw new Error('short');
     mostrarCarta(ENCABEZADO + '\n\n' + limpiarCarta(data.cv));
+    const _uso = await consumirUso('carta');   // ya entregada → ahora sí se descuenta
+    ev('cover_letter_consumed', {plan:_uso.plan, usados:_uso.usados});
   } catch(e) {
     alert((LANG==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
   }
@@ -1785,6 +1813,34 @@ async function verificarPagoServidor() {
 
 // ══════════ LÍMITES DE USO POR PLAN (verificados en servidor) ══════════
 // Básico: 0 · Estándar: 1 de cada · Premium: ilimitado
+
+// Comprueba el cupo SIN consumirlo. El cupo solo se descuenta cuando el
+// entregable llega de verdad (ver consumirUso), nunca al abrir un modal ni
+// antes de una llamada a la IA que puede fallar.
+async function verificarCupo(tipo) {
+  if (typeof esTester === 'function' && esTester()) return {permitido:true, plan:'premium', limite:-1, usados:0};
+  const codigo = sessionStorage.getItem('cvpro_codigo') || '';
+  if (!codigo) return {permitido:false, plan:'ninguno', limite:0, usados:0};
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_U}/rest/v1/rpc/consultar_usos`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`},
+      body: JSON.stringify({p_codigo: codigo, p_tipo: tipo})
+    });
+    if (!res.ok) return {permitido:false, plan:'error', limite:0, usados:0};
+    const rows = await res.json();
+    const r = (Array.isArray(rows) ? rows[0] : rows) || {};
+    const limite = Number.isFinite(+r.limite) ? +r.limite : 0;
+    const usados = Number.isFinite(+r.usados) ? +r.usados : 0;
+    return {permitido: limite === -1 || (limite > 0 && usados < limite), plan: r.plan || 'ninguno', limite, usados};
+  } catch(e) {
+    console.warn('No se pudo consultar el cupo:', e.message);
+    return {permitido:false, plan:'error', limite:0, usados:0};
+  }
+}
+
 async function consumirUso(tipo) {
   // Los testers no consumen cupo
   if (typeof esTester === 'function' && esTester()) return {permitido:true, plan:'premium', limite:-1, usados:0};

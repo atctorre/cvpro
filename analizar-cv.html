@@ -347,6 +347,11 @@ async function analizarTextoPegado() {
   }
   document.getElementById('pegarWrap').style.display = 'none';
   document.getElementById('loading').style.display = 'block';
+  if (!cuposDisponibles()) {
+    document.getElementById('loading').style.display = 'none';
+    return err(LANG==='en' ? 'Free limit: 3 scans per day. Come back tomorrow.' : 'Límite gratis: 3 análisis por día. Vuelve mañana.');
+  }
+  consumirAnalisis();
   cvTextoGlobal = sanitizarEntrada(t).substring(0, 6000);
   ev('free_analysis_pasted');
   await analizarCV();
@@ -354,8 +359,13 @@ async function analizarTextoPegado() {
 
 async function procesarArchivo(file) {
   document.getElementById('errBox').style.display = 'none';
-  if (!limiteDiario()) return err(LANG==='en' ? 'Free limit: 3 scans per day. Come back tomorrow or optimize your resume now.' : 'Límite gratis: 3 análisis por día. Vuelve mañana u optimiza tu CV ahora.');
+  // Primero validamos el archivo. Antes el contador subía ANTES de estas
+  // comprobaciones: subir un archivo de 6MB gastaba uno de los 3 análisis
+  // diarios sin haber analizado nada.
   if (file.size > 5 * 1024 * 1024) return err(LANG==='en' ? 'File exceeds 5MB.' : 'El archivo supera 5MB.');
+  const _ext = file.name.split('.').pop().toLowerCase();
+  if (!['pdf','docx','txt'].includes(_ext)) return err(LANG==='en' ? 'Format not supported. Use PDF, DOCX or TXT.' : 'Formato no soportado. Usa PDF, DOCX o TXT.');
+  if (!cuposDisponibles()) return err(LANG==='en' ? 'Free limit: 3 scans per day. Come back tomorrow or optimize your resume now.' : 'Límite gratis: 3 análisis por día. Vuelve mañana u optimiza tu CV ahora.');
   dz.style.display = 'none';
   document.getElementById('loading').style.display = 'block';
   try {
@@ -378,6 +388,7 @@ async function procesarArchivo(file) {
         ? 'We could not read the text in this file.<br><br>This often happens with resumes exported from <b>Canva, Figma or InDesign</b>, which hide the text inside layers — and note: <b>many ATS systems have the same problem</b>, so recruiters may not read it either.<br><br><button onclick="mostrarPegarTexto()" style="background:#FFD000;color:#0a0a0a;border:none;border-radius:50px;padding:11px 24px;font-weight:800;cursor:pointer;margin-top:6px">📋 Paste my resume text instead →</button><br><br><span style="font-size:0.85rem;opacity:.8">You can also upload it as <b>.docx</b> or <b>.txt</b>, or <a href="chat-cv.html" style="color:#FFD000;text-decoration:underline">build a clean one with AI</a>.</span>'
         : 'No pudimos leer el texto de este archivo.<br><br>Suele pasar con CVs exportados desde <b>Canva, Figma o InDesign</b>, que esconden el texto dentro de capas — y ojo: <b>muchos sistemas ATS tienen el mismo problema</b>, así que puede que los reclutadores tampoco lo lean.<br><br><button onclick="mostrarPegarTexto()" style="background:#FFD000;color:#0a0a0a;border:none;border-radius:50px;padding:11px 24px;font-weight:800;cursor:pointer;margin-top:6px">📋 Pegar el texto de mi CV →</button><br><br><span style="font-size:0.85rem;opacity:.8">También puedes subirlo como <b>.docx</b> o <b>.txt</b>, o <a href="chat-cv.html" style="color:#FFD000;text-decoration:underline">crear uno limpio con IA</a>.</span>');
     }
+    consumirAnalisis();   // texto extraído con éxito → ahora sí gastamos un análisis
     cvTextoGlobal = sanitizarEntrada(texto).substring(0, 6000);
     await analizarCV();
   } catch(e) {
@@ -466,16 +477,21 @@ function mostrarResultado(r) {
 
   // Antes: `r.extras || 5` — si la IA no detectaba problemas extra, la interfaz
   // inventaba un 5. Ahora, si no hay más, cambiamos el mensaje en vez de mentir.
-  const lockN = document.getElementById('lockN');
+  // Reconstruimos el <p> entero en cada análisis. Antes sobrescribíamos su
+  // innerHTML, lo que destruía el <strong id="lockN"> que vive dentro: en un
+  // segundo análisis con extras>0, el número ya no tenía dónde pintarse.
   const lockT = document.getElementById('lockT');
   const extras = Number.isFinite(+r.extras) ? Math.max(0, Math.round(+r.extras)) : 0;
-  if (extras > 0 && lockN) {
-    lockN.textContent = extras;
-    if (lockT) lockT.style.display = '';
-  } else if (lockT) {
-    lockT.innerHTML = LANG==='en'
-      ? 'Get your resume professionally rewritten by AI — ATS-ready and recruiter-approved'
-      : 'Reescribe tu CV con IA a nivel profesional — listo para ATS y para reclutadores';
+  if (lockT) {
+    if (extras > 0) {
+      lockT.innerHTML = LANG==='en'
+        ? `<strong id="lockN">${extras}</strong> more recommendations + professional AI rewrite of your resume`
+        : `<strong id="lockN">${extras}</strong> recomendaciones más + reescritura profesional de tu CV con IA`;
+    } else {
+      lockT.innerHTML = LANG==='en'
+        ? 'Get your resume professionally rewritten by AI — ATS-ready and recruiter-approved'
+        : 'Reescribe tu CV con IA a nivel profesional — listo para ATS y para reclutadores';
+    }
   }
   window.scrollTo({top: 0, behavior: 'smooth'});
 }
@@ -522,15 +538,28 @@ async function guardarLeadYPlanes() {
   setTimeout(irAPlanes, email ? 900 : 0);
 }
 
-function limiteDiario() {
-  // El modo tester no consume cupo: sin esto, probar el producto agotaba
-  // el mismo límite de 3 análisis diarios que tiene un visitante anónimo.
+// Comprueba si quedan análisis SIN gastarlos.
+function cuposDisponibles() {
   if (typeof esTester === 'function' && esTester()) return true;
   const hoy = new Date().toDateString();
   const d = JSON.parse(localStorage.getItem('cvpro_scans') || '{}');
-  if (d.dia !== hoy) { localStorage.setItem('cvpro_scans', JSON.stringify({dia: hoy, n: 1})); return true; }
-  if (d.n >= 3) return false;
-  d.n++; localStorage.setItem('cvpro_scans', JSON.stringify(d)); return true;
+  return d.dia !== hoy || (d.n || 0) < 3;
+}
+
+// Gasta un análisis. Se llama SOLO cuando el texto se extrajo con éxito.
+function consumirAnalisis() {
+  if (typeof esTester === 'function' && esTester()) return;
+  const hoy = new Date().toDateString();
+  const d = JSON.parse(localStorage.getItem('cvpro_scans') || '{}');
+  if (d.dia !== hoy) localStorage.setItem('cvpro_scans', JSON.stringify({dia: hoy, n: 1}));
+  else localStorage.setItem('cvpro_scans', JSON.stringify({dia: hoy, n: (d.n || 0) + 1}));
+}
+
+// Compatibilidad: nombre antiguo usado en otros puntos del archivo.
+function limiteDiario() {
+  if (!cuposDisponibles()) return false;
+  consumirAnalisis();
+  return true;
 }
 
 function irAPlanes() {

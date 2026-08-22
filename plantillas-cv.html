@@ -623,6 +623,24 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <meta name="theme-color" content="#0a0a0a">
 </head>
 <body>
+<script>
+// ══ RED DE SEGURIDAD: fetch() no lanza excepción con 400/500, así que un
+// try/catch sin mirar res.ok esconde el fallo por completo. Este envoltorio
+// registra en consola CUALQUIER respuesta no-OK de toda la aplicación.
+// Es diagnóstico: no cambia el comportamiento de ninguna llamada.
+(function() {
+  const _f = window.fetch;
+  window.fetch = async function(...args) {
+    const r = await _f.apply(this, args);
+    if (!r.ok) {
+      const url = (typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '?');
+      console.error(`🌐 fetch ${r.status} ${r.statusText} → ${String(url).substring(0, 120)}`);
+    }
+    return r;
+  };
+})();
+</script>
+
 
 <nav>
   <a href="formulario-cv.html" class="nav-logo">CV<span>Pro</span></a>
@@ -738,14 +756,14 @@ const T = LANG === 'en' ? {
   experiencia:'Professional experience', logros:'Achievements', certificaciones:'Certifications',
   descargarPDF:'📄 Download PDF', volver:'← Back to templates', elegir:'Choose this template',
   generar:'⚡ Generate my resume', titulo:'Choose your template', subtitulo:'10 professional designs — pick yours and download instantly',
-  fotoTitulo:'Add your photo (optional)', fotoOk:'✓ Use this photo', fotoSaltar:'Continue without photo',
+  fotoTitulo:'Add your photo (optional)', fotoAviso:'⚠️ US resumes normally have NO photo — recruiters often discard them for anti-discrimination compliance. We recommend continuing without one.', fotoOk:'✓ Use this photo', fotoSaltar:'Continue without photo',
   hombre:'Men styles', mujer:'Women styles', cargando:'Generating your resume...'
 } : {
   perfil:'Perfil', habilidades:'Habilidades', idiomas:'Idiomas', educacion:'Educación',
   experiencia:'Experiencia profesional', logros:'Logros', certificaciones:'Certificaciones',
   descargarPDF:'📄 Descargar PDF', volver:'← Volver a plantillas', elegir:'Elegir esta plantilla',
   generar:'⚡ Generar mi CV', titulo:'Elige tu plantilla', subtitulo:'10 diseños profesionales — elige el tuyo y descarga al instante',
-  fotoTitulo:'Agrega tu foto (opcional)', fotoOk:'✓ Usar esta foto', fotoSaltar:'Continuar sin foto',
+  fotoTitulo:'Agrega tu foto (opcional)', fotoAviso:'', fotoOk:'✓ Usar esta foto', fotoSaltar:'Continuar sin foto',
   hombre:'Estilos hombre', mujer:'Estilos mujer', cargando:'Generando tu CV...'
 };
 
@@ -879,6 +897,21 @@ if (LANG === 'en') {
   const navBack = document.querySelector('.nav-back');
   if (navBack) navBack.textContent = '← Back';
   document.querySelectorAll('.btn-foto-ok').forEach(b => { if(b.textContent.includes('Usar')) b.textContent = '✓ Use this photo'; });
+
+  // ⚠️ Convención de EE.UU.: un resume NO lleva foto. Muchos reclutadores lo
+  // descartan por cumplimiento antidiscriminación. Advertirlo evita entregar
+  // un documento que no pasa el primer filtro.
+  if (!document.getElementById('fotoAvisoEN')) {
+    const anclas = Array.from(document.querySelectorAll('h2,h3,p,div,label'))
+      .filter(el => el.children.length === 0 && /Add your photo|Agrega tu foto/i.test(el.textContent));
+    if (anclas.length) {
+      const p = document.createElement('p');
+      p.id = 'fotoAvisoEN';
+      p.style.cssText = 'color:#ffb020;background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:11px 15px;font-size:0.82rem;line-height:1.55;max-width:440px;margin:10px auto 0;text-align:center';
+      p.textContent = T.fotoAviso || '⚠️ US resumes normally have NO photo — many recruiters discard them for anti-discrimination compliance. We recommend continuing without one.';
+      anclas[0].parentNode.insertBefore(p, anclas[0].nextSibling);
+    }
+  }
   document.querySelectorAll('button,a,div,h2,h3,p,span,label').forEach(el => {
     if (el.children.length === 0) {
       const t = el.textContent.trim();
@@ -1546,23 +1579,46 @@ renderTemplates();
 const _SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
 const _SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
 
+// ⚠️ SEGURIDAD: antes leía localStorage → cualquiera obtenía Premium gratis
+// con un solo localStorage.setItem desde la consola. Ahora el token vive en
+// sessionStorage y va firmado con un sello de sesión impredecible.
 function esTester() {
   try {
-    const t = JSON.parse(localStorage.getItem('cvpro_tester') || 'null');
-    return !!(t && t.ok && (Date.now() - t.ts) < 30*86400000);
+    const t = JSON.parse(sessionStorage.getItem('cvpro_tester') || 'null');
+    return !!(t && t.ok === _TESTER_SELLO && (Date.now() - t.ts) < 12*3600000);
   } catch(e) { return false; }
 }
 
-async function activarTester(codigo) {
+const _TESTER_SELLO = (() => {
+  const b = new Uint32Array(2);
+  (window.crypto || window.msCrypto).getRandomValues(b);
+  return b[0].toString(36) + b[1].toString(36);
+})();
+
+async function revalidarTester() {
+  const cod = localStorage.getItem('cvpro_tester_cod');
+  if (!cod) return false;
+  const ok = await validarTesterEnServidor(cod);
+  if (!ok) {
+    localStorage.removeItem('cvpro_tester_cod');
+    sessionStorage.removeItem('cvpro_tester');
+    localStorage.removeItem('cvpro_plan');
+  }
+  return ok;
+}
+
+async function validarTesterEnServidor(codigo) {
   try {
     const res = await fetch(`${_SB_U}/rest/v1/rpc/validar_tester`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':_SB_K,'Authorization':`Bearer ${_SB_K}`},
       body: JSON.stringify({p_codigo: String(codigo).trim()})
     });
+    if (!res.ok) { console.warn('validar_tester HTTP', res.status); return false; }
     const ok = await res.json();
     if (ok === true) {
-      localStorage.setItem('cvpro_tester', JSON.stringify({ok:true, ts:Date.now()}));
+      sessionStorage.setItem('cvpro_tester', JSON.stringify({ok:_TESTER_SELLO, ts:Date.now()}));
+      localStorage.setItem('cvpro_tester_cod', String(codigo).trim());
       localStorage.setItem('cvpro_plan', 'premium');
       return true;
     }
@@ -1570,7 +1626,12 @@ async function activarTester(codigo) {
   return false;
 }
 
+async function activarTester(codigo) {
+  return await validarTesterEnServidor(codigo);
+}
+
 (async function initTester() {
+  const _L = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
   const p = new URLSearchParams(location.search).get('tester');
   if (p) {
     const ok = await activarTester(p);
@@ -1579,9 +1640,11 @@ async function activarTester(codigo) {
     url.searchParams.delete('tester');
     history.replaceState({}, '', url.toString());
     if (ok) mostrarBadgeTester();
-    else alert('Código de tester inválido.');
-  } else if (esTester()) {
-    mostrarBadgeTester();
+    else alert(_L==='en' ? 'Invalid tester code.' : 'Código de tester inválido.');
+  } else {
+    // Revalida contra el servidor en cada carga: si revocas el código en
+    // config_app, el acceso cae de inmediato en la siguiente página.
+    if (await revalidarTester()) mostrarBadgeTester();
   }
 })();
 
@@ -1601,8 +1664,13 @@ function mostrarBadgeTester() {
     b.onmouseleave = () => { b.classList.add('mini'); b.textContent = '🧪'; };
   }, 5000);
   b.onclick = () => {
-    if (confirm('¿Salir del modo tester? Volverás a ver la web como un cliente normal.')) {
-      localStorage.removeItem('cvpro_tester');
+    const _L2 = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+    const _msg = _L2==='en'
+      ? 'Exit tester mode? You will see the site as a regular customer.'
+      : '¿Salir del modo tester? Volverás a ver la web como un cliente normal.';
+    if (confirm(_msg)) {
+      sessionStorage.removeItem('cvpro_tester');
+      localStorage.removeItem('cvpro_tester_cod');
       localStorage.removeItem('cvpro_plan');
       location.reload();
     }

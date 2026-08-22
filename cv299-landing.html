@@ -303,6 +303,24 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 </script>
 </head>
 <body>
+<script>
+// ══ RED DE SEGURIDAD: fetch() no lanza excepción con 400/500, así que un
+// try/catch sin mirar res.ok esconde el fallo por completo. Este envoltorio
+// registra en consola CUALQUIER respuesta no-OK de toda la aplicación.
+// Es diagnóstico: no cambia el comportamiento de ninguna llamada.
+(function() {
+  const _f = window.fetch;
+  window.fetch = async function(...args) {
+    const r = await _f.apply(this, args);
+    if (!r.ok) {
+      const url = (typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '?');
+      console.error(`🌐 fetch ${r.status} ${r.statusText} → ${String(url).substring(0, 120)}`);
+    }
+    return r;
+  };
+})();
+</script>
+
 
 <!-- NAV -->
 <nav id="navbar">
@@ -574,58 +592,10 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <div style="max-width:1100px;margin:0 auto">
     <p class="sec-label reveal" id="secLabelTesti">Testimonios reales</p>
     <h2 class="sec-title reveal" id="secTitleTesti">Ellos ya <em>consiguieron</em> su trabajo</h2>
-    <p class="sec-sub reveal" id="secSubTesti">Más de CV élite con IA · pago único</p>
+    <p class="sec-sub reveal" id="secSubTesti">CVs de nivel ejecutivo creados con IA · pago único</p>
 
-    <div class="testi-grid" id="testiGrid" style="margin-top:48px">
-      <div class="testi reveal">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">Mandé mi CV viejo 3 meses y nada. Con CVPro me llamaron en una semana. El chat me hizo preguntas que nunca hubiera pensado incluir.</p>
-        <div class="testi-author">
-          <div class="testi-avatar">AG</div>
-          <div><div class="testi-name">Ana González</div><div class="testi-role">Contadora · Colombia</div></div>
-        </div>
-      </div>
-      <div class="testi reveal reveal-delay-1">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">Pagué $4.99 y conseguí trabajo que paga $1,200 al mes. La mejor inversión de mi vida. El CV quedó tan profesional que no lo reconocí.</p>
-        <div class="testi-author">
-          <div class="testi-avatar">MT</div>
-          <div><div class="testi-name">Miguel Torres</div><div class="testi-role">Desarrollador · México</div></div>
-        </div>
-      </div>
-      <div class="testi reveal reveal-delay-2">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">Pensé que por ese precio sería algo básico. Me sorprendió la calidad. La IA corrigió mi redacción y lo adaptó perfectamente a mi sector.</p>
-        <div class="testi-author">
-          <div class="testi-avatar">VR</div>
-          <div><div class="testi-name">Valeria Ríos</div><div class="testi-role">Enfermera · Chile</div></div>
-        </div>
-      </div>
-      <div class="testi reveal">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">El chat de preguntas es increíble. Me fue guiando paso a paso y al final tenía un CV que realmente me representaba. Conseguí 3 entrevistas en una semana.</p>
-        <div class="testi-author">
-          <div class="testi-avatar">JM</div>
-          <div><div class="testi-name">Jorge Mendez</div><div class="testi-role">Ingeniero · Argentina</div></div>
-        </div>
-      </div>
-      <div class="testi reveal reveal-delay-1">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">Llevaba 6 meses buscando trabajo. Con este CV conseguí entrevista en 4 días. Lo que más me gustó fue poder revisar y editar antes de descargar.</p>
-        <div class="testi-author">
-          <div class="testi-avatar">LP</div>
-          <div><div class="testi-name">Laura Pérez</div><div class="testi-role">Administradora · Perú</div></div>
-        </div>
-      </div>
-      <div class="testi reveal reveal-delay-2">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">Soy piloto y conseguir trabajo civil es difícil. CVPro tradujo mi experiencia militar a términos que los empleadores civiles entienden. Genial.</p>
-        <div class="testi-author">
-          <div class="testi-avatar">CA</div>
-          <div><div class="testi-name">Carlos Alvarez</div><div class="testi-role">Piloto · El Salvador</div></div>
-        </div>
-      </div>
-    </div>
+    <div class="testi-grid" id="testiGrid" style="margin-top:48px"></div>
+      <p id="testiVacio" style="text-align:center;color:#777;font-size:0.9rem;margin-top:24px" data-es="Estamos recopilando las primeras reseñas verificadas de nuestros usuarios." data-en="We are collecting our first verified user reviews.">Estamos recopilando las primeras reseñas verificadas de nuestros usuarios.</p>
   </div>
 </section>
 
@@ -711,6 +681,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
       <div class="plan-period" data-es="pago único" data-en="one-time payment">pago único</div>
       <ul class="plan-features">
         <li data-es="✅ Todo lo del plan Estándar" data-en="✅ Everything in Standard">✅ Todo lo del plan Estándar</li>
+        <li style="color:#FFD000;font-weight:700" data-es="🎯 Para quien aplica a varias vacantes a la vez" data-en="🎯 For those applying to several jobs at once">🎯 Para quien aplica a varias vacantes a la vez</li>
         <li data-es="🎯 Adaptaciones ILIMITADAS a vacantes (30 días)" data-en="🎯 UNLIMITED job-posting adaptations (30 days)">🎯 Adaptaciones ILIMITADAS a vacantes (30 días)</li>
         <li data-es="🌎 Traducciones ILIMITADAS entre español e inglés" data-en="🌎 UNLIMITED translations between Spanish and English">🌎 Traducciones ILIMITADAS entre español e inglés</li>
         <li data-es="✉️ Cartas de presentación ILIMITADAS" data-en="✉️ UNLIMITED cover letters">✉️ Cartas de presentación ILIMITADAS</li>
@@ -893,7 +864,7 @@ const TEXTOS = {
     secTitleCompare: 'CVPro vs <em>las alternativas</em>',
     secLabelTesti: 'Testimonios reales',
     secTitleTesti: 'Ellos ya <em>consiguieron</em> su trabajo',
-    secSubTesti: 'Más de CV élite con IA · pago único<br>con un buen CV',
+    secSubTesti: 'CVs de nivel ejecutivo creados con IA · pago único<br>con un buen CV',
     finalSub: 'Cuesta menos que un café. Vale más que cualquier otra inversión que puedas hacer hoy.',
     finalCta: '⚡ Crear mi CV profesional ahora',
     planBasicName: 'Básico', planStdName: 'Estándar', planPremName: 'Premium',
@@ -1324,10 +1295,13 @@ REGLAS:
     const res = await fetch(`${SB_URL}/rest/v1/resenas?select=nombre,texto,estrellas,rol&order=created_at.desc&limit=6`, {
       headers: {'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`}
     });
+    if (!res.ok) { console.warn('Reseñas no disponibles:', res.status); return; }
     const rows = await res.json();
-    if (!Array.isArray(rows) || !rows.length) return;
     const grid = document.getElementById('testiGrid');
     if (!grid) return;
+    if (!Array.isArray(rows) || !rows.length) return;   // sin reseñas reales → no inventamos ninguna
+    const vacio = document.getElementById('testiVacio');
+    if (vacio) vacio.style.display = 'none';
     rows.slice(0,3).forEach(r => {
       const ini = (r.nombre||'CV').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
       const stars = '★'.repeat(Math.min(5, r.estrellas||5));
@@ -1336,7 +1310,7 @@ REGLAS:
       div.innerHTML = `<div class="testi-stars">${stars}</div><p class="testi-text">${(r.texto||'').substring(0,220)}</p><div class="testi-author"><div class="testi-avatar">${ini}</div><div><div class="testi-name">${r.nombre||'Cliente CVPro'}</div><div class="testi-role">${r.rol||'Cliente verificado'}</div></div></div>`;
       grid.appendChild(div);
     });
-  } catch(e) {}
+  } catch(e) { console.warn('Reseñas no disponibles:', e.message); }
 })();
 </script>
 <script>
@@ -1463,23 +1437,46 @@ REGLAS:
 const _SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
 const _SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
 
+// ⚠️ SEGURIDAD: antes leía localStorage → cualquiera obtenía Premium gratis
+// con un solo localStorage.setItem desde la consola. Ahora el token vive en
+// sessionStorage y va firmado con un sello de sesión impredecible.
 function esTester() {
   try {
-    const t = JSON.parse(localStorage.getItem('cvpro_tester') || 'null');
-    return !!(t && t.ok && (Date.now() - t.ts) < 30*86400000);
+    const t = JSON.parse(sessionStorage.getItem('cvpro_tester') || 'null');
+    return !!(t && t.ok === _TESTER_SELLO && (Date.now() - t.ts) < 12*3600000);
   } catch(e) { return false; }
 }
 
-async function activarTester(codigo) {
+const _TESTER_SELLO = (() => {
+  const b = new Uint32Array(2);
+  (window.crypto || window.msCrypto).getRandomValues(b);
+  return b[0].toString(36) + b[1].toString(36);
+})();
+
+async function revalidarTester() {
+  const cod = localStorage.getItem('cvpro_tester_cod');
+  if (!cod) return false;
+  const ok = await validarTesterEnServidor(cod);
+  if (!ok) {
+    localStorage.removeItem('cvpro_tester_cod');
+    sessionStorage.removeItem('cvpro_tester');
+    localStorage.removeItem('cvpro_plan');
+  }
+  return ok;
+}
+
+async function validarTesterEnServidor(codigo) {
   try {
     const res = await fetch(`${_SB_U}/rest/v1/rpc/validar_tester`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':_SB_K,'Authorization':`Bearer ${_SB_K}`},
       body: JSON.stringify({p_codigo: String(codigo).trim()})
     });
+    if (!res.ok) { console.warn('validar_tester HTTP', res.status); return false; }
     const ok = await res.json();
     if (ok === true) {
-      localStorage.setItem('cvpro_tester', JSON.stringify({ok:true, ts:Date.now()}));
+      sessionStorage.setItem('cvpro_tester', JSON.stringify({ok:_TESTER_SELLO, ts:Date.now()}));
+      localStorage.setItem('cvpro_tester_cod', String(codigo).trim());
       localStorage.setItem('cvpro_plan', 'premium');
       return true;
     }
@@ -1487,7 +1484,12 @@ async function activarTester(codigo) {
   return false;
 }
 
+async function activarTester(codigo) {
+  return await validarTesterEnServidor(codigo);
+}
+
 (async function initTester() {
+  const _L = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
   const p = new URLSearchParams(location.search).get('tester');
   if (p) {
     const ok = await activarTester(p);
@@ -1496,9 +1498,11 @@ async function activarTester(codigo) {
     url.searchParams.delete('tester');
     history.replaceState({}, '', url.toString());
     if (ok) mostrarBadgeTester();
-    else alert('Código de tester inválido.');
-  } else if (esTester()) {
-    mostrarBadgeTester();
+    else alert(_L==='en' ? 'Invalid tester code.' : 'Código de tester inválido.');
+  } else {
+    // Revalida contra el servidor en cada carga: si revocas el código en
+    // config_app, el acceso cae de inmediato en la siguiente página.
+    if (await revalidarTester()) mostrarBadgeTester();
   }
 })();
 
@@ -1518,8 +1522,13 @@ function mostrarBadgeTester() {
     b.onmouseleave = () => { b.classList.add('mini'); b.textContent = '🧪'; };
   }, 5000);
   b.onclick = () => {
-    if (confirm('¿Salir del modo tester? Volverás a ver la web como un cliente normal.')) {
-      localStorage.removeItem('cvpro_tester');
+    const _L2 = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+    const _msg = _L2==='en'
+      ? 'Exit tester mode? You will see the site as a regular customer.'
+      : '¿Salir del modo tester? Volverás a ver la web como un cliente normal.';
+    if (confirm(_msg)) {
+      sessionStorage.removeItem('cvpro_tester');
+      localStorage.removeItem('cvpro_tester_cod');
       localStorage.removeItem('cvpro_plan');
       location.reload();
     }

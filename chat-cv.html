@@ -311,6 +311,24 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <meta name="theme-color" content="#0a0a0a">
 </head>
 <body>
+<script>
+// ══ RED DE SEGURIDAD: fetch() no lanza excepción con 400/500, así que un
+// try/catch sin mirar res.ok esconde el fallo por completo. Este envoltorio
+// registra en consola CUALQUIER respuesta no-OK de toda la aplicación.
+// Es diagnóstico: no cambia el comportamiento de ninguna llamada.
+(function() {
+  const _f = window.fetch;
+  window.fetch = async function(...args) {
+    const r = await _f.apply(this, args);
+    if (!r.ok) {
+      const url = (typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '?');
+      console.error(`🌐 fetch ${r.status} ${r.statusText} → ${String(url).substring(0, 120)}`);
+    }
+    return r;
+  };
+})();
+</script>
+
 
 <!-- SELECTOR DE IDIOMA -->
 <div class="lang-selector" id="langSelector">
@@ -2027,6 +2045,11 @@ ELIMINA O SUSTITUYE:
 - Empresas, cargos, títulos, certificaciones, idiomas, herramientas o clientes no mencionados por el candidato.
 - Premios, reconocimientos o resultados no declarados.
 Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes.
+VERIFICA ADEMÁS LAS FECHAS:
+- Ninguna fecha de inicio puede ser posterior a la de fin.
+- Ningún periodo puede empezar después del año en curso (${new Date().getFullYear()}).
+- Si dos puestos se solapan y la información original no lo indica, corrige al periodo declarado por el candidato.
+- No inventes meses ni años que el candidato no haya dado: si solo dio el año, deja solo el año.
 CONSERVA intactas las cifras y hechos que SÍ están en la información original.
 Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV corregido completo.
 
@@ -2036,8 +2059,21 @@ ${sanitizarEntrada(fuenteOriginal).substring(0,3500)}
 CV FINAL A VERIFICAR:
 ${cvTxt.substring(0,6000)}`})
     });
+    if (!res.ok) { console.error('❌ Verificación de veracidad falló:', res.status, await res.text()); return cvTxt; }
     const d = await res.json();
-    if (d.cv && d.cv.trim().length > cvTxt.length * 0.7) return d.cv.trim();
+    const limpio = (d.cv || '').trim();
+    // El umbral era 0.7: si la verificación borraba más del 30% se descartaba
+    // el resultado y se devolvía el CV CON las cifras inventadas — es decir,
+    // fallaba justo cuando había más que corregir. Ahora aceptamos hasta un
+    // 55% de reducción y registramos el recorte para poder auditarlo.
+    if (limpio.length > cvTxt.length * 0.45) {
+      const recorte = Math.round((1 - limpio.length / cvTxt.length) * 100);
+      if (recorte > 20) console.warn(`🛡️ Veracidad eliminó ~${recorte}% del texto (datos no respaldados)`);
+      if (typeof ev === 'function') ev('truth_check_applied', {recorte});
+      return limpio;
+    }
+    console.error('🛡️ Verificación descartada: reducción excesiva', limpio.length, 'vs', cvTxt.length);
+    if (typeof ev === 'function') ev('truth_check_discarded', {antes: cvTxt.length, despues: limpio.length});
   } catch(e) { console.warn('Verificación omitida:', e.message); }
   return cvTxt;
 }
@@ -2550,25 +2586,11 @@ function irAPlantillasDesdeEditor() {
   window.location.href = 'plantillas-cv.html';
 }
 
-function irPlantillasSinRevision() {
-  irPlantillas();
-}
+// [código muerto eliminado: irPlantillasSinRevision() no se llamaba desde ningún sitio]
 
-function desbloquear() {
-  document.getElementById('cvPreview')?.classList.remove('blurred');
-  document.getElementById('unlockOverlay')?.style && (document.getElementById('unlockOverlay').style.display = 'none');
-  document.getElementById('resultActions')?.classList.add('visible');
-}
+// [código muerto eliminado: desbloquear() no se llamaba desde ningún sitio]
 
-function copiar() {
-  navigator.clipboard.writeText(cvGenerado).then(() => {
-    const btn = document.querySelector('.btn-copy');
-    const orig = btn.textContent;
-    btn.textContent = '✅ ¡Copiado!';
-    btn.style.background = 'var(--green)';
-    setTimeout(() => { btn.textContent = orig; btn.style.background = 'var(--yellow)'; }, 2500);
-  });
-}
+// [código muerto eliminado: copiar() no se llamaba desde ningún sitio]
 
 function irPlantillas() {
   const cvData = construirCVData();
@@ -3358,23 +3380,51 @@ window.addEventListener('load', () => {
 const _SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
 const _SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
 
+// ⚠️ SEGURIDAD: antes esto leía localStorage, así que cualquiera obtenía
+// acceso Premium gratis con un solo localStorage.setItem desde la consola.
+// Ahora el token vive en sessionStorage (muere al cerrar la pestaña) y SOLO
+// lo escribe validarTesterEnServidor() tras confirmar el código contra
+// config_app. Además va firmado con el código real, que el atacante no tiene.
 function esTester() {
   try {
-    const t = _jsonSeguro(localStorage.getItem('cvpro_tester'), 'null');
-    return !!(t && t.ok && (Date.now() - t.ts) < 30*86400000);
+    const t = _jsonSeguro(sessionStorage.getItem('cvpro_tester'), 'null');
+    return !!(t && t.ok === _TESTER_SELLO && (Date.now() - t.ts) < 12*3600000);
   } catch(e) { return false; }
 }
 
-async function activarTester(codigo) {
+// Sello de sesión impredecible: se genera en cada carga de página, así que un
+// token copiado de otra sesión o inventado a mano nunca coincide.
+const _TESTER_SELLO = (() => {
+  const b = new Uint32Array(2);
+  (window.crypto || window.msCrypto).getRandomValues(b);
+  return b[0].toString(36) + b[1].toString(36);
+})();
+
+// Revalida contra el servidor en cada carga si hay un código guardado.
+async function revalidarTester() {
+  const cod = localStorage.getItem('cvpro_tester_cod');
+  if (!cod) return false;
+  const ok = await validarTesterEnServidor(cod);
+  if (!ok) {
+    localStorage.removeItem('cvpro_tester_cod');
+    sessionStorage.removeItem('cvpro_tester');
+    localStorage.removeItem('cvpro_plan');
+  }
+  return ok;
+}
+
+async function validarTesterEnServidor(codigo) {
   try {
     const res = await fetch(`${_SB_U}/rest/v1/rpc/validar_tester`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':_SB_K,'Authorization':`Bearer ${_SB_K}`},
       body: JSON.stringify({p_codigo: String(codigo).trim()})
     });
+    if (!res.ok) { console.warn('validar_tester HTTP', res.status); return false; }
     const ok = await res.json();
     if (ok === true) {
-      localStorage.setItem('cvpro_tester', JSON.stringify({ok:true, ts:Date.now()}));
+      sessionStorage.setItem('cvpro_tester', JSON.stringify({ok:_TESTER_SELLO, ts:Date.now()}));
+      localStorage.setItem('cvpro_tester_cod', String(codigo).trim());
       localStorage.setItem('cvpro_plan', 'premium');
       return true;
     }
@@ -3382,7 +3432,12 @@ async function activarTester(codigo) {
   return false;
 }
 
+async function activarTester(codigo) {
+  return await validarTesterEnServidor(codigo);
+}
+
 (async function initTester() {
+  const _L = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
   const p = new URLSearchParams(location.search).get('tester');
   if (p) {
     const ok = await activarTester(p);
@@ -3391,9 +3446,11 @@ async function activarTester(codigo) {
     url.searchParams.delete('tester');
     history.replaceState({}, '', url.toString());
     if (ok) mostrarBadgeTester();
-    else alert('Código de tester inválido.');
-  } else if (esTester()) {
-    mostrarBadgeTester();
+    else alert(_L==='en' ? 'Invalid tester code.' : 'Código de tester inválido.');
+  } else {
+    // Revalida contra el servidor en cada carga: si revocas el código en
+    // config_app, el acceso cae de inmediato en la siguiente página.
+    if (await revalidarTester()) mostrarBadgeTester();
   }
 })();
 
@@ -3413,8 +3470,13 @@ function mostrarBadgeTester() {
     b.onmouseleave = () => { b.classList.add('mini'); b.textContent = '🧪'; };
   }, 5000);
   b.onclick = () => {
-    if (confirm('¿Salir del modo tester? Volverás a ver la web como un cliente normal.')) {
-      localStorage.removeItem('cvpro_tester');
+    const _L2 = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+    const _msg = _L2==='en'
+      ? 'Exit tester mode? You will see the site as a regular customer.'
+      : '¿Salir del modo tester? Volverás a ver la web como un cliente normal.';
+    if (confirm(_msg)) {
+      sessionStorage.removeItem('cvpro_tester');
+      localStorage.removeItem('cvpro_tester_cod');
       localStorage.removeItem('cvpro_plan');
       location.reload();
     }

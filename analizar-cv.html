@@ -478,6 +478,15 @@ function ev(nombre, extra) {
     if (cola.length > 40) cola.shift();
     localStorage.setItem('cvpro_eventos', JSON.stringify(cola));
     if (window.gtag) window.gtag('event', nombre, extra || {});
+    // Enviar al servidor (sin bloquear la navegación)
+    try {
+      const _U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co/rest/v1/eventos';
+      const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+      fetch(_U, {method:'POST', keepalive:true,
+        headers:{'Content-Type':'application/json','apikey':_K,'Authorization':`Bearer ${_K}`,'Prefer':'return=minimal'},
+        body: JSON.stringify({evento:nombre, pagina:d.pagina, lang:d.lang, extra:extra||null})
+      }).catch(()=>{});
+    } catch(e) {}
     console.debug('📊', nombre, extra || '');
   } catch(e) {}
 }

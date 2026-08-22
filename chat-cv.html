@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Crear mi CV | CVPro</title>
-<meta name="description" content="Crea tu CV profesional con IA en minutos. Solo responde 15 preguntas y descarga tu CV listo para conseguir entrevistas.">
+<meta name="description" content="Crea tu CV profesional con IA en minutos. Solo responde 14 preguntas y descarga tu CV listo para conseguir entrevistas.">
 <meta property="og:title" content="Crear CV con IA | CVPro">
-<meta property="og:description" content="15 preguntas guiadas. IA corrige y mejora tu CV. 10 plantillas profesionales. Descarga en PDF.">
+<meta property="og:description" content="14 preguntas guiadas. IA corrige y mejora tu CV. 10 plantillas profesionales. Descarga en PDF.">
 <meta property="og:image" content="https://getcvpro.com/og-image.png">
 <meta name="robots" content="noindex">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -414,8 +414,8 @@ const PASOS = [
   {
     key: 'nombre',
     preg: () => LANG==='en'
-      ? `Hi! I'm your personal CVPro assistant 👋\n\nI'll ask you 15 quick questions to build your professional resume. The more detail you give me, the better it gets.\n\nLet's start — what's your full name?`
-      : `¡Hola! Soy tu asistente personal de CVPro 👋\n\nEn los próximos minutos voy a hacerte 15 preguntas rápidas para crear tu CV profesional. Cuanta más información me des, mejor quedará.\n\nEmpecemos — ¿Cuál es tu nombre completo?`,
+      ? `Hi! I'm your personal CVPro assistant 👋\n\nI'll ask you 14 quick questions to build your professional resume. The more detail you give me, the better it gets.\n\nLet's start — what's your full name?`
+      : `¡Hola! Soy tu asistente personal de CVPro 👋\n\nEn los próximos minutos voy a hacerte 14 preguntas rápidas para crear tu CV profesional. Cuanta más información me des, mejor quedará.\n\nEmpecemos — ¿Cuál es tu nombre completo?`,
     hint: () => LANG==='en' ? 'Type your first and last name' : 'Escribe tu nombre y apellidos',
     placeholder: () => LANG==='en' ? 'E.g.: John Michael Smith' : 'Ej: Adolfo Miguel Alvarez Reyes'
   },
@@ -472,21 +472,17 @@ const PASOS = [
   {
     key: 'exp1',
     preg: () => LANG==='en'
-      ? `Let's talk about your experience 💼\n\nWhere do/did you work, what's your job title, and for how long?\n\nNo work experience yet? No problem — type "no experience" and we'll build your resume around your education, projects and skills.`
-      : `Hablemos de tu experiencia 💼\n\n¿Dónde trabajas o trabajaste, cuál es tu cargo y por cuánto tiempo?\n\n¿Aún sin experiencia laboral? Sin problema — escribe "sin experiencia" y construimos tu CV con tu formación, proyectos y habilidades.`,
+      ? `Let's talk about your main work experience 💼\n\nWhere do/did you work, what's your job title, and for how long?`
+      : `Hablemos de tu experiencia laboral principal 💼\n\n¿Dónde trabajas o trabajaste, cuál es tu cargo y por cuánto tiempo?`,
     hint: () => LANG==='en' ? 'Format: Company — Title — Period' : 'Formato: Empresa — Cargo — Período',
     placeholder: () => LANG==='en' ? 'E.g.: US Air Force — Helicopter Pilot — 2018 to 2026' : 'Ej: Fuerza Aérea Salvadoreña — Piloto de Helicóptero — 2018 a 2026',
     opts: () => LANG==='en'
-      ? ['TechCorp — Senior Developer — 2020 to present','National Hospital — Head Nurse — 2019 to 2024','🎓 No work experience yet']
-      : ['TechCorp — Desarrollador Senior — 2020 a presente','Hospital Nacional — Enfermera Jefe — 2019 a 2024','🎓 Aún sin experiencia laboral']
+      ? ['US Air Force — Aviator Pilot — 2018 to 2026','TechCorp — Senior Developer — 2020 to present','National Hospital — Head Nurse — 2019 to 2024']
+      : ['Fuerza Aérea Salvadoreña — Piloto Aviador — 2018 a 2026','TechCorp Colombia — Desarrollador Senior — 2020 a presente','Hospital Nacional — Enfermera Jefe — 2019 a 2024']
   },
   {
     key: 'logros1',
     preg: (d) => {
-      const _sinExp = /sin experiencia|no experience|ninguna|no tengo|primer empleo/i.test(d.exp1||'');
-      if (_sinExp) return LANG==='en'
-        ? `Perfect — many great resumes start here 🎓\n\nTell me about your academic projects, internships, volunteering or courses:\n• What did you build, study or organize?\n• Any team work, presentations or real results?\n• Tools or methods you learned to use`
-        : `Perfecto — muchos CVs excelentes empiezan aquí 🎓\n\nCuéntame sobre tus proyectos académicos, prácticas, voluntariados o cursos:\n• ¿Qué construiste, estudiaste u organizaste?\n• ¿Trabajo en equipo, presentaciones, resultados reales?\n• Herramientas o métodos que aprendiste a usar`;
       const emp = d.exp1?.split(/[—\-|]/)[0]?.trim() || (LANG==='en'?'that job':'ese trabajo');
       const p = (d.puesto||'').toLowerCase();
       if (LANG==='en') {
@@ -570,22 +566,11 @@ const PASOS = [
       : ['Solo español','Español nativo + Inglés básico','Español + Inglés intermedio','Español + Inglés avanzado']
   },
   {
-    key: 'idioma_cv',
-    preg: (d) => LANG==='en'
-      ? `One more thing 🌍\n\nIn which language should your resume be written?`
-      : `Una cosa más 🌍\n\n¿En qué idioma quieres que se escriba tu CV?`,
-    hint: () => LANG==='en' ? 'Independent from the website language — pick your target job market' : 'Independiente del idioma de la web — elige el mercado al que aplicas',
-    placeholder: () => LANG==='en' ? 'Spanish or English' : 'Español o inglés',
-    opts: () => LANG==='en'
-      ? ['🇺🇸 In English','🇪🇸 In Spanish']
-      : ['🇪🇸 En español','🇺🇸 En inglés']
-  },
-  {
     key: 'info_extra',
     preg: (d) => LANG==='en'
-      ? `Almost done, ${d.nombre.split(' ')[0]}! 🎉\n\nAnything else worth adding? (availability, driver's license, LinkedIn, awards...)\n\nIf not, just type "done".`
-      : `¡Ya casi, ${d.nombre.split(' ')[0]}! 🎉\n\n¿Algo más que sume a tu CV? (disponibilidad, licencia, LinkedIn, premios...)\n\nSi no, escribe "nada más".`,
-    hint: () => LANG==='en' ? 'Availability · License · LinkedIn · Awards · Volunteering · Career break reason' : 'Disponibilidad · Licencia · LinkedIn · Premios · Voluntariado · Motivo de pausa laboral',
+      ? `Last question, ${d.nombre.split(' ')[0]}! 🎉\n\nAnything else for your resume?\n• Availability (immediate, 2 weeks...)\n• Willing to relocate or travel\n• Driver's license / own vehicle\n• LinkedIn or portfolio\n• Awards, volunteering, references\n\nIf nothing else, type "done".`
+      : `¡Última pregunta, ${d.nombre.split(' ')[0]}! 🎉\n\n¿Algo más que quieras incluir en tu CV?\n• Disponibilidad (inmediata, 2 semanas...)\n• Movilidad o disposición a viajar\n• Licencia de conducir / vehículo propio\n• LinkedIn o portafolio\n• Premios, voluntariado, referencias\n\nSi no tienes nada más, escribe "nada más".`,
+    hint: () => LANG==='en' ? 'Any extra detail that adds value' : 'Cualquier detalle extra que sume a tu perfil',
     placeholder: () => LANG==='en' ? 'E.g.: Immediate availability, type B license, references upon request...' : 'Ej: Disponibilidad inmediata, licencia tipo B, referencias disponibles...',
     multiline: true
   }
@@ -1420,15 +1405,6 @@ async function mostrarGenerando() {
     catch(ep) { console.error('Parser falló:', ep); cvData = {nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}; }
     sessionStorage.setItem('cvData', JSON.stringify(cvData));
     sessionStorage.setItem('cvTexto', cv);
-    // Aprendizaje: calidad del CV generado (sin datos personales)
-    try {
-      const _ris = calcularRIS(cv, cvData);
-      sessionStorage.setItem('cvpro_ris', JSON.stringify(_ris));
-      sessionStorage.setItem('cvpro_cvdata_original', JSON.stringify({nombre:cvData.nombre, puesto:cvData.puesto, resumen:cvData.resumen}));
-      aprender('cv_generado', {quality: _ris.global, ats: _ris.ats, impacto: _ris.impacto,
-        palabras: cv.split(/\s+/).length, bullets: (cv.match(/^\s*[•·▸▪]/gm)||[]).length,
-        problemas: validarCV(cv)});
-    } catch(e) {}
     await guardarEnSupabase();
     guardarCVConCodigo(cv);
     mostrarResultado(cv);
@@ -1460,11 +1436,8 @@ async function generarConIA() {
   const telefono = telM ? telM[0].trim() : '';
 
   // FIX 4 — Idioma AL INICIO del prompt (Claude prioriza instrucciones al inicio)
-  // El idioma del CV es INDEPENDIENTE del idioma de la interfaz
-  const idiomaCV = datos.idioma_cv || (LANG === 'en' ? 'English' : 'Español');
-  const enIngles = /ingl[eé]s|english/i.test(idiomaCV);
-  // Guardarlo para que plantillas y PDF usen el idioma del CV, no el de la UI
-  try { const _cl = enIngles ? 'en' : 'es'; sessionStorage.setItem('cvpro_cv_lang', _cl); localStorage.setItem('cvpro_cvlang_backup', _cl); } catch(e) {}
+  const idiomaCV = datos.idioma_cv || 'Solo en español';
+  const enIngles = idiomaCV.toLowerCase().includes('ingl');
   const idiomaInstruccion = enIngles
     ? 'IMPORTANT: Write the ENTIRE CV in professional English. Every word, section label, and bullet must be in English.'
     : 'IMPORTANTE: Escribe el CV completo en español profesional.';
@@ -1538,7 +1511,6 @@ REGLAS (estándar de reclutador ejecutivo élite):
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
 5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
-5a. VACÍOS LABORALES: si detectas un período sin empleo (maternidad, cuidado familiar, salud, estudio, desempleo), NO lo escondas ni inventes trabajos para taparlo. Si el candidato explicó el motivo, redáctalo con dignidad y en una línea (ej: "Pausa profesional por cuidado familiar, con formación continua en X"). Si no lo explicó, simplemente no lo menciones: enfoca el CV en la experiencia y competencias que sí aportó. Un vacío bien manejado no descalifica; una mentira sí.
 5b. SI EL CANDIDATO TIENE POCA O NINGUNA EXPERIENCIA LABORAL: no dejes secciones vacías ni inventes empleos. Construye el CV alrededor de formación académica, proyectos de estudio, prácticas, voluntariado, cursos, competencias técnicas adquiridas y capacidad demostrada. Encabeza con el perfil y la educación en lugar de la experiencia. Un CV honesto de recién graduado bien redactado supera a uno con experiencia fabricada. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
 7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis
@@ -1608,7 +1580,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     console.log('✅ CV generado correctamente:', cvTexto.substring(0,150));
     // ── PASADA 2: AUTOCRÍTICA ──
     try {
-      renderMsgAI(LANG==='en' ? '🔍 A recruiter is reviewing every line...' : '🔍 Un reclutador está revisando cada línea...');
+      renderMsgAI(LANG==='en' ? '🔍 Elite recruiter review pass...' : '🔍 Pasada de revisión de reclutador élite...');
       const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -1625,7 +1597,6 @@ ${cvTexto.substring(0,5500)}`})
 
   } catch(e) {
     console.error('❌ Error en generarConIA:', e.message);
-    try { aprender('fallo_ia', {error: String(e.message||'').substring(0,120)}); } catch(e2) {}
 
     // Reintentar UNA vez
     try {
@@ -1707,8 +1678,6 @@ async function recuperarCVPorCodigo(codigo) {
     sessionStorage.setItem('cvTexto', cvGenerado);
     sessionStorage.setItem('cvData', JSON.stringify(r.cv_data||{}));
     sessionStorage.setItem('cvpro_codigo', codigo);
-    // Restaurar el idioma del DOCUMENTO (independiente del idioma de la UI)
-    if (r.lang) sessionStorage.setItem('cvpro_cv_lang', r.lang === 'en' ? 'en' : 'es');
     if (r.cv_data) {
       datos.nombre = r.cv_data.nombre || '';
       datos.puesto = r.cv_data.puesto || '';
@@ -1738,7 +1707,7 @@ async function guardarCVConCodigo(cv) {
     await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'resolution=merge-duplicates'},
-      body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:(sessionStorage.getItem('cvpro_cv_lang') || LANG), plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
+      body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:LANG, plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
     });
     // Enviar el código por email si tenemos uno válido
     const emailCliente = (datos.email_tel || D_EMAIL_FALLBACK()).match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
@@ -1766,6 +1735,9 @@ let cvOriginalBackup = null;
 async function abrirModalVacante() {
   ev('adapt_job_clicked');
   if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => abrirModalVacante()); return; }
+  const _cupo = await consumirUso('vacante');
+  if (!_cupo.permitido) { avisarCupoAgotado('vacante', _cupo); return; }
+  ev('adapt_job_consumed', {plan:_cupo.plan, usados:_cupo.usados});
   const overlay = document.createElement('div');
   overlay.id = 'vacanteOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -1846,7 +1818,7 @@ GENERA EL CV ADAPTADO AHORA:`;
     const _enIng = LANG === 'en';
     // Filtro 2: revisión de reclutador
     try {
-      renderMsgAI(_enIng ? '🔍 A recruiter is reviewing every line...' : '🔍 Un reclutador está revisando cada línea...');
+      renderMsgAI(_enIng ? '🔍 Elite recruiter review pass...' : '🔍 Pasada de revisión de reclutador élite...');
       const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${_enIng?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -1895,7 +1867,6 @@ function revertirAdaptacion() {
 
 
 async function optimizarCVSubido(texto) {
-  try { sessionStorage.setItem('cvpro_cv_lang', LANG); } catch(e) {}
   renderMsgAI(LANG==='en' ? '🚀 Optimizing your uploaded resume with elite AI... (20-30s)' : '🚀 Optimizando tu CV subido con IA élite... (20-30s)');
   const enIngles = LANG === 'en';
   const prompt = `${enIngles?'IMPORTANT: Write the ENTIRE resume in professional English.':'IMPORTANTE: Escribe todo en español profesional.'}
@@ -1973,7 +1944,6 @@ ${cvV1.substring(0,5500)}`})
       sessionStorage.setItem('cvData', JSON.stringify(construirCVData()));
     } catch(ep) {
       console.error('Parser falló:', ep);
-      try { aprender('fallo_parser', {error: String(ep.message||'').substring(0,120)}); } catch(e) {}
       sessionStorage.setItem('cvData', JSON.stringify({nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}));
     }
     try { guardarCVConCodigo(cvGenerado); } catch(eg) { console.warn(eg); }
@@ -1996,7 +1966,7 @@ function _fuenteRespuestas() {
 async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng) {
   if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
   try {
-    renderMsgAI(enIng ? '🛡️ Verifying every fact comes from you...' : '🛡️ Verificando que cada dato provenga de ti...');
+    renderMsgAI(enIng ? '🛡️ Truth check — verifying every fact against your data...' : '🛡️ Verificación de veracidad — contrastando cada dato con tu información...');
     const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -2026,7 +1996,7 @@ async function pasadaATS(cvTxt, enIng) {
   const FECHA_ACTUAL = `${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][_h.getMonth()]} ${_h.getFullYear()}`;
   const ANIO_ACTUAL = _h.getFullYear();
   try {
-    renderMsgAI(enIng ? '🎯 Checking it passes automated filters...' : '🎯 Comprobando que pase los filtros automáticos...');
+    renderMsgAI(enIng ? '🎯 Final ATS audit — keywords, structure and consistency...' : '🎯 Auditoría ATS final — keywords, estructura y coherencia...');
     const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -2126,7 +2096,6 @@ async function generarConValidacion(fnGenerar, fuente, enIng) {
   const graves = probs.filter(p => ['cv_corto','pocos_bullets','bullets_pobres','perfil_debil'].includes(p));
   if (graves.length) {
     console.warn('⚠️ CV pobre, regenerando:', graves);
-    try { aprender('validacion_fallida', {problemas: graves, patron: `CV insuficiente por: ${graves.join(', ')}`, propuesta: 'Reforzar el prompt de este sector'}); } catch(e) {}
     renderMsgAI(enIng ? '⚡ Reinforcing content depth...' : '⚡ Reforzando la profundidad del contenido...');
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
@@ -2205,109 +2174,6 @@ function restaurarBackupEditor() {
     }
   } catch(e) {}
   return false;
-}
-
-
-// ══════════ MOTOR DE APRENDIZAJE CONTINUO ══════════
-// Regla #2/#32/#33: los datos personales NUNCA salen de aquí. Solo patrones anonimizados.
-
-const _APR_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
-const _APR_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-
-// ── REGLA #33: filtro de privacidad. Nada con PII cruza esta función.
-function _anonimizar(txt) {
-  return String(txt || '')
-    .replace(/[\w.+-]+@[\w.-]+\.\w{2,}/g, '[EMAIL]')
-    .replace(/[\+\d][\d\s\-\(\)\.]{6,}\d/g, '[TEL]')
-    .replace(/\b(?:https?:\/\/|www\.)\S+/gi, '[URL]')
-    .replace(/\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2}\b/g, '[NOMBRE]')
-    .replace(/\b\d{6,}\b/g, '[ID]')
-    .substring(0, 400);
-}
-
-// ── Clasificación de sector y seniority (metadatos, no PII)
-function _sectorDe(puesto) {
-  // Normalizar acentos: 'Médico' debe coincidir con /medic/
-  const p = String(puesto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const mapa = [
-    [/pilot|aviaci|vuelo|helic/, 'aviacion'], [/medic|doctor|ciruj|enfermer|salud/, 'salud'],
-    [/desarrollad|program|software|devops|data|frontend|backend/, 'tecnologia'],
-    [/vend|comerci|sales|account exec/, 'ventas'], [/market|publicidad|brand/, 'marketing'],
-    [/contad|financ|audit|conta/, 'finanzas'], [/abogad|legal|jurid/, 'legal'],
-    [/maestro|profesor|docente|educa/, 'educacion'], [/ingenier/, 'ingenieria'],
-    [/chef|cocin|restaur|hotel/, 'hospitalidad'], [/logistic|transport|almacen|supply/, 'logistica'],
-    [/construc|arquitect|obra/, 'construccion'], [/rrhh|recursos humanos|talento/, 'rrhh'],
-    [/director|gerente general|ceo|cfo|coo/, 'direccion'],
-    [/disen|creativ|redact|editor|fotograf/, 'creativo']
-  ];
-  for (const [re, s] of mapa) if (re.test(p)) return s;
-  return 'otros';
-}
-function _seniorityDe(d) {
-  const t = ((d.exp1||'') + ' ' + (d.puesto||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (/sin experiencia|no experience|estudiante|reci[eé]n graduad|pasante/.test(t)) return 'entry';
-  if (/director|gerente general|ceo|cfo|coo|vicepresidente|jefe de/.test(t)) return 'executive';
-  const anios = (t.match(/\b(19|20)\d{2}\b/g)||[]).map(Number);
-  if (anios.length >= 2) {
-    const rango = Math.max(...anios) - Math.min(...anios);
-    if (rango >= 10) return 'senior';
-    if (rango >= 4) return 'mid';
-  }
-  return 'mid';
-}
-
-// ── Envío del evento (siempre anonimizado)
-async function aprender(tipo, payload) {
-  try {
-    const d = (typeof datos !== 'undefined') ? datos : {};
-    await fetch(`${_APR_URL}/rest/v1/rpc/registrar_aprendizaje`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','apikey':_APR_KEY,'Authorization':`Bearer ${_APR_KEY}`},
-      body: JSON.stringify({
-        p_tipo: tipo,
-        p_sector: _sectorDe(d.puesto),
-        p_seniority: _seniorityDe(d),
-        p_idioma: (sessionStorage.getItem('cvpro_cv_lang') || LANG),
-        p_mercado: /ingl|english/i.test(d.idioma_cv||'') ? 'US' : 'LATAM',
-        p_payload: payload || {}
-      })
-    });
-  } catch(e) { console.debug('aprendizaje omitido:', e.message); }
-}
-
-// ── REGLA #8/#41: Resume Intelligence Score calculado localmente
-function calcularRIS(cvTexto, cvData) {
-  const t = String(cvTexto||''); const d = cvData || {};
-  const palabras = t.split(/\s+/).filter(Boolean).length;
-  const bullets = (t.match(/^\s*[•·▸▪]/gm)||[]);
-  const largos = bullets.filter(b => b.split(/\s+/).length >= 20).length;
-  const problemas = (typeof validarCV === 'function') ? validarCV(t) : [];
-  const s = {
-    contenido:   Math.min(100, Math.round(palabras / 12)),
-    estructura:  (d.resumen?25:0) + (d.experiencia?.length?30:0) + (d.educacion?.length?20:0) + (d.habilidades?.length?15:0) + (d.idiomas?.length?10:0),
-    impacto:     bullets.length ? Math.round((largos / bullets.length) * 100) : 0,
-    ats:         Math.max(0, 100 - problemas.length * 14),
-    veracidad:   problemas.includes('fecha_futura') ? 60 : 100,
-    lenguaje:    problemas.includes('cliches') ? 65 : 100
-  };
-  s.global = Math.round((s.contenido + s.estructura + s.impacto + s.ats + s.veracidad + s.lenguaje) / 6);
-  return s;
-}
-
-// ── REGLA #4/#5: comparar output de IA contra la versión final del usuario
-function analizarEdiciones(original, final) {
-  const cambios = [];
-  const campos = ['nombre','puesto','resumen'];
-  campos.forEach(f => {
-    const a = String((original||{})[f]||'').trim(), b = String((final||{})[f]||'').trim();
-    if (!a || !b || a === b) return;
-    const cat = b.length > a.length * 1.25 ? 'expansion'
-              : b.length < a.length * 0.75 ? 'reduccion'
-              : /\d/.test(b) && !/\d/.test(a) ? 'agrego_metricas'
-              : 'reformulacion';
-    cambios.push({campo: f, tipo: cat, delta: b.length - a.length});
-  });
-  return cambios;
 }
 
 // ── RESULTADO ──
@@ -2601,7 +2467,6 @@ function agregarIdioma() {
 function agregarEducacion() {}
 
 async function regenerarCV() {
-  try { aprender('regeneracion', {momento: 'editor'}); } catch(e) {}
   if (!confirm((LANG==='en' ? 'Regenerate with AI? Manual edits will be lost.' : '¿Regenerar el CV con IA? Se perderán los cambios manuales.'))) return;
   document.querySelector('.main-layout').innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:20px">
@@ -2615,25 +2480,6 @@ async function regenerarCV() {
 }
 
 function irAPlantillasDesdeEditor() {
-  // Aprendizaje: qué cambió el usuario respecto a la IA
-  try {
-    const orig = JSON.parse(sessionStorage.getItem('cvpro_cvdata_original') || 'null');
-    const fin = JSON.parse(sessionStorage.getItem('cvData') || '{}');
-    if (orig) {
-      const cambios = analizarEdiciones(orig, fin);
-      if (cambios.length) {
-        const tipos = cambios.map(x => x.tipo);
-        aprender('edicion_usuario', {
-          campos_editados: cambios.length,
-          tipos: tipos,
-          patron: `Los usuarios de este sector suelen aplicar: ${[...new Set(tipos)].join(', ')} sobre el texto de la IA`,
-          propuesta: tipos.includes('agrego_metricas')
-            ? 'Insistir más en pedir cifras concretas durante el chat'
-            : tipos.includes('reduccion') ? 'Generar textos más concisos' : 'Revisar naturalidad de la redacción'
-        });
-      }
-    }
-  } catch(e) {}
   // Recopilar todo el contenido editable del editor
   const editables = document.querySelectorAll('[contenteditable]');
   editables.forEach(el => {
@@ -3084,7 +2930,7 @@ async function recuperarConCodigo(codigo) {
 // ── ONBOARDING ──
 const ONB_PASOS_ES = [
   { icon:'👋', titulo:'¡Bienvenido a <em>CVPro</em>!', desc:'Vamos a crear tu CV profesional en minutos. La IA te guiará paso a paso con preguntas simples.',
-    lista:[{ic:'🤖',txt:'Chat inteligente de 15 preguntas'},{ic:'✍️',txt:'IA transforma tu redacción en nivel profesional'},{ic:'🎨',txt:'10 plantillas profesionales con foto'}], btn:'¡Empezamos!' },
+    lista:[{ic:'🤖',txt:'Chat inteligente de 14 preguntas'},{ic:'✍️',txt:'IA transforma tu redacción en nivel profesional'},{ic:'🎨',txt:'10 plantillas profesionales con foto'}], btn:'¡Empezamos!' },
   { icon:'💬', titulo:'Solo <em>escribe</em> — la IA hace el resto', desc:'No necesitas saber redactar un CV. Cuéntame tu experiencia con tus palabras y yo la transformo.',
     lista:[{ic:'📝',txt:'Responde con naturalidad'},{ic:'🔄',txt:'Puedes editar todo al final'},{ic:'⚡',txt:'En ~8 minutos tendrás tu CV listo'}], btn:'Entendido →' },
   { icon:'✅', titulo:'Revisa antes de <em>descargar</em>', desc:'Después de generar tu CV podrás editar cualquier campo directamente antes de elegir plantilla.',
@@ -3092,7 +2938,7 @@ const ONB_PASOS_ES = [
 ];
 const ONB_PASOS_EN = [
   { icon:'👋', titulo:'Welcome to <em>CVPro</em>!', desc:'We will build your professional resume in minutes. The AI guides you step by step with simple questions.',
-    lista:[{ic:'🤖',txt:'Smart chat with 15 questions'},{ic:'✍️',txt:'AI turns your words into professional writing'},{ic:'🎨',txt:'10 professional templates with photo'}], btn:'Let\'s start!' },
+    lista:[{ic:'🤖',txt:'Smart chat with 14 questions'},{ic:'✍️',txt:'AI turns your words into professional writing'},{ic:'🎨',txt:'10 professional templates with photo'}], btn:'Let\'s start!' },
   { icon:'💬', titulo:'Just <em>type</em> — the AI does the rest', desc:'No resume-writing skills needed. Tell me your experience in your own words and I will transform it.',
     lista:[{ic:'📝',txt:'Answer naturally'},{ic:'🔄',txt:'You can edit everything at the end'},{ic:'⚡',txt:'Your resume ready in ~8 minutes'}], btn:'Got it →' },
   { icon:'✅', titulo:'Review before <em>downloading</em>', desc:'After generating your resume you can edit any field directly before choosing a template.',
@@ -3378,7 +3224,7 @@ async function consultarIA(pregunta) {
 
 INFORMACIÓN CLAVE DE CVPRO:
 - Precios: Básico $4.99, Estándar $9.99, Premium $14.99 — pago único, sin suscripción
-- Proceso: Chat de 15 preguntas guiadas → IA genera CV → pantalla de revisión → elegir plantilla → descargar PDF
+- Proceso: Chat de 14 preguntas guiadas → IA genera CV → pantalla de revisión → elegir plantilla → descargar PDF
 - La IA corrige ortografía, mejora redacción y optimiza para filtros ATS
 - 10 plantillas profesionales (5 hombre, 5 mujer) con opción de subir foto
 - Pago con PayPal, Visa, Mastercard
@@ -3594,6 +3440,45 @@ async function verificarPagoServidor() {
   } catch(e) { console.warn('No se pudo verificar el pago:', e.message); return null; }
 }
 
+
+// ══════════ LÍMITES DE USO POR PLAN (verificados en servidor) ══════════
+async function consumirUso(tipo) {
+  if (typeof esTester === 'function' && esTester()) return {permitido:true, plan:'premium', limite:-1, usados:0};
+  const codigo = sessionStorage.getItem('cvpro_codigo') || '';
+  if (!codigo) return {permitido:false, plan:'ninguno', limite:0, usados:0};
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_U}/rest/v1/rpc/consumir_uso`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`},
+      body: JSON.stringify({p_codigo: codigo, p_tipo: tipo})
+    });
+    const rows = await res.json();
+    const r = Array.isArray(rows) ? rows[0] : rows;
+    return r || {permitido:false, plan:'ninguno', limite:0, usados:0};
+  } catch(e) {
+    console.warn('No se pudo verificar el cupo:', e.message);
+    return {permitido:false, plan:'error', limite:0, usados:0};
+  }
+}
+
+function avisarCupoAgotado(tipo, r) {
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  const nombres = {
+    carta:      {es:'cartas de presentación', en:'cover letters'},
+    vacante:    {es:'adaptaciones a vacantes', en:'job-posting adaptations'},
+    traduccion: {es:'traducciones', en:'translations'}
+  };
+  const q = (nombres[tipo] || {es:'usos', en:'uses'})[L];
+  const msg = L === 'en'
+    ? `Your Standard plan includes 1 of these. You've already used it.\n\nUpgrade to Premium ($14.99) for unlimited ${q}.`
+    : `Tu plan Estándar incluye 1. Ya la usaste.\n\nSube a Premium ($14.99) para tener ${q} ilimitadas.`;
+  if (confirm(msg + (L==='en' ? '\n\nSee Premium?' : '\n\n¿Ver Premium?'))) {
+    if (typeof abrirMuroPago === 'function') abrirMuroPago('premium', null);
+  }
+}
+
 async function accesoVerificado(nivelMinimo) {
   if (typeof esTester === 'function' && esTester()) return true;
   const planSrv = await verificarPagoServidor();
@@ -3668,7 +3553,7 @@ async function abrirMuroPago(planSugerido, alPagar) {
       <div id="planesMuro" style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px"></div>
       <div id="paypalBtns" style="min-height:52px"></div>
       <p style="text-align:center;font-size:.72rem;color:#999;margin-top:14px">🔒 ${L==='en'?'Secure payment via PayPal · Card accepted':'Pago seguro con PayPal · Aceptamos tarjeta'}</p>
-      <p style="text-align:center;font-size:.72rem;color:#7dd3a8;margin-top:6px">🛡️ ${L==='en'?'Satisfaction guarantee':'Garantía de satisfacción'}</p>
+      <p style="text-align:center;font-size:.72rem;color:#7dd3a8;margin-top:6px">🛡️ ${L==='en'?'7-day money-back guarantee':'Garantía de 7 días — te devolvemos tu dinero'}</p>
     </div>`;
   document.body.appendChild(ov);
 
@@ -3676,8 +3561,8 @@ async function abrirMuroPago(planSugerido, alPagar) {
     const cont = document.getElementById('planesMuro');
     const desc = {
       basico:   {es:'CV con IA · 20 plantillas · PDF + versión ATS', en:'AI resume · 20 templates · PDF + ATS version'},
-      estandar: {es:'+ Carta de presentación · Adaptar a 1 vacante · 2 idiomas', en:'+ Cover letter · Tailor to 1 job · 2 languages'},
-      premium:  {es:'+ Adaptaciones ilimitadas · 3 cartas · 6 meses', en:'+ Unlimited tailoring · 3 letters · 6 months'}
+      estandar: {es:'+ 1 carta · 1 adaptación a vacante · 1 traducción', en:'+ 1 cover letter · 1 job adaptation · 1 translation'},
+      premium:  {es:'+ Cartas, adaptaciones y traducciones ILIMITADAS · 6 meses', en:'+ UNLIMITED letters, adaptations & translations · 6 months'}
     };
     cont.innerHTML = Object.entries(PLANES).map(([k,v]) => `
       <label style="display:flex;align-items:center;gap:11px;border:2px solid ${k===planSel?'#FFD000':'#e5e5e5'};background:${k===planSel?'#fffbe6':'#fff'};border-radius:12px;padding:11px 13px;cursor:pointer">
@@ -3761,6 +3646,15 @@ function ev(nombre, extra) {
     if (cola.length > 40) cola.shift();
     localStorage.setItem('cvpro_eventos', JSON.stringify(cola));
     if (window.gtag) window.gtag('event', nombre, extra || {});
+    // Enviar al servidor (sin bloquear la navegación)
+    try {
+      const _U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co/rest/v1/eventos';
+      const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+      fetch(_U, {method:'POST', keepalive:true,
+        headers:{'Content-Type':'application/json','apikey':_K,'Authorization':`Bearer ${_K}`,'Prefer':'return=minimal'},
+        body: JSON.stringify({evento:nombre, pagina:d.pagina, lang:d.lang, extra:extra||null})
+      }).catch(()=>{});
+    } catch(e) {}
     console.debug('📊', nombre, extra || '');
   } catch(e) {}
 }

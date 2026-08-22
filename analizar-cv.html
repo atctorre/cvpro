@@ -219,6 +219,14 @@ async function procesarArchivo(file) {
 }
 
 
+
+// ══ SEGURIDAD XSS: escapar todo dato del usuario antes de insertarlo en el DOM ══
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function sanitizarEntrada(txt) {
   return String(txt || '')
     .replace(/\b(ignore|disregard|forget|olvida|ignora)\s+(all\s+)?(previous|prior|above|anterior|todo lo anterior)[^.\n]{0,60}/gi, '[omitido]')
@@ -281,11 +289,11 @@ function mostrarResultado(r) {
   }).join('');
 
   document.getElementById('problemas').innerHTML = (r.problemas || []).slice(0,3).map((p,i) =>
-    `<div class="prob"><b>${i+1}. ${p.titulo}</b>${p.cita?`<span class="cita">"${p.cita}"</span>`:''}<p>💡 ${p.recomendacion}</p></div>`
+    `<div class="prob"><b>${i+1}. ${esc(p.titulo)}</b>${p.cita?`<span class="cita">"${esc(p.cita)}"</span>`:''}<p>💡 ${esc(p.recomendacion)}</p></div>`
   ).join('');
 
   document.getElementById('fortalezas').innerHTML = (r.fortalezas || []).slice(0,3).map(f =>
-    `<div class="fort">✓ ${f}</div>`
+    `<div class="fort">✓ ${esc(f)}</div>`
   ).join('');
 
   const lockN = document.getElementById('lockN');
@@ -309,8 +317,8 @@ CV: ${cvTextoGlobal.substring(0,4000)}`;
     document.getElementById('matchBox').style.display = 'block';
     document.getElementById('gauge2').style.background = `conic-gradient(${colorScore(m)} ${m*3.6}deg, #222 0deg)`;
     document.getElementById('matchNum').textContent = m;
-    document.getElementById('matchFort').innerHTML = (r.fortalezas||[]).map(f=>`<span class="tag ok">✓ ${f}</span>`).join('');
-    document.getElementById('matchFalt').innerHTML = (r.faltantes||[]).map(f=>`<span class="tag no">✗ ${f}</span>`).join('');
+    document.getElementById('matchFort').innerHTML = (r.fortalezas||[]).map(f=>`<span class="tag ok">✓ ${esc(f)}</span>`).join('');
+    document.getElementById('matchFalt').innerHTML = (r.faltantes||[]).map(f=>`<span class="tag no">✗ ${esc(f)}</span>`).join('');
   } catch(e) {
     alert(LANG==='en' ? 'Analysis failed, try again.' : 'Falló el análisis, intenta de nuevo.');
   }

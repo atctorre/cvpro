@@ -349,6 +349,14 @@ let enviando = false;
 
 // ── 16 PREGUNTAS GUIADAS ──
 let LANG = 'es';
+
+// ══ SEGURIDAD XSS: escapar todo dato del usuario antes de insertarlo en el DOM ══
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function resolver(v) { return typeof v === 'function' ? v() : (v || ''); }
 
 const PASOS = [
@@ -594,10 +602,10 @@ function actualizarPreview() {
   el.innerHTML = `
   <div class="cv-preview-card">
     <div class="cv-prev-header">
-      <div class="cv-prev-photo">${ini||'?'}</div>
+      <div class="cv-prev-photo">${esc(ini||'?')}</div>
       <div>
-        <div class="cv-prev-name">${nombre||'Tu nombre'}</div>
-        <div class="cv-prev-role">${puesto||'Tu puesto'}</div>
+        <div class="cv-prev-name">${esc(nombre||'Tu nombre')}</div>
+        <div class="cv-prev-role">${esc(puesto||'Tu puesto')}</div>
         <div class="cv-prev-contact">
           ${email?`<span class="cv-prev-ci">✉ ${email}</span>`:''}
           ${pais?`<span class="cv-prev-ci">📍 ${pais}</span>`:''}
@@ -608,12 +616,12 @@ function actualizarPreview() {
       <div class="cv-prev-sb">
         ${habsArr.length?`
         <div class="cv-prev-st">${LANG==='en'?'Skills':'Habilidades'}</div>
-        ${habsArr.map(h=>`<div class="cv-prev-sk"><div class="cv-prev-sn">${h.nombre}</div><div class="cv-prev-sb2"><div class="cv-prev-sf" style="width:${h.nivel}%"></div></div></div>`).join('')}
+        ${habsArr.map(h=>`<div class="cv-prev-sk"><div class="cv-prev-sn">${esc(h.nombre)}</div><div class="cv-prev-sb2"><div class="cv-prev-sf" style="width:${h.nivel}%"></div></div></div>`).join('')}
         `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:10px 0">Las habilidades<br>aparecerán aquí</div>`}
 
         ${idiomasArr.length?`
         <div class="cv-prev-st" style="margin-top:10px">${LANG==='en'?'Languages':'Idiomas'}</div>
-        ${idiomasArr.map(l=>`<div class="cv-prev-lang"><span>${l.nombre}</span><span style="color:#888">${l.nivel}</span></div>`).join('')}
+        ${idiomasArr.map(l=>`<div class="cv-prev-lang"><span>${esc(l.nombre)}</span><span style="color:#888">${esc(l.nivel)}</span></div>`).join('')}
         `:''}
 
         ${d.estudios?`
@@ -1135,7 +1143,7 @@ function renderMsg(tipo, texto, opts=[], animar=true, pasoIdx=null, chips=null) 
       </div>`;
     }
     const ayudaHtml = (pasoIdx !== null && !chips) ? renderAyuda(PASOS[pasoIdx]?.key) : '';
-    const textoLimpio = texto
+    const textoLimpio = esc(texto)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/^#{1,3} (.+)/gm, '<strong>$1</strong>')
@@ -2140,7 +2148,7 @@ function mostrarResultado(cv) {
             <div id="habilidadesEditor">
               ${habilidades.map((h,i) => `
               <div style="margin-bottom:8px">
-                <div contenteditable="true" style="font-size:0.72rem;font-weight:600;color:#333;outline:none;cursor:text" onblur="actualizarHabilidad(${i},'nombre',this.textContent)">${h.nombre}</div>
+                <div contenteditable="true" style="font-size:0.72rem;font-weight:600;color:#333;outline:none;cursor:text" onblur="actualizarHabilidad(${i},'nombre',this.textContent)">${esc(h.nombre)}</div>
                 <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:3px">
                   <div style="height:100%;width:${h.nivel}%;background:linear-gradient(90deg,#0d1b2a,#FFD000);border-radius:2px"></div>
                 </div>
@@ -2154,8 +2162,8 @@ function mostrarResultado(cv) {
             <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;color:#0d1b2a;text-transform:uppercase;border-bottom:2px solid #FFD000;padding-bottom:4px;margin-bottom:10px">${LANG==='en'?'Languages':'Idiomas'}</div>
             ${idiomas.map((l,i) => `
             <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-              <span contenteditable="true" style="font-size:0.72rem;font-weight:600;color:#333;outline:none;cursor:text" onblur="actualizarIdioma(${i},'nombre',this.textContent)">${l.nombre}</span>
-              <span contenteditable="true" style="font-size:0.68rem;color:#888;outline:none;cursor:text" onblur="actualizarIdioma(${i},'nivel',this.textContent)">${l.nivel}</span>
+              <span contenteditable="true" style="font-size:0.72rem;font-weight:600;color:#333;outline:none;cursor:text" onblur="actualizarIdioma(${i},'nombre',this.textContent)">${esc(l.nombre)}</span>
+              <span contenteditable="true" style="font-size:0.68rem;color:#888;outline:none;cursor:text" onblur="actualizarIdioma(${i},'nivel',this.textContent)">${esc(l.nivel)}</span>
             </div>`).join('')}
             <button onclick="agregarIdioma()" style="font-size:0.65rem;color:#999;background:none;border:1px dashed #ddd;border-radius:4px;padding:4px 8px;cursor:pointer;margin-top:4px;width:100%">${LANG==='en'?'+ Add language':'+ Agregar idioma'}</button>
           </div>` : ''}
@@ -2165,7 +2173,7 @@ function mostrarResultado(cv) {
             <div style="font-size:0.6rem;font-weight:800;letter-spacing:2px;color:#0d1b2a;text-transform:uppercase;border-bottom:2px solid #FFD000;padding-bottom:4px;margin-bottom:10px">${LANG==='en'?'Education':'Educación'}</div>
             ${educacion.map((e,i) => `
             <div style="margin-bottom:10px">
-              <div contenteditable="true" style="font-size:0.72rem;font-weight:700;color:#0d1b2a;outline:none;cursor:text;line-height:1.4" onblur="actualizarEducacion(${i},'titulo',this.textContent)">${e.titulo}</div>
+              <div contenteditable="true" style="font-size:0.72rem;font-weight:700;color:#0d1b2a;outline:none;cursor:text;line-height:1.4" onblur="actualizarEducacion(${i},'titulo',this.textContent)">${esc(e.titulo)}</div>
               <div contenteditable="true" style="font-size:0.68rem;color:#888;outline:none;cursor:text" onblur="actualizarEducacion(${i},'institucion',this.textContent)">${e.institucion || ''}</div>
               <div contenteditable="true" style="font-size:0.65rem;color:#aaa;outline:none;cursor:text" onblur="actualizarEducacion(${i},'año',this.textContent)">${e.año || ''}</div>
             </div>`).join('')}
@@ -3013,7 +3021,7 @@ function agregarMsgAI(texto) {
   const msgs = document.getElementById('soporteMsgs');
   const div = document.createElement('div');
   div.className = 'smsg ai';
-  div.innerHTML = `<div class="smsg-av">CV</div><div class="smsg-bubble">${texto.replace(/\n/g,'<br>')}</div>`;
+  div.innerHTML = `<div class="smsg-av">CV</div><div class="smsg-bubble">${esc(texto).replace(/\n/g,'<br>')}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   soporteHistorial.push({role:'assistant', content:texto});

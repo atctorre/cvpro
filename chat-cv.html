@@ -1554,7 +1554,7 @@ INFO EXTRA: ${datos.info_extra||''}
 
 REGLAS (estándar de reclutador ejecutivo élite):
 1. RESUMEN: MÁXIMO 5 líneas / 90 palabras. Quién es + años + especialización + logro diferenciador. NUNCA excedas 90 palabras — un perfil largo pierde al reclutador. Sin "yo/soy/tengo". Modelo: "${ejemplo}"
-2. EXPERIENCIA: 5-7 bullets RICOS por trabajo (25-40 palabras c/u), desarrollados con contexto, alcance y escala del sector. CV final: mínimo 2 páginas A4 (1000-1500 palabras) con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. Bullets cortos o planos = trabajo rechazado.
+2. EXPERIENCIA: 5-7 bullets RICOS por trabajo (22-35 palabras c/u), desarrollados con contexto, alcance y escala del sector. CV final: mínimo 1½-2 páginas A4 (900-1200 palabras) con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. Bullets cortos o planos = trabajo rechazado.
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
 5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
@@ -1637,7 +1637,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
       const rr = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 2 páginas A4 (1000-1500 palabras), bullets de 25-40 palabras. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
+Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
 CV:
 ${cvTexto.substring(0,12000)}`})
       });
@@ -1908,7 +1908,7 @@ ${cvGenerado}
 VACANTE OBJETIVO:
 ${sanitizarEntrada(texto).substring(0, 2000)}
 
-MISIÓN: Reescribe el CV adaptándolo a esta vacante específica con profundidad de Executive Recruiter: CV final de 2 páginas A4 (1000-1500 palabras), bullets de 25-40 palabras con contexto, alcance y resultado.
+MISIÓN: Reescribe el CV adaptándolo a esta vacante específica con profundidad de Executive Recruiter: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras con contexto, alcance y resultado.
 REGLAS ESTRICTAS:
 1. NO INVENTES experiencia, títulos, certificaciones NI CIFRAS que no estén en el CV original. Reordenar y reformular sí; añadir hechos nuevos jamás.
 2. REORDENA y REFORMULA los bullets para destacar lo más relevante a la vacante
@@ -2079,13 +2079,13 @@ function iniciarProgreso() {
   // usuario mirando un 96% eterno sin saber si sigue vivo.
   _prog.watchdog = setTimeout(() => {
     if (!document.getElementById('progresoPanel')) return;
-    console.error('⏱️ Pipeline sin desenlace tras 180s');
-    if (typeof ev === 'function') ev('ai_colgado', {segundos: 180});
+    console.error('⏱️ Pipeline sin desenlace tras 130s');
+    if (typeof ev === 'function') ev('ai_colgado', {segundos: 130});
     terminarProgreso(false);
     renderMsgAI(LANG === 'en'
       ? '⏱️ This is taking longer than expected. Reload the page and try again — your uploaded resume is saved.'
       : '⏱️ Está tardando más de lo normal. Recarga la página e inténtalo otra vez — tu CV subido está guardado.');
-  }, 180000);
+  }, 130000);
 
   // Rotar consejos para que haya algo que leer
   let ti = 0;
@@ -2166,8 +2166,17 @@ function conLimite(promesa, segundos, valorPorDefecto) {
 
 function fetchIA(url, opciones, segundos) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), (segundos || 45) * 1000);
+  const lim = segundos || 45;
+  const t0 = Date.now();
+  const t = setTimeout(() => {
+    console.error(`⏱️ TIMEOUT tras ${lim}s → ${String(url).split('/').pop()}`);
+    ctrl.abort();
+  }, lim * 1000);
   return fetch(url, {...opciones, signal: ctrl.signal})
+    .then(r => {
+      console.debug(`⏱️ ${String(url).split('/').pop()}: ${Math.round((Date.now()-t0)/1000)}s · HTTP ${r.status}`);
+      return r;
+    })
     .finally(() => clearTimeout(t));
 }
 
@@ -2180,7 +2189,7 @@ async function optimizarCVSubido(texto) {
   const prompt = `${enIngles?'IMPORTANT: Write the ENTIRE resume in professional English.':'IMPORTANTE: Escribe todo en español profesional.'}
 Actúas como consultor de RRHH, Executive Recruiter y especialista internacional en ATS con 20+ años evaluando candidatos para procesos altamente competitivos. Tu misión: transformar este CV en un documento de nivel ÉLITE que consiga entrevistas.
 PROCESO: 1) ANALIZA profesión, nivel, años, industrias, logros, diferenciadores. 2) REESCRIBE estratégicamente.
-EXTENSIÓN OBLIGATORIA: el CV final debe llenar MÍNIMO 2 páginas A4 completas (1000-1500 palabras). Expande cada experiencia con profundidad de consultor: contexto institucional, alcance, equipos, procesos, impacto. Si el original es corto, DESARROLLA cada función con el conocimiento experto del sector — sin inventar hechos, cargos ni cifras.
+EXTENSIÓN OBLIGATORIA: el CV final debe llenar entre 1½ y 1½-2 páginas A4 (900-1200 palabras). Expande cada experiencia con profundidad de consultor: contexto institucional, alcance, equipos, procesos, impacto. Si el original es corto, DESARROLLA cada función con el conocimiento experto del sector — sin inventar hechos, cargos ni cifras.
 REGLAS ESTRICTAS:
 - PERFIL: MÁXIMO 5 líneas / 90 palabras. Denso pero breve: quién es + años + especialización + valor diferenciador. Un perfil largo se lee peor que uno corto y potente. NUNCA excedas 90 palabras. PROHIBIDO: "responsable", "proactivo", "comprometido", "dinámico", primera persona.
 - EXPERIENCIA: CADA puesto con 4-6 bullets ricos de 15-30 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe alcance, complejidad y contexto verificables — está PROHIBIDO estimar o inferir números del promedio del sector. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
@@ -2255,7 +2264,7 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres un Executive Recruiter élite Y auditor ATS revisando el trabajo de un colega. Haz AMBAS cosas en una sola pasada:
 (A) CRITICA y MEJORA: elimina cualquier bullet débil o genérico, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos.
-(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 2 páginas A4 (1000-1500 palabras) con bullets de 25-40 palabras. (C) VERIFICACIÓN DE VERACIDAD contra la información original que aparece abajo: ELIMINA toda cifra, porcentaje, cantidad de personas, empresa, cargo, título, certificación o premio que NO aparezca en esa fuente. Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes. CONSERVA intactos los datos que SÍ están en la fuente.
+(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 1½-2 páginas A4 (900-1200 palabras) con bullets de 22-35 palabras. (C) VERIFICACIÓN DE VERACIDAD contra la información original que aparece abajo: ELIMINA toda cifra, porcentaje, cantidad de personas, empresa, cargo, título, certificación o premio que NO aparezca en esa fuente. Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes. CONSERVA intactos los datos que SÍ están en la fuente.
 Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
 
 INFORMACIÓN ORIGINAL DEL CANDIDATO (única fuente de verdad):
@@ -2279,15 +2288,20 @@ ${cvV1.substring(0,9000)}`})
     // resultado no mejoraba lo suficiente para justificar 100 segundos.
     if (typeof marcarPaso === 'function') marcarPaso(3);
 
-    // Refuerzo local: solo si el CV salió pobre, y sin poder romper nada.
-    // conLimite() garantiza que aunque se cuelgue, seguimos en 60s.
+    // ❌ generarConValidacion() ELIMINADA de esta ruta.
+    // Si consideraba el CV "pobre" lanzaba una TERCERA reescritura completa
+    // de 1.000-1.500 palabras: ~60s más y el punto exacto donde el pipeline
+    // se quedaba colgado en el 96%. La pasada 2 ya hace revisión de
+    // reclutador, auditoría ATS y verificación de veracidad, así que este
+    // refuerzo era redundante y caro. Solo dejamos el diagnóstico local,
+    // que no cuesta nada y nos dice si la calidad baja.
     try {
-      cvV1 = await conLimite(
-        generarConValidacion(async () => cvV1, texto, enIngles),
-        60, cvV1);
-    } catch(e3) {
-      console.warn('Refuerzo omitido:', e3.message);
-    }
+      const probs = validarCV(cvV1);
+      if (probs && probs.length) {
+        console.warn('⚠️ Diagnóstico de calidad:', probs.join(', '));
+        if (typeof ev === 'function') ev('cv_calidad_baja', {problemas: probs.join(',')});
+      }
+    } catch(e3) {}
 
     cvGenerado = (cvV1 && cvV1.length > 300) ? cvV1 : _cvSeguro;
 
@@ -2446,7 +2460,7 @@ function validarCV(cv) {
   if (palabras < 350) problemas.push('cv_corto');
   const bullets = t.split('\n').filter(l => /^\s*[•·▸▪]/.test(l));
   if (bullets.length < 4) problemas.push('pocos_bullets');
-  const flojos = bullets.filter(b => b.split(/\s+/).length < 12).length;
+  const flojos = bullets.filter(b => b.split(/\s+/).length < 10).length;   // acorde a bullets de 22-35 palabras
   if (bullets.length && flojos / bullets.length > 0.4) problemas.push('bullets_pobres');
   const mRes = t.match(/(?:RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY|PERFIL)[^\n]*\n(?:[─\-═]+\s*\n)?([\s\S]{0,900}?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n|$)/i);
   if (!mRes || mRes[1].split(/\s+/).filter(Boolean).length < 35) problemas.push('perfil_debil');
@@ -2457,7 +2471,10 @@ function validarCV(cv) {
   // 4. FECHAS imposibles
   const anioActual = new Date().getFullYear();
   const anios = (t.match(/\b(19|20)\d{2}\b/g) || []).map(Number);
+  // Un año igual al actual es perfectamente válido (un puesto que empezó
+  // este año). Solo son imposibles los POSTERIORES al actual.
   if (anios.some(a => a > anioActual)) problemas.push('fecha_futura');
+  if (anios.some(a => a < 1950)) problemas.push('fecha_imposible');
 
   return problemas;
 }
@@ -2527,7 +2544,7 @@ async function generarConValidacion(fnGenerar, fuente, enIng) {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Este CV es demasiado pobre para un candidato profesional. Problemas: ${graves.join(', ')}.
-EXPANDE cada bullet a 25-40 palabras con contexto, alcance y resultado. El perfil debe tener 4-5 líneas densas. CV final de 1000-1500 palabras.
+EXPANDE cada bullet a 22-35 palabras con contexto, alcance y resultado. El perfil debe tener 4-5 líneas densas. CV final de 900-1200 palabras.
 NO inventes hechos ni cifras nuevas — desarrolla lo que ya está. Mismo formato y headers exactos. Devuelve SOLO el CV completo.
 CV:
 ${String(cv).substring(0,6000)}`})

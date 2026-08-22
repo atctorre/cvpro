@@ -927,25 +927,7 @@ if (LANG === 'en') {
   // En EE.UU. un resume con foto se descarta por cumplimiento
   // antidiscriminación. Advertirlo no bastaba: el usuario la subía igual.
   // En el flujo en inglés ocultamos el bloque de foto por completo.
-  // La clase real del bloque es .foto-section (antes buscaba .foto-box, que
-  // no existe). En EE.UU. un resume con foto se descarta por cumplimiento
-  // antidiscriminación, así que en el flujo en inglés el bloque desaparece
-  // y se explica por qué, en vez de dejar que el usuario se dispare al pie.
-  const secFoto = document.querySelector('.foto-section');
-  if (secFoto && !document.getElementById('fotoAvisoEN')) {
-    secFoto.innerHTML = '';
-    const aviso = document.createElement('div');
-    aviso.id = 'fotoAvisoEN';
-    aviso.style.cssText = 'background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.28);border-radius:14px;padding:16px 20px;max-width:560px;margin:0 auto;text-align:center';
-    aviso.innerHTML = '<div style="font-size:1.4rem;margin-bottom:6px">🇺🇸</div>' +
-      '<p style="color:#ffb020;font-weight:700;font-size:0.9rem;margin-bottom:6px">No photo on US resumes</p>' +
-      '<p style="color:#aaa;font-size:0.8rem;line-height:1.55;margin:0">Most US employers discard resumes with photos for anti-discrimination compliance. ' +
-      'We build your resume without one — that is what recruiters there expect.</p>';
-    secFoto.appendChild(aviso);
-    // Sin foto seleccionada, las plantillas se renderizan sin hueco de imagen
-    if (typeof fotoAjustada !== 'undefined') fotoAjustada = null;
-    if (typeof fotoOriginal !== 'undefined') fotoOriginal = null;
-  }
+
 
   document.querySelectorAll('button,a,div,h2,h3,p,span,label').forEach(el => {
     if (el.children.length === 0) {
@@ -1019,11 +1001,36 @@ function seleccionar(id) {
 function cargarFoto(e) {
   const file = e.target.files[0];
   if (!file) return;
+
+  if (!/^image\//.test(file.type)) {
+    alert(LANG==='en' ? 'Please choose an image file (JPG or PNG).' : 'Elige un archivo de imagen (JPG o PNG).');
+    return;
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    alert(LANG==='en' ? 'The image is too large (max 8MB).' : 'La imagen es muy pesada (máx. 8MB).');
+    return;
+  }
+
+  const txt = document.getElementById('uploadTxt');
+  if (txt) txt.innerHTML = '<strong style="color:#FFD000">⏳ Cargando tu foto...</strong>';
+
   const reader = new FileReader();
+  reader.onerror = () => {
+    console.error('No se pudo leer el archivo de imagen');
+    if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ No se pudo leer la imagen — prueba con otra</strong>';
+  };
   reader.onload = ev => {
     fotoOriginal = ev.target.result;
-    mostrarAjuste();
-    document.getElementById('uploadTxt').innerHTML = '<strong style="color:#00C853">✅ Foto cargada — ajústala abajo</strong>';
+    // El aviso se actualiza ANTES de montar el panel: si mostrarAjuste()
+    // lanza una excepción, el usuario ya sabe que su foto sí se leyó, y el
+    // error aparece en consola en vez de dejar la pantalla en negro.
+    if (txt) txt.innerHTML = '<strong style="color:#00C853">✅ Foto cargada — ajústala abajo</strong>';
+    try {
+      mostrarAjuste();
+    } catch(err) {
+      console.error('Fallo al montar el ajuste de foto:', err);
+      if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ Error al preparar el recorte: ' + err.message + '</strong>';
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -1395,6 +1402,17 @@ ${JSON.stringify(D)}`;
     if (hacia === 'en') {
       fotoAjustada = null;
       fotoOriginal = null;
+      // Ocultamos el bloque de foto y explicamos por qué: en EE.UU. un resume
+      // con fotografía se descarta por cumplimiento antidiscriminación.
+      const secFoto = document.querySelector('.foto-section');
+      if (secFoto && !document.getElementById('fotoAvisoEN')) {
+        secFoto.innerHTML =
+          '<div id="fotoAvisoEN" style="background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.28);border-radius:14px;padding:16px 20px;max-width:560px;margin:0 auto;text-align:center">' +
+          '<div style="font-size:1.4rem;margin-bottom:6px">🇺🇸</div>' +
+          '<p style="color:#ffb020;font-weight:700;font-size:0.9rem;margin-bottom:6px">No photo on US resumes</p>' +
+          '<p style="color:#aaa;font-size:0.8rem;line-height:1.55;margin:0">Most US employers discard resumes with photos for anti-discrimination compliance. ' +
+          'We build your resume without one — that is what recruiters there expect.</p></div>';
+      }
       // Números de identidad nacionales que a veces viajan en el campo de contacto
       const limpiarId = (s) => String(s || '')
         .replace(/\b(?:DUI|NUE|CURP|C[ÉE]DULA|RFC|CUIL|CUIT|RUT|NIT|DNI)\s*[:#-]?\s*[\w.-]+/gi, '')
@@ -1405,10 +1423,14 @@ ${JSON.stringify(D)}`;
       D.pais = limpiarId(D.pais);
       if (D.linkedin) D.linkedin = String(D.linkedin).trim();
       mostrarToast('🇺🇸 Foto y datos personales eliminados — convención de EE.UU.');
-    } else if (_fotoRespaldo) {
-      // Al volver al español recuperamos la foto que el usuario había ajustado
-      fotoAjustada = _fotoRespaldo.ajustada;
-      fotoOriginal = _fotoRespaldo.original;
+    } else {
+      // Al volver al español recuperamos la foto y el bloque de subida
+      if (_fotoRespaldo) {
+        fotoAjustada = _fotoRespaldo.ajustada;
+        fotoOriginal = _fotoRespaldo.original;
+      }
+      const avisoEN = document.getElementById('fotoAvisoEN');
+      if (avisoEN) location.reload();   // la sección se reconstruye limpia
     }
 
     aplicarEtiquetasIdioma(hacia);

@@ -805,7 +805,8 @@ function descargarCartaWord() {
 <head><meta charset="utf-8"><title>${LANG==='en'?'Cover Letter':'Carta de Presentación'}</title>
 <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
 <style>@page{size:A4;margin:2.5cm} body{font-family:'Calibri','Segoe UI',sans-serif;font-size:11.5pt;line-height:1.6;color:#1a1a1a}</style>
-</head><body>${parrafos}</body></html>`;
+</head><body>${parrafos}
+</body></html>`;
   const blob = new Blob(['\ufeff', doc], {type: 'application/msword'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -1294,6 +1295,67 @@ function descargarPDF() {
 }
 
 renderTemplates();
+</script>
+<script>
+// ══ MODO TESTER: acceso completo para el equipo de pruebas ══
+const _SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const _SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+function esTester() {
+  try {
+    const t = JSON.parse(localStorage.getItem('cvpro_tester') || 'null');
+    return !!(t && t.ok && (Date.now() - t.ts) < 30*86400000);
+  } catch(e) { return false; }
+}
+
+async function activarTester(codigo) {
+  try {
+    const res = await fetch(`${_SB_U}/rest/v1/rpc/validar_tester`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':_SB_K,'Authorization':`Bearer ${_SB_K}`},
+      body: JSON.stringify({p_codigo: String(codigo).trim()})
+    });
+    const ok = await res.json();
+    if (ok === true) {
+      localStorage.setItem('cvpro_tester', JSON.stringify({ok:true, ts:Date.now()}));
+      localStorage.setItem('cvpro_plan', 'premium');
+      return true;
+    }
+  } catch(e) { console.warn('Validación tester falló:', e.message); }
+  return false;
+}
+
+(async function initTester() {
+  const p = new URLSearchParams(location.search).get('tester');
+  if (p) {
+    const ok = await activarTester(p);
+    // Limpiar la URL para no dejar el código a la vista
+    const url = new URL(location.href);
+    url.searchParams.delete('tester');
+    history.replaceState({}, '', url.toString());
+    if (ok) mostrarBadgeTester();
+    else alert('Código de tester inválido.');
+  } else if (esTester()) {
+    mostrarBadgeTester();
+  }
+})();
+
+function mostrarBadgeTester() {
+  if (document.getElementById('testerBadge')) return;
+  const b = document.createElement('div');
+  b.id = 'testerBadge';
+  b.style.cssText = 'position:fixed;bottom:14px;left:14px;z-index:99999;background:#1baf7a;color:#fff;padding:7px 14px;border-radius:50px;font-size:0.72rem;font-weight:700;font-family:system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer';
+  b.textContent = '🧪 MODO TESTER — acceso completo';
+  b.title = 'Clic para salir del modo tester';
+  b.onclick = () => {
+    if (confirm('¿Salir del modo tester? Volverás a ver la web como un cliente normal.')) {
+      localStorage.removeItem('cvpro_tester');
+      localStorage.removeItem('cvpro_plan');
+      location.reload();
+    }
+  };
+  document.body.appendChild(b);
+}
 </script>
 </body>
 </html>

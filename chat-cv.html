@@ -1461,7 +1461,7 @@ DISPONIBILIDAD: ${datos.disponibilidad||''}
 INFO EXTRA: ${datos.info_extra||''}
 
 REGLAS (estándar de reclutador ejecutivo élite):
-1. RESUMEN: 4-5 líneas densas y potentes. Quién es + años + especialización + logro diferenciador + valor que aporta. Sin "yo/soy/tengo". Modelo: "${ejemplo}"
+1. RESUMEN: MÁXIMO 5 líneas / 90 palabras. Quién es + años + especialización + logro diferenciador. NUNCA excedas 90 palabras — un perfil largo pierde al reclutador. Sin "yo/soy/tengo". Modelo: "${ejemplo}"
 2. EXPERIENCIA: 5-7 bullets RICOS por trabajo (25-40 palabras c/u), desarrollados con contexto, alcance y escala del sector. CV final: mínimo 2 páginas A4 (1000-1500 palabras) con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. Bullets cortos o planos = trabajo rechazado.
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
@@ -1826,7 +1826,7 @@ Actúas como consultor de RRHH, Executive Recruiter y especialista internacional
 PROCESO: 1) ANALIZA profesión, nivel, años, industrias, logros, diferenciadores. 2) REESCRIBE estratégicamente.
 EXTENSIÓN OBLIGATORIA: el CV final debe llenar MÍNIMO 2 páginas A4 completas (1000-1500 palabras). Expande cada experiencia con profundidad de consultor: contexto institucional, alcance, equipos, procesos, impacto. Si el original es corto, DESARROLLA cada función con el conocimiento experto del sector — sin inventar hechos, cargos ni cifras.
 REGLAS ESTRICTAS:
-- PERFIL: 5-7 líneas potentes → quién es + experiencia + en qué destaca + valor que aporta. PROHIBIDO: "responsable", "proactivo", "comprometido", "dinámico", primera persona.
+- PERFIL: MÁXIMO 5 líneas / 90 palabras. Denso pero breve: quién es + años + especialización + valor diferenciador. Un perfil largo se lee peor que uno corto y potente. NUNCA excedas 90 palabras. PROHIBIDO: "responsable", "proactivo", "comprometido", "dinámico", primera persona.
 - EXPERIENCIA: CADA puesto con 4-6 bullets ricos de 15-30 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe alcance, complejidad y contexto verificables — está PROHIBIDO estimar o inferir números del promedio del sector. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
 - PRESERVA TODAS las secciones del original: certificaciones, membresías, investigación, publicaciones, educación continua, referencias — nada se pierde, todo se profesionaliza.
 - NUNCA inventes cargos, empresas, títulos, certificaciones ni cifras.
@@ -1850,6 +1850,7 @@ Cargo | Empresa | Período
 ${enIngles?'EDUCATION':'EDUCACIÓN'}
 ─────────
 Título | Institución | Año
+(una línea por cada título, TODOS los estudios del candidato)
 
 ${enIngles?'CERTIFICATIONS':'CERTIFICACIONES'}
 ───────────────
@@ -1857,9 +1858,9 @@ ${enIngles?'CERTIFICATIONS':'CERTIFICACIONES'}
 
 ${enIngles?'SKILLS':'HABILIDADES'}
 ───────────
-${enIngles?'Technical':'Técnicas'}: skill1, skill2, ... (8-12)
+${enIngles?'Technical':'Técnicas'}: skill1, skill2, ... (8-12 habilidades CORTAS de 1-4 palabras cada una, nunca frases largas)
 ${enIngles?'Soft skills':'Blandas'}: ...
-${enIngles?'Languages':'Idiomas'}: ...
+${enIngles?'Languages':'Idiomas'}: Idioma1 (nivel), Idioma2 (nivel) — TODOS los idiomas del candidato en UNA línea
 
 Sin corchetes, sin markdown, sin comentarios — solo el CV completo.
 CV ORIGINAL:
@@ -2662,11 +2663,43 @@ function construirCVData() {
 
   // Filtrar headers de sección colados y aplicar fallback real
   habsTexto = (habsTexto||'').split(/[,;\n]/).map(s=>s.replace(/^[\s•·▸▪\-\*]+/,'').trim())
-    .filter(s => s && s.length>1 && s.length<70 && !ES_HEADER.test(s) && !/^[─\-═\.]+$/.test(s))
+    .filter(esHabilidadValida)
     .join(', ');
   if (!habsTexto) habsTexto = (datos.habilidades_tecnicas_enriquecido || datos.habilidades_tecnicas || '')
     .split(/[,;\n]/).map(s=>s.replace(/^[\s•·▸▪\-\*]+/,'').trim())
     .filter(s=>s && s.length>1 && s.length<70 && !ES_HEADER.test(s)).slice(0,14).join(', ');
+
+
+  // Rechaza fragmentos de bullets colados como "habilidades"
+  function esHabilidadValida(s) {
+    const t = String(s||'').trim();
+    if (!t || t.length < 2 || t.length > 45) return false;
+    if (ES_HEADER.test(t)) return false;
+    const palabras = t.split(/\s+/);
+    if (palabras.length > 6) return false;                       // frases largas = bullet, no habilidad
+    if (/^(promoviendo|garantizando|coordinando|realizando|aplicando|desarrollando|contribuyendo|asegurando|gestionando|logrando|mediante|para|con|y |del |de la )/i.test(t)) return false;
+    if (/[.;]$/.test(t)) return false;                            // termina en punto = oración
+    return true;
+  }
+
+
+  // Detección robusta de idiomas por nombre conocido
+  const _IDIOMAS_CONOCIDOS = /(espa[ñn]ol|ingl[eé]s|portugu[eé]s|franc[eé]s|alem[aá]n|italiano|chino|mandar[ií]n|japon[eé]s|coreano|ruso|[aá]rabe|holand[eé]s|catal[aá]n|spanish|english|portuguese|french|german|italian|chinese|japanese|korean|russian|arabic|dutch)/i;
+  function extraerIdiomasRobusto(txt) {
+    if (!txt) return [];
+    const lineas = txt.split(/\n|,|;/).map(l => limpiarBullet(l).replace(/^(Idiomas?|Languages?)\s*:/i,'').trim());
+    const out = [];
+    const vistos = new Set();
+    lineas.forEach(l => {
+      if (!l || l.length < 3 || !_IDIOMAS_CONOCIDOS.test(l)) return;
+      const m = l.match(/^([^\(\-–:]{2,30})[\s\(\-–:]*(.*?)\)?$/);
+      const nom = (m ? m[1] : l).trim().replace(/[.,]$/,'');
+      const niv = (m && m[2] ? m[2] : '').trim().replace(/[.,]$/,'');
+      const k = nom.toLowerCase();
+      if (!vistos.has(k) && nom.length < 30) { vistos.add(k); out.push({nombre: nom, nivel: niv}); }
+    });
+    return out.slice(0,5);
+  }
 
   const habsTec = habsTexto.split(/[,;\/]/)
     .map((h, i) => ({ nombre: h.trim().replace(/^[\-•·\s]+/, '').trim(), nivel: Math.max(65, 92 - i * 6) }))
@@ -2706,7 +2739,8 @@ function construirCVData() {
 
   // ── FALLBACKS: primero del texto del CV, luego de las respuestas ──
   if (!educacion || !educacion.length || educacion.every(e => !(e.titulo||'').trim())) {
-    const eduTxt = seccionFlex('EDUCACIÓN|EDUCACION|EDUCATION|FORMACIÓN|FORMACION');
+    let eduTxt = seccionFlex('EDUCACIÓN|EDUCACION|EDUCATION|FORMACIÓN|FORMACION|CERTIFICACIONES|CERTIFICATIONS');
+    if (!eduTxt) { const me = cv.match(/(?:EDUCACI[ÓO]N|EDUCATION)[^\n]*\n([\s\S]{10,600}?)(?=\n[A-ZÁÉÍÓÚ]{4,}|$)/i); eduTxt = me ? me[1] : ''; }
     if (eduTxt) {
       educacion = eduTxt.split('\n').map(l => {
         const t = limpiarBullet(l);
@@ -2723,6 +2757,8 @@ function construirCVData() {
   }
   if (!idiomas || idiomas.length < 2) {
     const iTxt = seccionFlex('IDIOMAS|LANGUAGES') || (cv.match(/(?:Idiomas?|Languages?)\s*:\s*([^\n]+)/i)||[])[1] || '';
+    const robustos = extraerIdiomasRobusto(iTxt || cv);
+    if (robustos.length > (idiomas||[]).length) idiomas = robustos;
     if (iTxt) {
       const arr = iTxt.split(/[,;\n]/).map(l => {
         const t = limpiarBullet(l).replace(/^(Idiomas?|Languages?)\s*:/i,'').trim();

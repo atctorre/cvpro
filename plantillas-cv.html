@@ -794,8 +794,29 @@ async function generarCarta() {
 
 
 
+
+function corregirFechaCarta(t) {
+  const h = new Date();
+  const mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const esEN = (typeof LANG !== 'undefined' && LANG === 'en');
+  const fechaOK = esEN
+    ? `${mesesEN[h.getMonth()]} ${h.getDate()}, ${h.getFullYear()}`
+    : `${h.getDate()} de ${mesesES[h.getMonth()]} de ${h.getFullYear()}`;
+  let out = String(t || '');
+  // Reemplaza "mes de AAAA" o "mes AAAA" en español por la fecha real
+  const reES = new RegExp('(?:\\d{1,2}\\s+de\\s+)?(' + mesesES.join('|') + ')\\s+(?:de\\s+)?(19|20)\\d{2}', 'gi');
+  out = out.replace(reES, fechaOK);
+  // Inglés: "Month DD, YYYY" o "Month YYYY"
+  const reEN = new RegExp('(' + mesesEN.join('|') + ')\\s+\\d{0,2},?\\s*(19|20)\\d{2}', 'gi');
+  out = out.replace(reEN, fechaOK);
+  // Cualquier año suelto posterior al actual
+  out = out.replace(/\b(19|20)\d{2}\b/g, (m) => Number(m) > h.getFullYear() ? String(h.getFullYear()) : m);
+  return out;
+}
+
 function limpiarCarta(t) {
-  return String(t || '')
+  const _r = String(t || '')
     .replace(/\r/g, '')
     .replace(/^\s*#{1,6}\s*.*$/gm, '')          // títulos markdown completos
     .replace(/^\s*[-–—_*]{3,}\s*$/gm, '')       // separadores --- ___ ***
@@ -807,6 +828,7 @@ function limpiarCarta(t) {
     .replace(/\n{3,}/g, '\n\n')
     .split('\n').map(l => l.replace(/\s+$/,'')).join('\n')
     .trim();
+  return corregirFechaCarta(_r);
 }
 
 function descargarCartaWord() {

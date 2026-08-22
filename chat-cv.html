@@ -1522,9 +1522,11 @@ CV:
 ${cvTexto.substring(0,5500)}`})
       });
       const dr = await rr.json();
-      if (dr.cv && dr.cv.trim().length > cvTexto.length * 0.7) return dr.cv.trim();
+      if (dr.cv && dr.cv.trim().length > cvTexto.length * 0.7) {
+        return await pasadaVeracidad(await pasadaATS(dr.cv.trim(), enIngles), _fuenteRespuestas(), enIngles);
+      }
     } catch(e2) {}
-    return cvTexto;
+    return await pasadaVeracidad(await pasadaATS(cvTexto, enIngles), _fuenteRespuestas(), enIngles);
 
   } catch(e) {
     console.error('❌ Error en generarConIA:', e.message);
@@ -1828,6 +1830,8 @@ ${cvV1.substring(0,5500)}`})
       const d2 = await res2.json();
       if (d2.cv && d2.cv.trim().length > cvV1.length * 0.7) cvV1 = d2.cv.trim();
     } catch(e2) { /* usar v1 si falla */ }
+    cvV1 = await pasadaATS(cvV1, enIngles);
+    cvV1 = await pasadaVeracidad(cvV1, texto, enIngles);
     cvGenerado = cvV1;
     const m = cvGenerado.match(/^([A-ZÁÉÍÓÚÑ ]{5,60})$/m);
     datos.nombre = m ? m[1].trim() : (datos.nombre||'');
@@ -1843,6 +1847,72 @@ ${cvV1.substring(0,5500)}`})
   } catch(e) {
     renderMsgAI(LANG==='en' ? '❌ Optimization failed. Wait 30s and reload.' : '❌ Falló la optimización. Espera 30s y recarga.');
   }
+}
+
+
+
+
+function _fuenteRespuestas() {
+  const d = datos || {};
+  return ['nombre','puesto','pais','email_tel','tipo_empresa','resumen_personal','exp1','logros1','exp2','logros2','estudios','habilidades_tecnicas','idiomas_nivel','info_extra']
+    .map(k => d[k] ? `${k}: ${d[k+'_enriquecido'] || d[k]}` : '')
+    .filter(Boolean).join('\n');
+}
+
+async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng) {
+  if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
+  try {
+    renderMsgAI(enIng ? '🛡️ Truth check — verifying every fact against your data...' : '🛡️ Verificación de veracidad — contrastando cada dato con tu información...');
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
+Eres auditor de integridad de CVs. Compara el CV FINAL contra la INFORMACIÓN ORIGINAL del candidato y corrige toda afirmación no respaldada.
+ELIMINA O SUSTITUYE:
+- Cifras, porcentajes, montos, cantidades de personas u horas que NO aparezcan en la información original.
+- Empresas, cargos, títulos, certificaciones, idiomas, herramientas o clientes no mencionados por el candidato.
+- Premios, reconocimientos o resultados no declarados.
+Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes.
+CONSERVA intactas las cifras y hechos que SÍ están en la información original.
+Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV corregido completo.
+
+INFORMACIÓN ORIGINAL DEL CANDIDATO:
+${fuenteOriginal.substring(0,3500)}
+
+CV FINAL A VERIFICAR:
+${cvTxt.substring(0,6000)}`})
+    });
+    const d = await res.json();
+    if (d.cv && d.cv.trim().length > cvTxt.length * 0.7) return d.cv.trim();
+  } catch(e) { console.warn('Verificación omitida:', e.message); }
+  return cvTxt;
+}
+
+async function pasadaATS(cvTxt, enIng) {
+  const _h = new Date();
+  const FECHA_ACTUAL = `${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][_h.getMonth()]} ${_h.getFullYear()}`;
+  const ANIO_ACTUAL = _h.getFullYear();
+  try {
+    renderMsgAI(enIng ? '🎯 Final ATS audit — keywords, structure and consistency...' : '🎯 Auditoría ATS final — keywords, estructura y coherencia...');
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
+Eres auditor senior de sistemas ATS (Workday, Greenhouse, Taleo, iCIMS) y especialista en selección. Audita este CV y devuélvelo CORREGIDO.
+VERIFICA Y CORRIGE:
+1. KEYWORDS: que las palabras clave reales del sector aparezcan de forma natural en perfil y bullets (sin stuffing).
+2. VERBOS: cada bullet inicia con verbo de acción fuerte; elimina "responsable de", "encargado de", "participé en".
+3. FECHAS (crítico): hoy es ${FECHA_ACTUAL}. Ninguna fecha puede superar ${ANIO_ACTUAL}. Verifica orden de más reciente a más antigua, sin solapes imposibles ni contradicciones. Usa SOLO las fechas que el candidato aportó — si una es futura o inventada, corrígela o elimínala. Los puestos vigentes se marcan "Actualidad"/"Present", nunca con un año futuro.
+4. HONESTIDAD: si detectas una cifra o hecho que no puede provenir del candidato, sustitúyelo por alcance verificable.
+5. ATS: headers estándar, una sola columna, sin caracteres raros, sin tablas, texto plano legible.
+6. ORTOGRAFÍA y consistencia de tiempos verbales.
+NO agregues información nueva. Mantén EXACTAMENTE el mismo formato y headers.
+Devuelve SOLO el CV final auditado y completo.
+CV:
+${cvTxt.substring(0,6000)}`})
+    });
+    const d = await res.json();
+    if (d.cv && d.cv.trim().length > cvTxt.length * 0.75) return d.cv.trim();
+  } catch(e) { console.warn('Pasada ATS omitida:', e.message); }
+  return cvTxt;
 }
 
 // ── RESULTADO ──

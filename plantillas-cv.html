@@ -724,6 +724,12 @@ function setGender(g) {
 let cartaGenerada = '';
 
 async function generarCarta() {
+  const _hoy = new Date();
+  const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const FECHA_HOY = LANG==='en'
+    ? `${_mesesEN[_hoy.getMonth()]} ${_hoy.getDate()}, ${_hoy.getFullYear()}`
+    : `${_hoy.getDate()} de ${_mesesES[_hoy.getMonth()]} de ${_hoy.getFullYear()}`;
   const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
   const btn = document.getElementById('btnCarta');
@@ -744,8 +750,8 @@ async function generarCarta() {
       `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
   }
   const prompt = LANG==='en'
-    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs, confident tone, mention 2-3 concrete achievements from the resume, no placeholders or brackets, ready to send. MANDATORY FORMAT: plain text only — NO markdown whatsoever (no #, no **, no ---, no bullets, no titles). Start directly with "Dear Hiring Manager," then 3-4 body paragraphs, then "Sincerely," and the candidate name on its own line.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
-    : `Eres un ghostwriter élite de cartas de presentación. Basándote en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, que aplica como ${D.puesto}. 3-4 párrafos, tono seguro y profesional, menciona 2-3 logros concretos del CV, sin corchetes ni placeholders, lista para enviar. FORMATO OBLIGATORIO: texto plano — PROHIBIDO markdown (nada de #, **, ---, viñetas ni títulos). Empieza directamente con "Estimado equipo de selección," luego 3-4 párrafos de cuerpo, después "Atentamente," y el nombre del candidato en su propia línea.\n\nCV:\n${cvTexto.substring(0,2500)}`;
+    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs, confident tone, mention 2-3 concrete achievements from the resume, no placeholders or brackets, ready to send. DATE: if you include a date line, use EXACTLY "${FECHA_HOY}" — never invent another date. MANDATORY FORMAT: plain text only — NO markdown whatsoever (no #, no **, no ---, no bullets, no titles). Start directly with "Dear Hiring Manager," then 3-4 body paragraphs, then "Sincerely," and the candidate name on its own line.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
+    : `Eres un ghostwriter élite de cartas de presentación. Basándote en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, que aplica como ${D.puesto}. 3-4 párrafos, tono seguro y profesional, menciona 2-3 logros concretos del CV, sin corchetes ni placeholders, lista para enviar. FECHA: si incluyes línea de fecha, usa EXACTAMENTE "${FECHA_HOY}" — nunca inventes otra fecha. FORMATO OBLIGATORIO: texto plano — PROHIBIDO markdown (nada de #, **, ---, viñetas ni títulos). Empieza directamente con "Estimado equipo de selección," luego 3-4 párrafos de cuerpo, después "Atentamente," y el nombre del candidato en su propia línea.\n\nCV:\n${cvTexto.substring(0,2500)}`;
 
   try {
     const res = await fetch(`${SB_URL}/functions/v1/super-service`, {
@@ -1147,6 +1153,12 @@ function volverSelector() {
 
 // ── P3: CARTA DE PRESENTACIÓN CON IA ──
 async function generarCarta() {
+  const _hoy = new Date();
+  const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const FECHA_HOY = LANG==='en'
+    ? `${_mesesEN[_hoy.getMonth()]} ${_hoy.getDate()}, ${_hoy.getFullYear()}`
+    : `${_hoy.getDate()} de ${_mesesES[_hoy.getMonth()]} de ${_hoy.getFullYear()}`;
   const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
   const btn = document.getElementById('btnCarta');

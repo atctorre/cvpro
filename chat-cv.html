@@ -2105,7 +2105,7 @@ function marcarPaso(i) {
     const ahora = Date.now();
     if (window._tPaso && window._pasoPrev !== undefined) {
       const seg = Math.round((ahora - window._tPaso) / 1000);
-      console.debug(`⏱️ Etapa ${window._pasoPrev}: ${seg}s`);
+      console.log(`⏱️ Etapa ${window._pasoPrev}: ${seg}s`);
       window._tiemposEtapa = window._tiemposEtapa || {};
       window._tiemposEtapa['e' + window._pasoPrev] = seg;
     }
@@ -2129,6 +2129,14 @@ function terminarProgreso(exito) {
   clearInterval(_prog.timer); clearInterval(_prog.tipsTimer);
   clearTimeout(_prog.watchdog);
   const panel = document.getElementById('progresoPanel');
+  // Resumen de rendimiento siempre visible, sin depender del nivel Verbose
+  try {
+    const total = window._t0IA ? Math.round((Date.now() - window._t0IA) / 1000) : null;
+    if (total !== null) {
+      console.log(`%c⏱️ CV generado en ${total}s`, 'font-weight:bold;color:#1baf7a;font-size:13px');
+      if (window._tiemposEtapa) console.table(window._tiemposEtapa);
+    }
+  } catch(e) {}
   if (!panel) return;
   if (exito !== false) {
     const b = document.getElementById('progBar');
@@ -2174,7 +2182,7 @@ function fetchIA(url, opciones, segundos) {
   }, lim * 1000);
   return fetch(url, {...opciones, signal: ctrl.signal})
     .then(r => {
-      console.debug(`⏱️ ${String(url).split('/').pop()}: ${Math.round((Date.now()-t0)/1000)}s · HTTP ${r.status}`);
+      console.log(`⏱️ ${String(url).split('/').pop()}: ${Math.round((Date.now()-t0)/1000)}s · HTTP ${r.status}`);
       return r;
     })
     .finally(() => clearTimeout(t));
@@ -2992,6 +3000,40 @@ function habilidadesDeRespaldo() {
 }
 
 
+const _HEADERS_CV = 'RESUMEN|PERFIL|PROFESSIONAL|EXPERIENCIA|EXPERIENCE|WORK|EDUCACI[ÓO]N|EDUCATION|FORMACI[ÓO]N|HABILIDADES|SKILLS|COMPETENCIAS|COMPETENCIES|APTITUDES|CERTIFICACIONES|CERTIFICATIONS|IDIOMAS|LANGUAGES|LOGROS|ACHIEVEMENTS|INFORMACI[ÓO]N|REFERENCIAS|REFERENCES|PUBLICACIONES|PUBLICATIONS|MEMBRES[ÍI]AS|MEMBERSHIPS|CURSOS|COURSES|INVESTIGACI[ÓO]N|RESEARCH|TESIS|THESIS|CONGRESOS|CONFERENCES|PREMIOS|AWARDS|RECONOCIMIENTOS|PROYECTOS|PROJECTS|VOLUNTARIADO|VOLUNTEER|OBJETIVO|OBJECTIVE|CONTACTO|CONTACT|DATOS PERSONALES|SOBRE M[ÍI]|ABOUT ME|EXTRACURRICULAR';
+const ES_HEADER = new RegExp('^(?:' + _HEADERS_CV + ')\\b', 'i');
+
+// Descarta encabezados, separadores y basura que el parser confunde con datos.
+// Sin esto, títulos como "INVESTIGACIÓN" o líneas de guiones acababan
+// impresos como si fueran una habilidad o un estudio del candidato.
+function esRuido(t) {
+const s = String(t || '').replace(/^[\s•·▸▪\-\*]+/, '').trim();
+if (!s || s.length < 3) return true;
+if (ES_HEADER.test(s)) return true;
+if (/^[─═_\-–—.·•\s]+$/.test(s)) return true;          // separadores
+if (!/[a-záéíóúñA-ZÁÉÍÓÚÑ0-9]/.test(s)) return true;    // sin contenido real
+// Línea TODA EN MAYÚSCULAS que parece encabezado. Pero cuidado: las siglas
+// técnicas (BLS, ACLS, ATLS, POCUS, SAP, ERP, CRM...) también van en
+// mayúsculas y son justo las palabras clave que un ATS busca. Solo
+// descartamos si tiene AL MENOS DOS PALABRAS, que es como se escriben los
+// encabezados y casi nunca las siglas.
+const palabras = s.split(/\s+/).filter(Boolean);
+if (/^[A-ZÁÉÍÓÚÑ\s]{6,30}$/.test(s) && palabras.length >= 2 && palabras.length <= 3 && !/\d/.test(s)) {
+  return true;
+}
+return false;
+}
+
+// Quita duplicados conservando el orden y el primer formato encontrado.
+function sinDuplicados(arr, clave) {
+const vistos = new Set();
+return arr.filter(it => {
+  const k = String(clave ? it[clave] : it).toLowerCase().trim();
+  if (!k || vistos.has(k)) return false;
+  vistos.add(k); return true;
+});
+}
+
 // La IA a veces devuelve 4 habilidades genéricas cuando el CV original lista
 // 10 concretas. Este rescate NO inventa nada: solo recupera competencias que
 // ya estaban escritas en el CV que subió el candidato.
@@ -3034,7 +3076,7 @@ ${sanitizarEntrada(fuente, 8000).substring(0, 8000)}`})
     if (!Array.isArray(arr)) return [];
     const limpias = arr.map(s => String(s).trim())
       .filter(s => s.length > 2 && s.length < 45 && s.split(/\s+/).length <= 5);
-    console.debug(`🔧 IA extrajo ${limpias.length} competencias del CV original`);
+    console.log(`🔧 IA extrajo ${limpias.length} competencias del CV original`);
     return limpias;
   } catch(e) {
     console.warn('Extracción de habilidades falló:', e.message);
@@ -3069,7 +3111,7 @@ function rescatarCompetenciasOriginales(actuales) {
     if (!vistas.has(k)) { vistas.add(k); nuevas.push(s); }
   });
 
-  if (nuevas.length) console.debug(`🔧 Rescatadas ${nuevas.length} competencias del CV original`);
+  if (nuevas.length) console.log(`🔧 Rescatadas ${nuevas.length} competencias del CV original`);
   return actuales.concat(nuevas.map((nombre, i) => ({nombre, nivel: Math.max(60, 85 - i * 3)}))).slice(0, 12);
 }
 
@@ -3164,39 +3206,8 @@ function construirCVData() {
 
 
   // Extractor flexible: toma TODO entre un header y el siguiente header real
-  const _HEADERS_CV = 'RESUMEN|PERFIL|PROFESSIONAL|EXPERIENCIA|EXPERIENCE|WORK|EDUCACI[ÓO]N|EDUCATION|FORMACI[ÓO]N|HABILIDADES|SKILLS|COMPETENCIAS|COMPETENCIES|APTITUDES|CERTIFICACIONES|CERTIFICATIONS|IDIOMAS|LANGUAGES|LOGROS|ACHIEVEMENTS|INFORMACI[ÓO]N|REFERENCIAS|REFERENCES|PUBLICACIONES|PUBLICATIONS|MEMBRES[ÍI]AS|MEMBERSHIPS|CURSOS|COURSES|INVESTIGACI[ÓO]N|RESEARCH|TESIS|THESIS|CONGRESOS|CONFERENCES|PREMIOS|AWARDS|RECONOCIMIENTOS|PROYECTOS|PROJECTS|VOLUNTARIADO|VOLUNTEER|OBJETIVO|OBJECTIVE|CONTACTO|CONTACT|DATOS PERSONALES|SOBRE M[ÍI]|ABOUT ME|EXTRACURRICULAR';
-  const ES_HEADER = new RegExp('^(?:' + _HEADERS_CV + ')\\b', 'i');
-
-// Descarta encabezados, separadores y basura que el parser confunde con datos.
-// Sin esto, títulos como "INVESTIGACIÓN" o líneas de guiones acababan
-// impresos como si fueran una habilidad o un estudio del candidato.
-function esRuido(t) {
-  const s = String(t || '').replace(/^[\s•·▸▪\-\*]+/, '').trim();
-  if (!s || s.length < 3) return true;
-  if (ES_HEADER.test(s)) return true;
-  if (/^[─═_\-–—.·•\s]+$/.test(s)) return true;          // separadores
-  if (!/[a-záéíóúñA-ZÁÉÍÓÚÑ0-9]/.test(s)) return true;    // sin contenido real
-  // Línea TODA EN MAYÚSCULAS que parece encabezado. Pero cuidado: las siglas
-  // técnicas (BLS, ACLS, ATLS, POCUS, SAP, ERP, CRM...) también van en
-  // mayúsculas y son justo las palabras clave que un ATS busca. Solo
-  // descartamos si tiene AL MENOS DOS PALABRAS, que es como se escriben los
-  // encabezados y casi nunca las siglas.
-  const palabras = s.split(/\s+/).filter(Boolean);
-  if (/^[A-ZÁÉÍÓÚÑ\s]{6,30}$/.test(s) && palabras.length >= 2 && palabras.length <= 3 && !/\d/.test(s)) {
-    return true;
-  }
-  return false;
-}
-
-// Quita duplicados conservando el orden y el primer formato encontrado.
-function sinDuplicados(arr, clave) {
-  const vistos = new Set();
-  return arr.filter(it => {
-    const k = String(clave ? it[clave] : it).toLowerCase().trim();
-    if (!k || vistos.has(k)) return false;
-    vistos.add(k); return true;
-  });
-}
+  // [_HEADERS_CV, ES_HEADER, esRuido() y sinDuplicados() movidos a ámbito global:
+  //  rescatarCompetenciasOriginales() los necesita y vive fuera de esta función]
 
   function seccionFlex(nombres) {
     const pat = new RegExp(

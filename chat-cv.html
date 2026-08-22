@@ -2227,7 +2227,8 @@ function _anonimizar(txt) {
 
 // ── Clasificación de sector y seniority (metadatos, no PII)
 function _sectorDe(puesto) {
-  const p = String(puesto || '').toLowerCase();
+  // Normalizar acentos: 'Médico' debe coincidir con /medic/
+  const p = String(puesto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const mapa = [
     [/pilot|aviaci|vuelo|helic/, 'aviacion'], [/medic|doctor|ciruj|enfermer|salud/, 'salud'],
     [/desarrollad|program|software|devops|data|frontend|backend/, 'tecnologia'],
@@ -2237,13 +2238,13 @@ function _sectorDe(puesto) {
     [/chef|cocin|restaur|hotel/, 'hospitalidad'], [/logistic|transport|almacen|supply/, 'logistica'],
     [/construc|arquitect|obra/, 'construccion'], [/rrhh|recursos humanos|talento/, 'rrhh'],
     [/director|gerente general|ceo|cfo|coo/, 'direccion'],
-    [/dise[ñn]|creativ|redact|editor|fotograf/, 'creativo']
+    [/disen|creativ|redact|editor|fotograf/, 'creativo']
   ];
   for (const [re, s] of mapa) if (re.test(p)) return s;
   return 'otros';
 }
 function _seniorityDe(d) {
-  const t = ((d.exp1||'') + ' ' + (d.puesto||'')).toLowerCase();
+  const t = ((d.exp1||'') + ' ' + (d.puesto||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (/sin experiencia|no experience|estudiante|reci[eé]n graduad|pasante/.test(t)) return 'entry';
   if (/director|gerente general|ceo|cfo|coo|vicepresidente|jefe de/.test(t)) return 'executive';
   const anios = (t.match(/\b(19|20)\d{2}\b/g)||[]).map(Number);

@@ -241,6 +241,99 @@ function err(msg) {
   document.getElementById('fileInput').value = '';
 }
 
+
+// ══════════ EXTRACCIÓN DE PDF — MULTIESTRATEGIA ══════════
+// Los PDFs de Canva, Figma e InDesign meten el texto dentro de XObjects de
+// formulario anidados, con escalados y eje Y invertido. Una sola pasada con
+// las opciones por defecto puede devolver casi nada aunque el PDF SÍ tenga
+// texto seleccionable. Probamos varias combinaciones y nos quedamos con la mejor.
+async function extraerTextoPDF(buffer) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  const estrategias = [
+    {nombre: 'normal',        opts: undefined},
+    {nombre: 'sin-normalizar', opts: {disableNormalization: true}},
+    {nombre: 'con-marcado',   opts: {includeMarkedContent: true, disableNormalization: true}}
+  ];
+
+  let mejor = '';
+  for (const est of estrategias) {
+    try {
+      // Cada intento necesita su propia copia: pdf.js transfiere el buffer al worker
+      const pdf = await pdfjsLib.getDocument({data: buffer.slice(0)}).promise;
+      let t = '';
+      for (let i = 1; i <= Math.min(pdf.numPages, 8); i++) {
+        const page = await pdf.getPage(i);
+        const tc = await page.getTextContent(est.opts);
+        // Reconstruimos respetando saltos de línea, no solo espacios
+        let linea = '';
+        for (const it of tc.items) {
+          if (typeof it.str !== 'string') continue;
+          linea += it.str;
+          if (it.hasEOL) { t += linea + '\n'; linea = ''; }
+          else linea += ' ';
+        }
+        if (linea.trim()) t += linea + '\n';
+      }
+      console.debug(`📄 pdf.js [${est.nombre}]: ${t.trim().length} caracteres`);
+      if (t.trim().length > mejor.length) mejor = t.trim();
+      if (mejor.length > 400) break;   // suficiente, no seguimos probando
+    } catch(e) {
+      console.warn(`📄 pdf.js [${est.nombre}] falló:`, e.message);
+    }
+  }
+  return mejor;
+}
+
+// ══════════ ESCAPE: PEGAR EL TEXTO A MANO ══════════
+// Cuando la extracción falla, en vez de perder al visitante le damos una
+// salida que SIEMPRE funciona.
+function mostrarPegarTexto() {
+  document.getElementById('errBox').style.display = 'none';
+  const dzEl = document.getElementById('dropZone');
+  if (dzEl) dzEl.style.display = 'none';
+  if (document.getElementById('pegarWrap')) {
+    document.getElementById('pegarWrap').style.display = 'block';
+    document.getElementById('pegarArea').focus();
+    return;
+  }
+  const w = document.createElement('div');
+  w.id = 'pegarWrap';
+  w.style.cssText = 'max-width:760px;margin:0 auto 30px;text-align:left';
+  w.innerHTML = `
+    <p style="color:#ccc;font-size:0.92rem;margin-bottom:10px">
+      ${LANG==='en' ? 'Open your resume, select everything (Ctrl+A / Cmd+A), copy it and paste it here:'
+                    : 'Abre tu CV, selecciona todo (Ctrl+A / Cmd+A), cópialo y pégalo aquí:'}
+    </p>
+    <textarea id="pegarArea" rows="12" placeholder="${LANG==='en' ? 'Paste your resume text here...' : 'Pega aquí el texto de tu CV...'}"
+      style="width:100%;background:#111;border:1px solid #333;border-radius:12px;color:#eee;padding:14px;font-family:inherit;font-size:15px;line-height:1.6;resize:vertical"></textarea>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button onclick="analizarTextoPegado()" style="background:#FFD000;color:#0a0a0a;border:none;border-radius:50px;padding:12px 26px;font-weight:800;cursor:pointer;font-size:0.9rem">
+        ${LANG==='en' ? 'Analyze my resume →' : 'Analizar mi CV →'}
+      </button>
+      <button onclick="document.getElementById('pegarWrap').style.display='none';document.getElementById('dropZone').style.display='block'"
+        style="background:transparent;color:#888;border:1px solid #333;border-radius:50px;padding:12px 22px;cursor:pointer;font-size:0.9rem">
+        ${LANG==='en' ? 'Try another file' : 'Probar con otro archivo'}
+      </button>
+    </div>`;
+  dzEl.parentNode.insertBefore(w, dzEl.nextSibling);
+  document.getElementById('pegarArea').focus();
+}
+
+async function analizarTextoPegado() {
+  const t = (document.getElementById('pegarArea').value || '').replace(/\s+/g, ' ').trim();
+  if (t.length < 120) {
+    alert(LANG==='en' ? 'Please paste a bit more text — we need at least a few lines to analyze.'
+                      : 'Pega un poco más de texto — necesitamos al menos unas líneas para analizar.');
+    return;
+  }
+  document.getElementById('pegarWrap').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  cvTextoGlobal = sanitizarEntrada(t).substring(0, 6000);
+  ev('free_analysis_pasted');
+  await analizarCV();
+}
+
 async function procesarArchivo(file) {
   document.getElementById('errBox').style.display = 'none';
   if (!limiteDiario()) return err(LANG==='en' ? 'Free limit: 3 scans per day. Come back tomorrow or optimize your resume now.' : 'Límite gratis: 3 análisis por día. Vuelve mañana u optimiza tu CV ahora.');
@@ -251,13 +344,7 @@ async function procesarArchivo(file) {
     let texto = '';
     const ext = file.name.split('.').pop().toLowerCase();
     if (ext === 'pdf') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      const pdf = await pdfjsLib.getDocument({data: await file.arrayBuffer()}).promise;
-      for (let i = 1; i <= Math.min(pdf.numPages, 8); i++) {
-        const page = await pdf.getPage(i);
-        const tc = await page.getTextContent();
-        texto += tc.items.map(it => it.str).join(' ') + '\n';
-      }
+      texto = await extraerTextoPDF(await file.arrayBuffer());
     } else if (ext === 'docx') {
       const res = await mammoth.extractRawText({arrayBuffer: await file.arrayBuffer()});
       texto = res.value;
@@ -267,7 +354,12 @@ async function procesarArchivo(file) {
       return err(LANG==='en' ? 'Format not supported. Use PDF, DOCX or TXT.' : 'Formato no soportado. Usa PDF, DOCX o TXT.');
     }
     texto = texto.replace(/\s+/g, ' ').trim();
-    if (texto.length < 120) return err(LANG==='en' ? 'Your PDF has no readable text — it is likely a scanned image or was exported as an image.<br><br><b>Solutions:</b><br>• If you made it in Word or Canva, export again choosing <b>PDF (not image)</b><br>• Or upload it as <b>.docx</b><br>• Or paste your resume text into a <b>.txt</b> file<br><br>No resume yet? <a href="chat-cv.html" style="color:#FFD000;text-decoration:underline">Build one with AI →</a>' : 'Tu PDF no contiene texto legible — probablemente es una imagen escaneada o fue exportado como imagen.<br><br><b>Soluciones:</b><br>• Si lo hiciste en Word o Canva, exporta de nuevo eligiendo <b>PDF (no imagen)</b><br>• O súbelo en formato <b>.docx</b><br>• O copia el texto de tu CV en un <b>.txt</b> y súbelo<br><br>¿No tienes CV todavía? <a href="chat-cv.html" style="color:#FFD000;text-decoration:underline">Créalo desde cero con IA →</a>');
+    if (texto.length < 120) {
+      ev('free_analysis_extract_failed', {ext, chars: texto.length});
+      return err(LANG==='en'
+        ? 'We could not read the text in this file.<br><br>This often happens with resumes exported from <b>Canva, Figma or InDesign</b>, which hide the text inside layers — and note: <b>many ATS systems have the same problem</b>, so recruiters may not read it either.<br><br><button onclick="mostrarPegarTexto()" style="background:#FFD000;color:#0a0a0a;border:none;border-radius:50px;padding:11px 24px;font-weight:800;cursor:pointer;margin-top:6px">📋 Paste my resume text instead →</button><br><br><span style="font-size:0.85rem;opacity:.8">You can also upload it as <b>.docx</b> or <b>.txt</b>, or <a href="chat-cv.html" style="color:#FFD000;text-decoration:underline">build a clean one with AI</a>.</span>'
+        : 'No pudimos leer el texto de este archivo.<br><br>Suele pasar con CVs exportados desde <b>Canva, Figma o InDesign</b>, que esconden el texto dentro de capas — y ojo: <b>muchos sistemas ATS tienen el mismo problema</b>, así que puede que los reclutadores tampoco lo lean.<br><br><button onclick="mostrarPegarTexto()" style="background:#FFD000;color:#0a0a0a;border:none;border-radius:50px;padding:11px 24px;font-weight:800;cursor:pointer;margin-top:6px">📋 Pegar el texto de mi CV →</button><br><br><span style="font-size:0.85rem;opacity:.8">También puedes subirlo como <b>.docx</b> o <b>.txt</b>, o <a href="chat-cv.html" style="color:#FFD000;text-decoration:underline">crear uno limpio con IA</a>.</span>');
+    }
     cvTextoGlobal = sanitizarEntrada(texto).substring(0, 6000);
     await analizarCV();
   } catch(e) {

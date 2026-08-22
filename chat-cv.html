@@ -760,7 +760,7 @@ Si el texto es escaso, enriquece SOLO la redacción y el contexto verificable de
 Sin explicaciones, sin saludos, solo el resultado.
 IDIOMA: ${LANG==='en' ? 'Respond ENTIRELY in English.' : 'Responde en español.'}`;
 
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt})
@@ -842,7 +842,7 @@ FORMATO: Solo la pregunta + ejemplos. Sin saludos, sin explicaciones extra.
 IDIOMA: ${LANG==='en' ? 'Responde COMPLETAMENTE en inglés.' : 'Responde en español.'}`;
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: systemPrompt})
@@ -1607,7 +1607,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
 
   // FIX 1 — Mostrar loading claro y manejar errores sin fallback silencioso
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt})
@@ -1634,7 +1634,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     // ── PASADA 2: AUTOCRÍTICA ──
     try {
       marcarPaso(2);
-      const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      const rr = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 2 páginas A4 (1000-1500 palabras), bullets de 25-40 palabras. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
@@ -1921,7 +1921,7 @@ REGLAS ESTRICTAS:
 GENERA EL CV ADAPTADO AHORA:`;
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt})
@@ -1934,7 +1934,7 @@ GENERA EL CV ADAPTADO AHORA:`;
     // Filtro 2: revisión de reclutador
     try {
       renderMsgAI(_enIng ? '🔍 Elite recruiter review pass...' : '🔍 Pasada de revisión de reclutador élite...');
-      const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      const rr = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${_enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres Executive Recruiter élite revisando un CV adaptado a una vacante. CRITICA y MEJORA: elimina bullets débiles, refuerza los que respondan a la oferta, asegura que el perfil venda en 5 segundos. VERIFICA que ninguna cifra sea inventada. NO agregues hechos nuevos. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
@@ -1989,7 +1989,7 @@ function revertirAdaptacion() {
 // Los mensajes de etapa se acumulaban como burbujas de chat y entre una y
 // otra la pantalla quedaba muerta 20-30 segundos. Sin señal de avance el
 // usuario cree que se colgó y abandona justo antes de ver su CV.
-let _prog = {timer: null, pct: 0, objetivo: 0, paso: 0, inicio: 0, tipsTimer: null};
+let _prog = {timer: null, pct: 0, objetivo: 0, paso: 0, inicio: 0, tipsTimer: null, watchdog: null};
 
 const _PASOS_PROG = {
   es: ['Analizando tu información', 'Redactando con IA élite',
@@ -2074,6 +2074,19 @@ function iniciarProgreso() {
     }
   }, 90);
 
+  // Seguro final: si a los 3 minutos nadie llamó a terminarProgreso(), el
+  // pipeline está colgado. Cerramos el panel y avisamos, en vez de dejar al
+  // usuario mirando un 96% eterno sin saber si sigue vivo.
+  _prog.watchdog = setTimeout(() => {
+    if (!document.getElementById('progresoPanel')) return;
+    console.error('⏱️ Pipeline sin desenlace tras 180s');
+    if (typeof ev === 'function') ev('ai_colgado', {segundos: 180});
+    terminarProgreso(false);
+    renderMsgAI(LANG === 'en'
+      ? '⏱️ This is taking longer than expected. Reload the page and try again — your uploaded resume is saved.'
+      : '⏱️ Está tardando más de lo normal. Recarga la página e inténtalo otra vez — tu CV subido está guardado.');
+  }, 180000);
+
   // Rotar consejos para que haya algo que leer
   let ti = 0;
   _prog.tipsTimer = setInterval(() => {
@@ -2114,6 +2127,7 @@ function marcarPaso(i) {
 
 function terminarProgreso(exito) {
   clearInterval(_prog.timer); clearInterval(_prog.tipsTimer);
+  clearTimeout(_prog.watchdog);
   const panel = document.getElementById('progresoPanel');
   if (!panel) return;
   if (exito !== false) {
@@ -2137,6 +2151,19 @@ function terminarProgreso(exito) {
 // Corta cualquier llamada a la IA que se pase del tiempo razonable.
 // Sin esto, una sola petición atascada deja al usuario esperando sin fin
 // mientras la barra de progreso repta hacia el 96% para siempre.
+// Vigilante de último recurso. Aunque cada llamada tenga su propio límite,
+// una cadena de reintentos o un await olvidado puede dejar la barra clavada
+// en el 96% para siempre. Esto garantiza que SIEMPRE haya un desenlace.
+function conLimite(promesa, segundos, valorPorDefecto) {
+  return Promise.race([
+    promesa,
+    new Promise((resolve) => setTimeout(() => {
+      console.warn(`⏱️ Límite de ${segundos}s alcanzado — se continúa con lo disponible`);
+      resolve(valorPorDefecto);
+    }, segundos * 1000))
+  ]);
+}
+
 function fetchIA(url, opciones, segundos) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), (segundos || 45) * 1000);
@@ -2252,9 +2279,12 @@ ${cvV1.substring(0,9000)}`})
     // resultado no mejoraba lo suficiente para justificar 100 segundos.
     if (typeof marcarPaso === 'function') marcarPaso(3);
 
-    // Refuerzo local: solo si el CV salió pobre, y sin poder romper nada
+    // Refuerzo local: solo si el CV salió pobre, y sin poder romper nada.
+    // conLimite() garantiza que aunque se cuelgue, seguimos en 60s.
     try {
-      cvV1 = await generarConValidacion(async () => cvV1, texto, enIngles);
+      cvV1 = await conLimite(
+        generarConValidacion(async () => cvV1, texto, enIngles),
+        60, cvV1);
     } catch(e3) {
       console.warn('Refuerzo omitido:', e3.message);
     }
@@ -2264,7 +2294,7 @@ ${cvV1.substring(0,9000)}`})
     // La extracción de habilidades se lanzó EN PARALELO al inicio (no depende
     // del CV generado). Aquí solo recogemos el resultado: cero espera extra.
     try {
-      const habsIA = await _promesaHabs;
+      const habsIA = await conLimite(_promesaHabs, 10, []);
       if (habsIA && habsIA.length) sessionStorage.setItem('cvpro_habs_extra', JSON.stringify(habsIA));
     } catch(eh) { console.warn('Extracción de habilidades omitida:', eh.message); }
 
@@ -2328,7 +2358,7 @@ async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng) {
   if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
   try {
     if (typeof marcarPaso === 'function') marcarPaso(4);
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres auditor de integridad de CVs. Compara el CV FINAL contra la INFORMACIÓN ORIGINAL del candidato y corrige toda afirmación no respaldada.
@@ -2376,7 +2406,7 @@ async function pasadaATS(cvTxt, enIng) {
   const ANIO_ACTUAL = _h.getFullYear();
   try {
     if (typeof marcarPaso === 'function') marcarPaso(3);
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres auditor senior de sistemas ATS (Workday, Greenhouse, Taleo, iCIMS) y especialista en selección. Audita este CV y devuélvelo CORREGIDO.
@@ -2493,7 +2523,7 @@ async function generarConValidacion(fnGenerar, fuente, enIng) {
     console.warn('⚠️ CV pobre, regenerando:', graves);
     if (typeof marcarPaso === 'function') marcarPaso(5);
     try {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Este CV es demasiado pobre para un candidato profesional. Problemas: ${graves.join(', ')}.

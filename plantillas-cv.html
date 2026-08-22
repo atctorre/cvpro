@@ -828,7 +828,7 @@ function descargarCartaPDF() {
     image:{type:'jpeg',quality:0.98},
     html2canvas:{scale:2,useCORS:true,logging:false},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-  }).from(el).save();
+  }).from(el).save().then(() => toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'));
 }
 
 // Traducir UI si el cliente es inglés
@@ -1286,6 +1286,7 @@ async function descargarATS() {
     content,
     defaultStyle: {font: 'Roboto'}
   }).download(LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);
+  toast(LANG==='en' ? '✅ ATS version downloaded' : '✅ Versión ATS descargada');
 }
 
 async function descargarPDF() {
@@ -1301,7 +1302,7 @@ async function descargarPDF() {
     image:{type:'jpeg',quality:0.98},
     html2canvas:{scale:2,useCORS:true,logging:false},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-  }).from(el).save();
+  }).from(el).save().then(() => toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'));
 }
 
 renderTemplates();
@@ -1536,6 +1537,50 @@ async function reintentarPagosPendientes() {
 }
 window.addEventListener('load', () => setTimeout(reintentarPagosPendientes, 2500));
 
+
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0d1b2a;color:#fff;padding:12px 22px;border-radius:50px;font-size:.83rem;font-family:Inter,system-ui,sans-serif;z-index:100002;box-shadow:0 6px 24px rgba(0,0,0,.35);opacity:0;transition:opacity .3s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>{ t.style.opacity='1'; });
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(), 400); }, 3800);
+}
+
+function mostrarConfirmacionPago(plan, orden, monto) {
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  const nombresPlan = {basico:{es:'Básico',en:'Basic'}, estandar:{es:'Estándar',en:'Standard'}, premium:{es:'Premium',en:'Premium'}};
+  const incluye = {
+    basico:{es:['CV profesional en PDF','Versión ATS con texto real','20 plantillas','Recuperación 30 días'], en:['Professional PDF resume','ATS version with real text','20 templates','30-day recovery']},
+    estandar:{es:['Todo lo del Básico','Carta de presentación IA','Adaptación a 1 vacante','CV en 2 idiomas','Recuperación 90 días'], en:['Everything in Basic','AI cover letter','Tailor to 1 job posting','Resume in 2 languages','90-day recovery']},
+    premium:{es:['Todo lo del Estándar','Adaptaciones ilimitadas','3 cartas de presentación','Actualizaciones 6 meses'], en:['Everything in Standard','Unlimited tailoring','3 cover letters','6 months of updates']}
+  };
+  const cod = sessionStorage.getItem('cvpro_codigo') || '';
+  const items = (incluye[plan] || incluye.basico)[L];
+  const ov = document.createElement('div');
+  ov.id = 'confirmaPago';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:30px;font-family:Inter,system-ui,sans-serif;text-align:center;max-height:92vh;overflow-y:auto">
+      <div style="font-size:2.6rem;line-height:1">✅</div>
+      <h2 style="font-size:1.3rem;color:#111;margin:10px 0 4px">${L==='en'?'Payment successful!':'¡Pago confirmado!'}</h2>
+      <p style="color:#666;font-size:.86rem;margin-bottom:16px">${L==='en'?'Plan':'Plan'} <b>${(nombresPlan[plan]||nombresPlan.basico)[L]}</b> · $${monto} USD</p>
+      <div style="background:#f6f6f6;border-radius:12px;padding:14px 16px;text-align:left;margin-bottom:14px">
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">${L==='en'?'What you get':'Qué incluye'}</div>
+        ${items.map(i=>`<div style="font-size:.82rem;color:#333;margin-bottom:4px">✓ ${i}</div>`).join('')}
+      </div>
+      <div style="background:#fffbe6;border:2px solid #FFD000;border-radius:12px;padding:13px;margin-bottom:14px">
+        <div style="font-size:.72rem;color:#7a6500;margin-bottom:4px">${L==='en'?'🔑 Your recovery code — save it':'🔑 Tu código de recuperación — guárdalo'}</div>
+        <div style="font-size:1.4rem;font-weight:800;letter-spacing:4px;color:#0d1b2a">${cod}</div>
+        <div style="font-size:.7rem;color:#999;margin-top:5px">${L==='en'?'Also sent to your email. Use it to download again anytime.':'También enviado a tu email. Úsalo para descargar de nuevo cuando quieras.'}</div>
+      </div>
+      <p style="font-size:.68rem;color:#aaa;margin-bottom:14px">${L==='en'?'Order':'Orden'}: ${orden}</p>
+      <button onclick="document.getElementById('confirmaPago').remove()" style="width:100%;background:#FFD000;border:none;padding:14px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;font-size:.92rem">${L==='en'?'Continue to my resume →':'Continuar a mi CV →'}</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
 async function abrirMuroPago(planSugerido, alPagar) {
   if (document.getElementById('muroPago')) return;
   ev('checkout_started', {plan: planSugerido || planActual()});
@@ -1612,7 +1657,8 @@ async function abrirMuroPago(planSugerido, alPagar) {
           });
           ev('payment_success', {plan: planReal, monto: montoReal});
           document.getElementById('muroPago')?.remove();
-          if (typeof alPagar === 'function') alPagar(planReal);
+          mostrarConfirmacionPago(planReal, det.id, montoReal);
+          if (typeof alPagar === 'function') setTimeout(() => alPagar(planReal), 400);
         },
         onError: (err) => {
           console.error('PayPal error:', err);
@@ -1642,6 +1688,23 @@ function ev(nombre, extra) {
     console.debug('📊', nombre, extra || '');
   } catch(e) {}
 }
+</script>
+<script>
+(async function badgePlan() {
+  try {
+    if (typeof esTester === 'function' && esTester()) return;
+    const plan = await verificarPagoServidor();
+    if (!plan || plan === 'ninguno') return;
+    const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+    const n = {basico:{es:'Básico',en:'Basic'}, estandar:{es:'Estándar',en:'Standard'}, premium:{es:'Premium',en:'Premium'}}[plan];
+    if (document.getElementById('planBadge')) return;
+    const b = document.createElement('div');
+    b.id = 'planBadge';
+    b.style.cssText = 'position:fixed;top:12px;right:12px;z-index:9999;background:#1baf7a;color:#fff;padding:6px 14px;border-radius:50px;font-size:.72rem;font-weight:700;font-family:Inter,system-ui,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.25)';
+    b.textContent = `✓ ${L==='en'?'Plan':'Plan'} ${n[L]}`;
+    document.body.appendChild(b);
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>

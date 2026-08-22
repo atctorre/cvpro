@@ -3422,9 +3422,19 @@ async function abrirMuroPago(planSugerido, alPagar) {
           document.getElementById('muroPago')?.remove();
           if (typeof alPagar === 'function') alPagar(planReal);
         },
+        onCancel: () => {
+          ev('payment_cancelled');
+          const cont2 = document.getElementById('paypalBtns');
+          if (cont2) {
+            const aviso = document.createElement('p');
+            aviso.style.cssText = 'text-align:center;font-size:.8rem;color:#888;margin-top:10px';
+            aviso.textContent = L==='en' ? 'Payment cancelled — your resume is safe, you can try again anytime.' : 'Pago cancelado — tu CV está guardado, puedes intentarlo cuando quieras.';
+            cont2.parentElement.appendChild(aviso);
+          }
+        },
         onError: (err) => {
           console.error('PayPal error:', err);
-          cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center">${L==='en'?'Payment error. Please try again.':'Error en el pago. Intenta de nuevo.'}</p>`;
+          cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center;line-height:1.5">${L==='en'?'Payment error. If you were charged, email hola@getcvpro.com with your order number and we will fix it immediately.':'Error en el pago. Si te cobraron, escríbenos a hola@getcvpro.com con tu número de orden y lo resolvemos de inmediato.'}</p>`;
         }
       }).render('#paypalBtns');
     } catch(e) {

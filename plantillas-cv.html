@@ -671,9 +671,15 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <div class="cv-result" id="cvResult">
   <div class="cv-actions">
     <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar mi CV
-      <span style="display:block;font-size:0.68rem;font-weight:400;opacity:.75;margin-top:2px">Para enviar por email o imprimir</span></button>
+      <span style="display:block;font-size:0.68rem;font-weight:400;opacity:.75;margin-top:2px">Diseño visual · para enviar por email o imprimir</span></button>
     <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión para portales de empleo
-      <span style="display:block;font-size:0.68rem;font-weight:400;opacity:.85;margin-top:2px">Optimizada para filtros automáticos (ATS)</span></button>
+      <span style="display:block;font-size:0.68rem;font-weight:400;opacity:.85;margin-top:2px">Texto seleccionable · para portales de empleo y filtros ATS</span></button>
+      <div style="font-size:.72rem;color:#888;line-height:1.55;margin-top:10px;padding:10px 12px;background:#0f0f0f;border-radius:10px;border-left:3px solid #FFD000">
+        <b style="color:#FFD000">${LANG==='en'?'Which one should I use?':'¿Cuál debo usar?'}</b><br>
+        ${LANG==='en'
+          ? 'Send the <b>design version</b> by email or in person. Upload the <b>ATS version</b> to job portals (LinkedIn, Indeed, Workday) — its text is machine-readable.'
+          : 'Envía la <b>versión con diseño</b> por email o en persona. Sube la <b>versión ATS</b> a portales de empleo (LinkedIn, Indeed, Workday) — su texto es legible por máquinas.'}
+      </div>
     <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
     <button class="btn-volver" onclick="volverSelector()">← Cambiar plantilla</button>
   </div>

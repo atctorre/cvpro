@@ -1420,6 +1420,15 @@ async function mostrarGenerando() {
     catch(ep) { console.error('Parser falló:', ep); cvData = {nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}; }
     sessionStorage.setItem('cvData', JSON.stringify(cvData));
     sessionStorage.setItem('cvTexto', cv);
+    // Aprendizaje: calidad del CV generado (sin datos personales)
+    try {
+      const _ris = calcularRIS(cv, cvData);
+      sessionStorage.setItem('cvpro_ris', JSON.stringify(_ris));
+      sessionStorage.setItem('cvpro_cvdata_original', JSON.stringify({nombre:cvData.nombre, puesto:cvData.puesto, resumen:cvData.resumen}));
+      aprender('cv_generado', {quality: _ris.global, ats: _ris.ats, impacto: _ris.impacto,
+        palabras: cv.split(/\s+/).length, bullets: (cv.match(/^\s*[•·▸▪]/gm)||[]).length,
+        problemas: validarCV(cv)});
+    } catch(e) {}
     await guardarEnSupabase();
     guardarCVConCodigo(cv);
     mostrarResultado(cv);
@@ -1616,6 +1625,7 @@ ${cvTexto.substring(0,5500)}`})
 
   } catch(e) {
     console.error('❌ Error en generarConIA:', e.message);
+    try { aprender('fallo_ia', {error: String(e.message||'').substring(0,120)}); } catch(e2) {}
 
     // Reintentar UNA vez
     try {
@@ -1963,6 +1973,7 @@ ${cvV1.substring(0,5500)}`})
       sessionStorage.setItem('cvData', JSON.stringify(construirCVData()));
     } catch(ep) {
       console.error('Parser falló:', ep);
+      try { aprender('fallo_parser', {error: String(ep.message||'').substring(0,120)}); } catch(e) {}
       sessionStorage.setItem('cvData', JSON.stringify({nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}));
     }
     try { guardarCVConCodigo(cvGenerado); } catch(eg) { console.warn(eg); }
@@ -2115,6 +2126,7 @@ async function generarConValidacion(fnGenerar, fuente, enIng) {
   const graves = probs.filter(p => ['cv_corto','pocos_bullets','bullets_pobres','perfil_debil'].includes(p));
   if (graves.length) {
     console.warn('⚠️ CV pobre, regenerando:', graves);
+    try { aprender('validacion_fallida', {problemas: graves, patron: `CV insuficiente por: ${graves.join(', ')}`, propuesta: 'Reforzar el prompt de este sector'}); } catch(e) {}
     renderMsgAI(enIng ? '⚡ Reinforcing content depth...' : '⚡ Reforzando la profundidad del contenido...');
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
@@ -2193,6 +2205,108 @@ function restaurarBackupEditor() {
     }
   } catch(e) {}
   return false;
+}
+
+
+// ══════════ MOTOR DE APRENDIZAJE CONTINUO ══════════
+// Regla #2/#32/#33: los datos personales NUNCA salen de aquí. Solo patrones anonimizados.
+
+const _APR_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const _APR_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+// ── REGLA #33: filtro de privacidad. Nada con PII cruza esta función.
+function _anonimizar(txt) {
+  return String(txt || '')
+    .replace(/[\w.+-]+@[\w.-]+\.\w{2,}/g, '[EMAIL]')
+    .replace(/[\+\d][\d\s\-\(\)\.]{6,}\d/g, '[TEL]')
+    .replace(/\b(?:https?:\/\/|www\.)\S+/gi, '[URL]')
+    .replace(/\b[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,2}\b/g, '[NOMBRE]')
+    .replace(/\b\d{6,}\b/g, '[ID]')
+    .substring(0, 400);
+}
+
+// ── Clasificación de sector y seniority (metadatos, no PII)
+function _sectorDe(puesto) {
+  const p = String(puesto || '').toLowerCase();
+  const mapa = [
+    [/pilot|aviaci|vuelo|helic/, 'aviacion'], [/medic|doctor|ciruj|enfermer|salud/, 'salud'],
+    [/desarrollad|program|software|devops|data|frontend|backend/, 'tecnologia'],
+    [/vend|comerci|sales|account exec/, 'ventas'], [/market|publicidad|brand/, 'marketing'],
+    [/contad|financ|audit|conta/, 'finanzas'], [/abogad|legal|jurid/, 'legal'],
+    [/maestro|profesor|docente|educa/, 'educacion'], [/ingenier/, 'ingenieria'],
+    [/chef|cocin|restaur|hotel/, 'hospitalidad'], [/logistic|transport|almacen|supply/, 'logistica'],
+    [/construc|arquitect|obra/, 'construccion'], [/rrhh|recursos humanos|talento/, 'rrhh'],
+    [/director|gerente general|ceo|cfo|coo/, 'direccion'],
+    [/dise[ñn]|creativ|redact|editor|fotograf/, 'creativo']
+  ];
+  for (const [re, s] of mapa) if (re.test(p)) return s;
+  return 'otros';
+}
+function _seniorityDe(d) {
+  const t = ((d.exp1||'') + ' ' + (d.puesto||'')).toLowerCase();
+  if (/sin experiencia|no experience|estudiante|reci[eé]n graduad|pasante/.test(t)) return 'entry';
+  if (/director|gerente general|ceo|cfo|coo|vicepresidente|jefe de/.test(t)) return 'executive';
+  const anios = (t.match(/\b(19|20)\d{2}\b/g)||[]).map(Number);
+  if (anios.length >= 2) {
+    const rango = Math.max(...anios) - Math.min(...anios);
+    if (rango >= 10) return 'senior';
+    if (rango >= 4) return 'mid';
+  }
+  return 'mid';
+}
+
+// ── Envío del evento (siempre anonimizado)
+async function aprender(tipo, payload) {
+  try {
+    const d = (typeof datos !== 'undefined') ? datos : {};
+    await fetch(`${_APR_URL}/rest/v1/rpc/registrar_aprendizaje`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':_APR_KEY,'Authorization':`Bearer ${_APR_KEY}`},
+      body: JSON.stringify({
+        p_tipo: tipo,
+        p_sector: _sectorDe(d.puesto),
+        p_seniority: _seniorityDe(d),
+        p_idioma: (sessionStorage.getItem('cvpro_cv_lang') || LANG),
+        p_mercado: /ingl|english/i.test(d.idioma_cv||'') ? 'US' : 'LATAM',
+        p_payload: payload || {}
+      })
+    });
+  } catch(e) { console.debug('aprendizaje omitido:', e.message); }
+}
+
+// ── REGLA #8/#41: Resume Intelligence Score calculado localmente
+function calcularRIS(cvTexto, cvData) {
+  const t = String(cvTexto||''); const d = cvData || {};
+  const palabras = t.split(/\s+/).filter(Boolean).length;
+  const bullets = (t.match(/^\s*[•·▸▪]/gm)||[]);
+  const largos = bullets.filter(b => b.split(/\s+/).length >= 20).length;
+  const problemas = (typeof validarCV === 'function') ? validarCV(t) : [];
+  const s = {
+    contenido:   Math.min(100, Math.round(palabras / 12)),
+    estructura:  (d.resumen?25:0) + (d.experiencia?.length?30:0) + (d.educacion?.length?20:0) + (d.habilidades?.length?15:0) + (d.idiomas?.length?10:0),
+    impacto:     bullets.length ? Math.round((largos / bullets.length) * 100) : 0,
+    ats:         Math.max(0, 100 - problemas.length * 14),
+    veracidad:   problemas.includes('fecha_futura') ? 60 : 100,
+    lenguaje:    problemas.includes('cliches') ? 65 : 100
+  };
+  s.global = Math.round((s.contenido + s.estructura + s.impacto + s.ats + s.veracidad + s.lenguaje) / 6);
+  return s;
+}
+
+// ── REGLA #4/#5: comparar output de IA contra la versión final del usuario
+function analizarEdiciones(original, final) {
+  const cambios = [];
+  const campos = ['nombre','puesto','resumen'];
+  campos.forEach(f => {
+    const a = String((original||{})[f]||'').trim(), b = String((final||{})[f]||'').trim();
+    if (!a || !b || a === b) return;
+    const cat = b.length > a.length * 1.25 ? 'expansion'
+              : b.length < a.length * 0.75 ? 'reduccion'
+              : /\d/.test(b) && !/\d/.test(a) ? 'agrego_metricas'
+              : 'reformulacion';
+    cambios.push({campo: f, tipo: cat, delta: b.length - a.length});
+  });
+  return cambios;
 }
 
 // ── RESULTADO ──
@@ -2486,6 +2600,7 @@ function agregarIdioma() {
 function agregarEducacion() {}
 
 async function regenerarCV() {
+  try { aprender('regeneracion', {momento: 'editor'}); } catch(e) {}
   if (!confirm((LANG==='en' ? 'Regenerate with AI? Manual edits will be lost.' : '¿Regenerar el CV con IA? Se perderán los cambios manuales.'))) return;
   document.querySelector('.main-layout').innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:20px">
@@ -2499,6 +2614,25 @@ async function regenerarCV() {
 }
 
 function irAPlantillasDesdeEditor() {
+  // Aprendizaje: qué cambió el usuario respecto a la IA
+  try {
+    const orig = JSON.parse(sessionStorage.getItem('cvpro_cvdata_original') || 'null');
+    const fin = JSON.parse(sessionStorage.getItem('cvData') || '{}');
+    if (orig) {
+      const cambios = analizarEdiciones(orig, fin);
+      if (cambios.length) {
+        const tipos = cambios.map(x => x.tipo);
+        aprender('edicion_usuario', {
+          campos_editados: cambios.length,
+          tipos: tipos,
+          patron: `Los usuarios de este sector suelen aplicar: ${[...new Set(tipos)].join(', ')} sobre el texto de la IA`,
+          propuesta: tipos.includes('agrego_metricas')
+            ? 'Insistir más en pedir cifras concretas durante el chat'
+            : tipos.includes('reduccion') ? 'Generar textos más concisos' : 'Revisar naturalidad de la redacción'
+        });
+      }
+    }
+  } catch(e) {}
   // Recopilar todo el contenido editable del editor
   const editables = document.querySelectorAll('[contenteditable]');
   editables.forEach(el => {

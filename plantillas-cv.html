@@ -914,7 +914,7 @@ function descargarCartaPDF() {
     image:{type:'jpeg',quality:0.98},
     html2canvas:{scale:2,useCORS:true,logging:false},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-  }).from(el).save().then(() => toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'));
+  }).from(el).save().then(() => { toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'); setTimeout(pedirFeedback, 2600); });
 }
 
 // Traducir UI si el cliente es inglés
@@ -1395,7 +1395,7 @@ async function descargarPDF() {
     html2canvas:{scale:2,useCORS:true,logging:false,scrollY:0,windowWidth:794},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
     pagebreak:{mode:['css','legacy'], avoid:['.jb','.sk','.li','.edu-item','.bl']}
-  }).from(el).save().then(() => toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'));
+  }).from(el).save().then(() => { toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'); setTimeout(pedirFeedback, 2600); });
 }
 
 renderTemplates();
@@ -1631,6 +1631,77 @@ async function reintentarPagosPendientes() {
 window.addEventListener('load', () => setTimeout(reintentarPagosPendientes, 2500));
 
 
+
+
+// ══ REGLA #23/#24: feedback loop tras la descarga ══
+function pedirFeedback() {
+  if (localStorage.getItem('cvpro_feedback_dado')) return;
+  if (document.getElementById('fbBox')) return;
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  const box = document.createElement('div');
+  box.id = 'fbBox';
+  box.style.cssText = 'position:fixed;bottom:18px;right:18px;left:18px;max-width:360px;margin-left:auto;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.28);padding:18px;z-index:99998;font-family:Inter,system-ui,sans-serif';
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+      <div style="font-weight:700;font-size:.92rem;color:#111">${L==='en'?'How happy are you with your resume?':'¿Qué tan contento estás con tu CV?'}</div>
+      <button onclick="document.getElementById('fbBox').remove()" style="background:none;border:none;font-size:1.05rem;cursor:pointer;color:#bbb;line-height:1">✕</button>
+    </div>
+    <div id="fbStars" style="display:flex;gap:6px;margin:14px 0 10px;justify-content:center">
+      ${[1,2,3,4,5].map(n=>`<button onclick="enviarFeedback(${n})" style="background:none;border:none;font-size:1.7rem;cursor:pointer;padding:2px;filter:grayscale(1);opacity:.5;transition:all .15s" onmouseover="this.style.filter='none';this.style.opacity='1'" onmouseout="this.style.filter='grayscale(1)';this.style.opacity='.5'">⭐</button>`).join('')}
+    </div>
+    <div style="text-align:center;font-size:.7rem;color:#aaa">${L==='en'?'Anonymous · helps us improve':'Anónimo · nos ayuda a mejorar'}</div>`;
+  document.body.appendChild(box);
+}
+
+async function enviarFeedback(n) {
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  const box = document.getElementById('fbBox');
+  if (n >= 4) {
+    localStorage.setItem('cvpro_feedback_dado', '1');
+    await _guardarFeedback(n, null, null);
+    if (box) box.innerHTML = `<div style="text-align:center;padding:8px"><div style="font-size:1.8rem">🎉</div><div style="font-weight:700;font-size:.9rem;color:#111;margin-top:6px">${L==='en'?'Thank you!':'¡Gracias!'}</div><div style="font-size:.76rem;color:#888;margin-top:5px">${L==='en'?'Your feedback helps CVPro improve for everyone.':'Tu opinión ayuda a que CVPro mejore para todos.'}</div></div>`;
+    setTimeout(()=>{ document.getElementById('fbBox')?.remove(); }, 3200);
+    return;
+  }
+  // Puntuación baja → preguntar QUÉ falló (Regla #24)
+  const cats = L==='en'
+    ? [['contenido','Content'],['idioma','Language / wording'],['formato','Format or template'],['ats','ATS / job portals'],['relevancia','Not relevant to my career'],['otro','Something else']]
+    : [['contenido','El contenido'],['idioma','La redacción o el idioma'],['formato','El formato o la plantilla'],['ats','Compatibilidad con portales'],['relevancia','No refleja mi carrera'],['otro','Otra cosa']];
+  if (box) box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="font-weight:700;font-size:.9rem;color:#111">${L==='en'?'What would you improve?':'¿Qué mejorarías?'}</div>
+      <button onclick="document.getElementById('fbBox').remove()" style="background:none;border:none;font-size:1.05rem;cursor:pointer;color:#bbb">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-top:12px">
+      ${cats.map(([k,t])=>`<button onclick="_finFeedback(${n},'${k}')" style="text-align:left;background:#f6f6f6;border:none;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:.8rem;color:#333;font-family:Inter,sans-serif">${t}</button>`).join('')}
+    </div>`;
+}
+
+async function _finFeedback(n, categoria) {
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  localStorage.setItem('cvpro_feedback_dado', '1');
+  await _guardarFeedback(n, categoria, null);
+  const box = document.getElementById('fbBox');
+  if (box) box.innerHTML = `<div style="text-align:center;padding:8px"><div style="font-size:1.6rem">🙏</div><div style="font-weight:700;font-size:.88rem;color:#111;margin-top:6px">${L==='en'?'Thank you for telling us':'Gracias por decírnoslo'}</div><div style="font-size:.75rem;color:#888;margin-top:5px">${L==='en'?'If you want it fixed, email hola@getcvpro.com':'Si quieres que lo corrijamos, escríbenos a hola@getcvpro.com'}</div></div>`;
+  setTimeout(()=>{ document.getElementById('fbBox')?.remove(); }, 4200);
+}
+
+async function _guardarFeedback(satisfaccion, categoria, comentario) {
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    await fetch(`${SB_U}/rest/v1/feedback_cv`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        codigo_cv: sessionStorage.getItem('cvpro_codigo') || '',
+        satisfaccion, categoria, comentario,
+        sector: (D.puesto||'').toLowerCase().substring(0,60),
+        idioma_cv: CV_LANG
+      })
+    });
+  } catch(e) { console.debug('feedback omitido'); }
+}
 
 function toast(msg) {
   const t = document.createElement('div');

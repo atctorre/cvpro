@@ -1421,6 +1421,10 @@ async function generarConIA() {
     if (p.match(/contador|finanzas|financiero|tesorero/)) return 'Profesional Financiero con 8 años en análisis y gestión de capital. Responsable de portafolios de $20M con optimización de costo financiero del 15%.';
     if (p.match(/arquitecto|arquitectura/)) return 'Arquitecto con 9 años diseñando proyectos residenciales y comerciales de $8M+. 15+ proyectos con certificación y reconocimiento en premios de diseño nacional.';
     if (p.match(/farmac/)) return 'Químico Farmacéutico con 7 años en dispensación y control de calidad. Gestor de 500+ reportes de farmacovigilancia y reducción de errores de medicación al 0%.';
+    if (p.match(/estudiante|reci[eé]n graduad|pasante|trainee|becari|primer empleo|sin experiencia/)) return 'Recién graduado en ${datos.puesto} con formación académica sólida y proyectos aplicados. Combina fundamentos técnicos actualizados con capacidad de aprendizaje acelerado y disposición para asumir responsabilidad desde el primer día.';
+    if (p.match(/cambio de carrera|transici[oó]n|reconversi/)) return 'Profesional en transición hacia ${datos.puesto}, aportando competencias transferibles consolidadas en su trayectoria previa. Combina experiencia real en entornos exigentes con formación específica orientada al nuevo sector.';
+    if (p.match(/redactor|copywriter|editor|periodis|content|creativ|audiovisual|fot[oó]graf|dise[ñn]ador de/)) return 'Profesional creativo con trayectoria produciendo contenido y piezas para marcas y medios. Combina criterio editorial, dominio técnico de herramientas de producción y orientación a resultados medibles de audiencia y engagement.';
+    if (p.match(/director|gerente general|ceo|cfo|coo|vicepresidente|jefe de/)) return 'Ejecutivo con trayectoria dirigiendo equipos y unidades de negocio. Responsable de estrategia, gestión de presupuesto y resultados operativos, con historial de liderazgo en entornos de alta exigencia y transformación organizacional.';
     return `Profesional de ${datos.puesto} con sólida trayectoria en el sector. Especializado en resultados medibles con impacto comprobado en organizaciones líderes de la industria.`;
   })();
 
@@ -1454,7 +1458,8 @@ REGLAS (estándar de reclutador ejecutivo élite):
 2. EXPERIENCIA: 5-7 bullets RICOS por trabajo (25-40 palabras c/u), desarrollados con contexto, alcance y escala del sector. CV final: mínimo 2 páginas A4 (1000-1500 palabras) con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. Bullets cortos o planos = trabajo rechazado.
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
-5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
+5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
+5b. SI EL CANDIDATO TIENE POCA O NINGUNA EXPERIENCIA LABORAL: no dejes secciones vacías ni inventes empleos. Construye el CV alrededor de formación académica, proyectos de estudio, prácticas, voluntariado, cursos, competencias técnicas adquiridas y capacidad demostrada. Encabeza con el perfil y la educación en lugar de la experiencia. Un CV honesto de recién graduado bien redactado supera a uno con experiencia fabricada. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
 7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis
 
@@ -1947,6 +1952,7 @@ VERIFICA Y CORRIGE:
 4. HONESTIDAD: si detectas una cifra o hecho que no puede provenir del candidato, sustitúyelo por alcance verificable.
 5. ATS: headers estándar, una sola columna, sin caracteres raros, sin tablas, texto plano legible.
 6. ORTOGRAFÍA y consistencia de tiempos verbales.
+7. CONTRADICCIONES: si la misma empresa, cargo o período aparece con datos distintos en el CV, unifica usando la versión más completa y coherente. Si un mismo empleo tiene dos fechas de inicio incompatibles, conserva la más antigua y elimina la duplicada. Nunca dejes dos versiones contradictorias del mismo hecho.
 NO agregues información nueva. Mantén EXACTAMENTE el mismo formato y headers.
 Devuelve SOLO el CV final auditado y completo.
 CV:

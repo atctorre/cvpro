@@ -1624,7 +1624,12 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     const esCopia = /\b(yo tengo|tengo \d|yo fui|fui piloto|fui el|fui la|trabajé en|me encargué)\b/i.test(cvTexto) || cvTexto.length < 300;
     if (esCopia || cvTexto.trim().length < 200) throw new Error('Claude no transformó el texto correctamente');
 
-    ev('ai_completed');
+    ev('ai_completed', {
+      segundos: window._t0IA ? Math.round((Date.now() - window._t0IA) / 1000) : null,
+      modo: 'chat',
+      etapas: window._tiemposEtapa || null,
+      chars: (cvTexto || '').length
+    });
     console.log('✅ CV generado correctamente:', cvTexto.substring(0,150));
     // ── PASADA 2: AUTOCRÍTICA ──
     try {
@@ -1988,9 +1993,9 @@ let _prog = {timer: null, pct: 0, objetivo: 0, paso: 0, inicio: 0, tipsTimer: nu
 
 const _PASOS_PROG = {
   es: ['Analizando tu información', 'Redactando con IA élite',
-       'Revisión de reclutador y auditoría ATS', 'Verificación de veracidad', 'Puliendo el resultado'],
+       'Revisión de reclutador · ATS · veracidad', 'Preparando tu CV'],
   en: ['Analyzing your information', 'Writing with elite AI',
-       'Recruiter review and ATS audit', 'Truth verification', 'Final polish']
+       'Recruiter review · ATS · truth check', 'Preparing your resume']
 };
 
 const _TIPS = {
@@ -2009,6 +2014,10 @@ const _TIPS = {
 };
 
 function iniciarProgreso() {
+  // Marca de inicio para medir cuánto tarda de verdad la generación.
+  // Sin esto, ev('ai_completed') no llevaba el tiempo y la consulta de
+  // rendimiento devolvía NULL.
+  window._t0IA = Date.now();
   if (document.getElementById('progresoPanel')) return;
   const L = LANG === 'en' ? 'en' : 'es';
   const pasos = _PASOS_PROG[L];
@@ -2061,7 +2070,7 @@ function iniciarProgreso() {
     if (t) {
       const seg = Math.round((Date.now() - _prog.inicio) / 1000);
       t.textContent = (LANG==='en' ? 'Elapsed: ' : 'Transcurrido: ') + seg + 's' +
-        (seg > 60 ? (LANG==='en' ? ' — almost there, do not close this page' : ' — casi listo, no cierres esta página') : '');
+        (seg > 80 ? (LANG==='en' ? ' — almost there, do not close this page' : ' — casi listo, no cierres esta página') : '');
     }
   }, 90);
 
@@ -2077,6 +2086,19 @@ function iniciarProgreso() {
 }
 
 function marcarPaso(i) {
+  // Registra cuánto tardó la etapa anterior: así sabemos QUÉ pasada es lenta,
+  // no solo que el total es alto.
+  try {
+    const ahora = Date.now();
+    if (window._tPaso && window._pasoPrev !== undefined) {
+      const seg = Math.round((ahora - window._tPaso) / 1000);
+      console.debug(`⏱️ Etapa ${window._pasoPrev}: ${seg}s`);
+      window._tiemposEtapa = window._tiemposEtapa || {};
+      window._tiemposEtapa['e' + window._pasoPrev] = seg;
+    }
+    window._tPaso = ahora;
+    window._pasoPrev = i;
+  } catch(e) {}
   const L = LANG === 'en' ? 'en' : 'es';
   const total = _PASOS_PROG[L].length;
   _prog.paso = i;
@@ -2181,35 +2203,63 @@ Sin corchetes, sin markdown, sin comentarios — solo el CV completo.
 CV ORIGINAL:
 ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
   try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+    // Solo esta llamada es obligatoria. Si falla, no hay CV.
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt})
-    });
+    }, 90);
     const data = await res.json();
     if (!data.cv || data.cv.length < 300) throw new Error('short');
     let cvV1 = data.cv.trim();
+
+    // ⚠️ A partir de aquí NADA puede hacer perder el CV. Antes, si una pasada
+    // de refinamiento fallaba, el catch general lo tiraba todo y el usuario
+    // se quedaba sin nada tras 3 minutos de espera. Ahora cada pasada es
+    // opcional: si falla o expira, se conserva la versión anterior.
+    const _cvSeguro = cvV1;
     // ── PASADA 2: RECLUTADOR + ATS EN UNA SOLA LLAMADA ──
     // Antes eran dos viajes al servidor de ~25s cada uno. Hacen trabajo
     // complementario sobre el mismo texto, así que se pueden fusionar sin
     // perder calidad y ahorrando una ronda completa.
     marcarPaso(2);
     try {
-      const res2 = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+      const res2 = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres un Executive Recruiter élite Y auditor ATS revisando el trabajo de un colega. Haz AMBAS cosas en una sola pasada:
 (A) CRITICA y MEJORA: elimina cualquier bullet débil o genérico, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos.
-(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 2 páginas A4 (1000-1500 palabras) con bullets de 25-40 palabras. Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
+(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 2 páginas A4 (1000-1500 palabras) con bullets de 25-40 palabras. (C) VERIFICACIÓN DE VERACIDAD contra la información original que aparece abajo: ELIMINA toda cifra, porcentaje, cantidad de personas, empresa, cargo, título, certificación o premio que NO aparezca en esa fuente. Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes. CONSERVA intactos los datos que SÍ están en la fuente.
+Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
+
+INFORMACIÓN ORIGINAL DEL CANDIDATO (única fuente de verdad):
+${sanitizarEntrada(texto, 7000).substring(0,7000)}
+
 CV A REVISAR:
 ${cvV1.substring(0,9000)}`})
-      });
+      }, 90);
       const d2 = await res2.json();
-      if (d2.cv && d2.cv.trim().length > cvV1.length * 0.7) cvV1 = d2.cv.trim();
-    } catch(e2) { /* usar v1 si falla */ }
-    // pasadaATS() fusionada en la pasada anterior — se elimina una ronda entera
+      if (d2.cv && d2.cv.trim().length > cvV1.length * 0.45) {
+        cvV1 = d2.cv.trim();
+        if (typeof ev === 'function') ev('truth_check_applied', {fusionada: true});
+      }
+    } catch(e2) {
+      console.warn('Pasada de revisión omitida (se conserva la v1):', e2.message);
+      if (typeof ev === 'function') ev('pasada2_omitida', {error: String(e2.message).substring(0,80)});
+    }
+
+    // Veracidad y auditoría ATS van FUSIONADAS en la pasada anterior.
+    // Eran dos reescrituras completas más del CV (~50s cada una) y el
+    // resultado no mejoraba lo suficiente para justificar 100 segundos.
     if (typeof marcarPaso === 'function') marcarPaso(3);
-    cvV1 = await generarConValidacion(async () => await pasadaVeracidad(cvV1, texto, enIngles), texto, enIngles);
-    cvGenerado = cvV1;
+
+    // Refuerzo local: solo si el CV salió pobre, y sin poder romper nada
+    try {
+      cvV1 = await generarConValidacion(async () => cvV1, texto, enIngles);
+    } catch(e3) {
+      console.warn('Refuerzo omitido:', e3.message);
+    }
+
+    cvGenerado = (cvV1 && cvV1.length > 300) ? cvV1 : _cvSeguro;
 
     // La extracción de habilidades se lanzó EN PARALELO al inicio (no depende
     // del CV generado). Aquí solo recogemos el resultado: cero espera extra.
@@ -2228,12 +2278,39 @@ ${cvV1.substring(0,9000)}`})
       sessionStorage.setItem('cvData', JSON.stringify({nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}));
     }
     try { guardarCVConCodigo(cvGenerado); } catch(eg) { console.warn(eg); }
+    ev('ai_completed', {
+      segundos: window._t0IA ? Math.round((Date.now() - window._t0IA) / 1000) : null,
+      modo: 'optimizar',
+      etapas: window._tiemposEtapa || null,
+      chars: (cvGenerado || '').length
+    });
     terminarProgreso(true);
     mostrarResultado(cvGenerado);
   } catch(e) {
+    // Si la primera generación funcionó, entregamos el CV aunque algo
+    // posterior haya fallado. Perder un CV ya generado tras 3 minutos de
+    // espera es el peor resultado posible para el usuario.
+    if (cvGenerado && cvGenerado.length > 300) {
+      console.warn('Fallo posterior, pero el CV existe — se entrega igual:', e.message);
+      try {
+        sessionStorage.setItem('cvTexto', cvGenerado);
+        sessionStorage.setItem('cvData', JSON.stringify(construirCVData()));
+        guardarCVConCodigo(cvGenerado);
+      } catch(er) { console.warn(er); }
+      terminarProgreso(true);
+      ev('ai_completed_parcial', {error: String(e.message).substring(0,80)});
+      mostrarResultado(cvGenerado);
+      return;
+    }
     terminarProgreso(false);
+    ev('ai_failed', {
+      segundos: window._t0IA ? Math.round((Date.now() - window._t0IA) / 1000) : null,
+      error: String(e && e.message ? e.message : e).substring(0, 120)
+    });
     console.error('Optimización fallida:', e);
-    renderMsgAI(LANG==='en' ? '❌ Optimization failed. Wait 30s and reload.' : '❌ Falló la optimización. Espera 30s y recarga.');
+    renderMsgAI(LANG==='en'
+      ? '❌ We could not generate your resume. The AI service did not respond in time.\n\n*What to do:* wait 30 seconds and reload the page. Your uploaded resume is saved.'
+      : '❌ No pudimos generar tu CV. El servicio de IA no respondió a tiempo.\n\n*Qué hacer:* espera 30 segundos y recarga la página. Tu CV subido está guardado.');
   }
 }
 

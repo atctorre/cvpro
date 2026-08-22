@@ -1990,6 +1990,7 @@ function limpiarFormatoCV(cv) {
        .replace(/\n{3,}/g, '\n\n');
   // Fechas futuras → Actualidad
   const anioActual = new Date().getFullYear();
+  t = t.replace(/\s*[-–—_]{3,}\s*$/gm, '').replace(/\s+[-–—_]{3,}\s*(?=\n|$)/g, '');
   t = t.replace(/\b(19|20)\d{2}\b/g, (m) => Number(m) > anioActual ? (LANG === 'en' ? 'Present' : 'Actualidad') : m);
   return t.trim();
 }
@@ -2447,6 +2448,18 @@ function construirCVData() {
       .trim();
   }
 
+
+  // Extractor flexible: toma TODO entre un header y el siguiente header real
+  const _HEADERS_CV = 'RESUMEN|PERFIL|PROFESSIONAL|EXPERIENCIA|EXPERIENCE|WORK|EDUCACI[ÓO]N|EDUCATION|FORMACI[ÓO]N|HABILIDADES|SKILLS|COMPETENCIAS|CERTIFICACIONES|CERTIFICATIONS|IDIOMAS|LANGUAGES|LOGROS|INFORMACI[ÓO]N|REFERENCIAS|PUBLICACIONES|MEMBRES[ÍI]AS|CURSOS';
+  function seccionFlex(nombres) {
+    const pat = new RegExp(
+      '^[ \\t]*(?:' + nombres + ')[ \\t]*\\n(?:[─\\-═_]{3,}[ \\t]*\\n)?' +
+      '((?:(?!\\n[ \\t]*(?:' + _HEADERS_CV + ')[^\\n]*\\n)[\\s\\S])*)', 'im');
+    const m = cv.match(pat);
+    if (!m) return '';
+    return m[1].split('\n').filter(l => !/^[─\-═_]{3,}$/.test(l.trim())).join('\n').trim();
+  }
+
   function limpiarBullet(l) {
     return limpiarMd(l.replace(/^[\s•·▸▪\-\*]+/, '').trim());
   }
@@ -2622,7 +2635,35 @@ function construirCVData() {
     });
   }
 
-  // ── FALLBACKS: nunca dejar secciones vacías ──
+  // ── FALLBACKS: primero del texto del CV, luego de las respuestas ──
+  if (!educacion || !educacion.length || educacion.every(e => !(e.titulo||'').trim())) {
+    const eduTxt = seccionFlex('EDUCACIÓN|EDUCACION|EDUCATION|FORMACIÓN|FORMACION');
+    if (eduTxt) {
+      educacion = eduTxt.split('\n').map(l => {
+        const t = limpiarBullet(l);
+        if (!t || t.length < 4 || ES_HEADER.test(t)) return null;
+        const p = t.split('|').map(x=>x.trim());
+        return {titulo: p[0]||t, institucion: p[1]||'', 'año': p[2]||''};
+      }).filter(Boolean).slice(0,8);
+    }
+  }
+  if (!habsTexto) {
+    const hTxt = seccionFlex('HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES|APTITUDES');
+    if (hTxt) habsTexto = hTxt.split(/\n|,/).map(l => limpiarBullet(l).replace(/^(Técnicas?|Technical|Blandas?|Soft)\s*:/i,'').trim())
+      .filter(s => s && s.length>1 && s.length<70 && !ES_HEADER.test(s) && !/^(Idiomas|Languages)/i.test(s)).slice(0,14).join(', ');
+  }
+  if (!idiomas || idiomas.length < 2) {
+    const iTxt = seccionFlex('IDIOMAS|LANGUAGES') || (cv.match(/(?:Idiomas?|Languages?)\s*:\s*([^\n]+)/i)||[])[1] || '';
+    if (iTxt) {
+      const arr = iTxt.split(/[,;\n]/).map(l => {
+        const t = limpiarBullet(l).replace(/^(Idiomas?|Languages?)\s*:/i,'').trim();
+        if (!t || t.length < 3 || ES_HEADER.test(t)) return null;
+        const mm = t.match(/^([^\(\-–:]+)[\(\-–:\s]*(.*?)\)?$/);
+        return mm ? {nombre: mm[1].trim(), nivel: (mm[2]||'').trim()} : {nombre: t, nivel: ''};
+      }).filter(Boolean).slice(0,5);
+      if (arr.length >= (idiomas||[]).length) idiomas = arr;
+    }
+  }
   if (!educacion || !educacion.length || educacion.every(e => !(e.titulo||'').replace(/[^\wÁÉÍÓÚÑáéíóúñ]/g,''))) {
     educacion = (datos.estudios || '').split(/\n|;/).map(l => {
       const t = l.replace(/^[\s•·▸▪\-\*]+/,'').trim();

@@ -564,6 +564,14 @@ function actualizarPreview() {
 
   // Habilidades — usar enriquecidas si existen, filtrar texto largo
   const habsRaw = datos.habilidades_tecnicas_enriquecido || d.habilidades_tecnicas || '';
+  // Filtrar headers de sección y basura colada en habilidades
+  habsTexto = (habsTexto||'').split(',').map(s=>s.trim())
+    .filter(s => s && s.length>1 && s.length<70 && !ES_HEADER.test(s) && !/^[─\-═\.]+$/.test(s))
+    .join(', ');
+  if (!habsTexto) habsTexto = (datos.habilidades_tecnicas_enriquecido || datos.habilidades_tecnicas || '')
+    .split(/[,;\n]/).map(s=>s.replace(/^[\s•·▸▪\-\*]+/,'').trim())
+    .filter(s=>s && s.length>1 && s.length<70 && !ES_HEADER.test(s)).slice(0,14).join(', ');
+
   const habsArr = habsRaw.split(/[,;]/)
     .map((h,i)=>({nombre:h.trim().replace(/^[•·\-\s]+/,'').trim(), nivel:Math.max(55,88-i*8)}))
     .filter(h=>h.nombre && h.nombre.length>1 && h.nombre.length<45)
@@ -1850,9 +1858,9 @@ function mostrarResultado(cv) {
   const linkedin = cvData.linkedin || '';
   const resumen = cvData.resumen || '';
   const experiencia = cvData.experiencia || [];
-  const educacion = cvData.educacion || [];
+  let educacion = cvData.educacion || [];
   const habilidades = cvData.habilidades || [];
-  const idiomas = cvData.idiomas || [];
+  let idiomas = cvData.idiomas || [];
   const logros = cvData.logros || [];
 
   document.querySelector('.main-layout').innerHTML = `
@@ -2332,6 +2340,7 @@ function construirCVData() {
   else if (habsM2) habsTexto = habsM2[1];
   else if (habsM3) habsTexto = habsM3[1].split('\n').map(l=>l.replace(/^[\s•·▸▪\-\*]+/,'').trim()).filter(l=>l&&l.length<60&&!/^(Blandas|Idiomas|Soft|Languages)/i.test(l)).slice(0,14).join(', ');
   // Fallback final: cualquier sección de competencias sin línea divisoria
+  const ES_HEADER = /^(EDUCACI[ÓO]N|EDUCATION|EXPERIENCIA|EXPERIENCE|HABILIDADES|SKILLS|IDIOMAS|LANGUAGES|CERTIFICACIONES|CERTIFICATIONS|RESUMEN|PERFIL|SUMMARY|LOGROS|INFORMACI[ÓO]N|COMPETENCIAS)\b/i;
   if (!habsTexto) {
     const m4 = cv.match(/(?:HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES)[^\n]*\n([\s\S]{20,700}?)(?=\n[A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚ\s]{4,}\n|\n══|$)/i);
     if (m4) habsTexto = m4[1].split(/\n|,/).map(l=>l.replace(/^[\s•·▸▪\-\*]+/,'').replace(/^(Técnicas?|Technical|Blandas?|Soft)\s*:/i,'').trim()).filter(l=>l&&l.length>2&&l.length<60&&!/^(Idiomas|Languages)/i.test(l)).slice(0,14).join(', ');
@@ -2349,6 +2358,14 @@ function construirCVData() {
   const habsBM = cv.match(/(?:Blandas?|Soft(?: skills)?):\s*([^\n]+)/i);
   if (habsBM) habsBTexto = habsBM[1];
   else habsBTexto = datos.habilidades_blandas || '';
+
+  // Filtrar headers de sección colados y aplicar fallback real
+  habsTexto = (habsTexto||'').split(/[,;\n]/).map(s=>s.replace(/^[\s•·▸▪\-\*]+/,'').trim())
+    .filter(s => s && s.length>1 && s.length<70 && !ES_HEADER.test(s) && !/^[─\-═\.]+$/.test(s))
+    .join(', ');
+  if (!habsTexto) habsTexto = (datos.habilidades_tecnicas_enriquecido || datos.habilidades_tecnicas || '')
+    .split(/[,;\n]/).map(s=>s.replace(/^[\s•·▸▪\-\*]+/,'').trim())
+    .filter(s=>s && s.length>1 && s.length<70 && !ES_HEADER.test(s)).slice(0,14).join(', ');
 
   const habsTec = habsTexto.split(/[,;\/]/)
     .map((h, i) => ({ nombre: h.trim().replace(/^[\-•·\s]+/, '').trim(), nivel: Math.max(65, 92 - i * 6) }))
@@ -2384,6 +2401,24 @@ function construirCVData() {
       const b = limpiarBullet(l);
       if (b.length > 3) logros.push(b);
     });
+  }
+
+  // ── FALLBACKS: nunca dejar secciones vacías ──
+  if (!educacion || !educacion.length || educacion.every(e => !(e.titulo||'').replace(/[^\wÁÉÍÓÚÑáéíóúñ]/g,''))) {
+    educacion = (datos.estudios || '').split(/\n|;/).map(l => {
+      const t = l.replace(/^[\s•·▸▪\-\*]+/,'').trim();
+      if (!t || t.length < 4) return null;
+      const p = t.split('|').map(x=>x.trim());
+      return {titulo: p[0]||t, institucion: p[1]||'', 'año': p[2]||''};
+    }).filter(Boolean).slice(0,6);
+  }
+  if (!idiomas || !idiomas.length) {
+    idiomas = (datos.idiomas_nivel || '').split(/[,;\n]/).map(l => {
+      const t = l.replace(/^[\s•·▸▪\-\*]+/,'').trim();
+      if (!t || t.length < 3) return null;
+      const m2 = t.match(/^([^\(\-–]+)[\(\-–\s]*(.*?)\)?$/);
+      return m2 ? {nombre: m2[1].trim(), nivel: (m2[2]||'').trim()} : {nombre: t, nivel: ''};
+    }).filter(Boolean).slice(0,5);
   }
 
   return {

@@ -630,6 +630,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
   <div id="cartaWrap" style="display:none;margin-top:30px">
     <div class="cv-actions">
       <button class="btn-pdf" onclick="descargarCartaPDF()">📄 Descargar carta PDF</button>
+      <button class="btn-pdf" style="background:#2b579a;color:#fff;margin-left:8px" onclick="descargarCartaWord()">📝 Descargar carta Word</button>
       <button class="btn-volver" onclick="document.getElementById('cartaWrap').style.display='none'">✕ Cerrar</button>
     </div>
     <div id="cartaFinal" style="background:#fff;width:794px;padding:60px 70px;font-family:'Lato',sans-serif;color:#1a1a1a;font-size:0.9rem;line-height:1.8;white-space:pre-wrap;margin:0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.15)"></div>
@@ -743,8 +744,8 @@ async function generarCarta() {
       `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
   }
   const prompt = LANG==='en'
-    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs, confident tone, mention 2-3 concrete achievements from the resume, no placeholders or brackets, ready to send. Start with "Dear Hiring Manager," and end with a professional signature with the candidate's name.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
-    : `Eres un ghostwriter élite de cartas de presentación. Basándote en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, que aplica como ${D.puesto}. 3-4 párrafos, tono seguro y profesional, menciona 2-3 logros concretos del CV, sin corchetes ni placeholders, lista para enviar. Empieza con "Estimado equipo de selección," y termina con firma profesional con el nombre del candidato.\n\nCV:\n${cvTexto.substring(0,2500)}`;
+    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}. 3-4 paragraphs, confident tone, mention 2-3 concrete achievements from the resume, no placeholders or brackets, ready to send. MANDATORY FORMAT: plain text only — NO markdown whatsoever (no #, no **, no ---, no bullets, no titles). Start directly with "Dear Hiring Manager," then 3-4 body paragraphs, then "Sincerely," and the candidate name on its own line.\n\nRESUME:\n${cvTexto.substring(0,2500)}`
+    : `Eres un ghostwriter élite de cartas de presentación. Basándote en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, que aplica como ${D.puesto}. 3-4 párrafos, tono seguro y profesional, menciona 2-3 logros concretos del CV, sin corchetes ni placeholders, lista para enviar. FORMATO OBLIGATORIO: texto plano — PROHIBIDO markdown (nada de #, **, ---, viñetas ni títulos). Empieza directamente con "Estimado equipo de selección," luego 3-4 párrafos de cuerpo, después "Atentamente," y el nombre del candidato en su propia línea.\n\nCV:\n${cvTexto.substring(0,2500)}`;
 
   try {
     const res = await fetch(`${SB_URL}/functions/v1/super-service`, {
@@ -754,7 +755,13 @@ async function generarCarta() {
     });
     const data = await res.json();
     if (data.cv && data.cv.trim().length > 100) {
-      cartaGenerada = data.cv.trim().replace(/\*\*/g,'').replace(/\*/g,'');
+      cartaGenerada = data.cv.trim()
+        .replace(/^#{1,6}\s*/gm, '')
+        .replace(/\*\*/g, '')
+        .replace(/\*/g, '')
+        .replace(/^\s*[-–—]{3,}\s*$/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
       document.getElementById('cartaFinal').textContent = cartaGenerada;
       document.getElementById('cartaWrap').style.display = 'block';
       document.getElementById('cartaWrap').scrollIntoView({behavior:'smooth'});
@@ -769,12 +776,34 @@ async function generarCarta() {
   btn.disabled = false;
 }
 
+
+function descargarCartaWord() {
+  const el = document.getElementById('cartaFinal');
+  const texto = (el ? el.textContent : cartaGenerada) || '';
+  if (!texto.trim()) return;
+  const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
+  const parrafos = texto.split(/\n{1,}/).map(l => l.trim())
+    .map(l => l ? `<p style="margin:0 0 12pt 0;text-align:justify">${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>` : '<p style="margin:0 0 12pt 0">&nbsp;</p>')
+    .join('');
+  const doc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${LANG==='en'?'Cover Letter':'Carta de Presentación'}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>@page{size:A4;margin:2.5cm} body{font-family:'Calibri','Segoe UI',sans-serif;font-size:11.5pt;line-height:1.6;color:#1a1a1a}</style>
+</head><body>${parrafos}</body></html>`;
+  const blob = new Blob(['\ufeff', doc], {type: 'application/msword'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.doc`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
 function descargarCartaPDF() {
   const el = document.getElementById('cartaFinal');
   if (!el || !cartaGenerada) return;
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
   html2pdf().set({
-    margin:0,
+    margin:[18,18,18,18],
     filename:`${LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.pdf`,
     image:{type:'jpeg',quality:0.98},
     html2canvas:{scale:2,useCORS:true,logging:false},
@@ -835,6 +864,7 @@ if (LANG === 'en') {
       'Ajusta tu foto dentro del recuadro:': 'Adjust your photo inside the frame:',
       '⚡ Generar mi CV con esta plantilla': '⚡ Generate my resume with this template',
       '📄 Descargar carta PDF': '📄 Download letter PDF',
+      '📝 Descargar carta Word': '📝 Download letter Word',
       '✉️ Generar carta de presentación (IA)': '✉️ Generate cover letter (AI)',
       '📋 Versión ATS (texto seleccionable)': '📋 ATS version (selectable text)',
       'Zoom': 'Zoom'
@@ -1149,7 +1179,8 @@ function mostrarCarta(texto) {
       </div>
       <div id="cartaBody" contenteditable="true" style="padding:28px 32px;overflow-y:auto;font-family:Georgia,serif;font-size:0.9rem;line-height:1.8;color:#222;white-space:pre-wrap;outline:none">${texto}</div>
       <div style="padding:14px 24px;border-top:1px solid #eee;display:flex;gap:10px">
-        <button onclick="descargarCartaPDF()" style="flex:1;background:#FFD000;border:none;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">${LANG==='en'?'📄 Download letter PDF':'📄 Descargar carta PDF'}</button>
+        <button onclick="descargarCartaPDF()" style="flex:1;background:#FFD000;border:none;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">${LANG==='en'?'📄 PDF':'📄 PDF'}</button>
+        <button onclick="descargarCartaWord()" style="flex:1;background:#2b579a;color:#fff;border:none;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">${LANG==='en'?'📝 Word':'📝 Word'}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);

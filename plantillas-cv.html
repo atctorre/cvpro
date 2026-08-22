@@ -1020,17 +1020,41 @@ function cargarFoto(e) {
     if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ No se pudo leer la imagen — prueba con otra</strong>';
   };
   reader.onload = ev => {
-    fotoOriginal = ev.target.result;
-    // El aviso se actualiza ANTES de montar el panel: si mostrarAjuste()
-    // lanza una excepción, el usuario ya sabe que su foto sí se leyó, y el
-    // error aparece en consola en vez de dejar la pantalla en negro.
-    if (txt) txt.innerHTML = '<strong style="color:#00C853">✅ Foto cargada — ajústala abajo</strong>';
-    try {
-      mostrarAjuste();
-    } catch(err) {
-      console.error('Fallo al montar el ajuste de foto:', err);
-      if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ Error al preparar el recorte: ' + err.message + '</strong>';
-    }
+    const dataUrl = ev.target.result;
+    // ── PRUEBA DE DECODIFICACIÓN ──
+    // FileReader NO decodifica la imagen: solo la convierte a base64. Un HEIC
+    // de iPhone pasa el filtro image/*, se lee sin error… y el <img> del
+    // recorte no puede pintarlo → recuadro negro sin excepción alguna.
+    // Verificamos que el navegador SÍ sabe renderizarla antes de continuar.
+    const probe = new Image();
+    probe.onload = () => {
+      if (!probe.naturalWidth || !probe.naturalHeight) {
+        console.error('Imagen decodificada con dimensiones 0 — formato no soportado');
+        if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">' + (LANG==='en'
+          ? '❌ This image format is not supported — please convert it to JPG or PNG'
+          : '❌ Este formato de imagen no es compatible — conviértela a JPG o PNG') + '</strong>';
+        return;
+      }
+      fotoOriginal = dataUrl;
+      // El aviso se actualiza ANTES de montar el panel: si mostrarAjuste()
+      // lanza una excepción, el usuario ya sabe que su foto sí se leyó, y el
+      // error aparece en consola en vez de dejar la pantalla en negro.
+      if (txt) txt.innerHTML = '<strong style="color:#00C853">' + (LANG==='en' ? '✅ Photo loaded — adjust it below' : '✅ Foto cargada — ajústala abajo') + '</strong>';
+      try {
+        mostrarAjuste();
+      } catch(err) {
+        console.error('Fallo al montar el ajuste de foto:', err);
+        if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ Error al preparar el recorte: ' + err.message + '</strong>';
+      }
+    };
+    probe.onerror = () => {
+      console.error('El navegador no puede decodificar esta imagen. Tipo:', file.type, '· Nombre:', file.name);
+      const esHeic = /heic|heif/i.test(file.type + ' ' + file.name);
+      if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">' + (LANG==='en'
+        ? (esHeic ? '❌ iPhone HEIC photos are not supported by this browser — open the photo and save it as JPG, or take a screenshot of it' : '❌ Your browser cannot read this image — please use a JPG or PNG')
+        : (esHeic ? '❌ Las fotos HEIC de iPhone no son compatibles con este navegador — abre la foto y guárdala como JPG, o hazle una captura de pantalla' : '❌ Tu navegador no puede leer esta imagen — usa un JPG o PNG')) + '</strong>';
+    };
+    probe.src = dataUrl;
   };
   reader.readAsDataURL(file);
 }
@@ -1092,7 +1116,8 @@ function mostrarAjuste() {
     <h4>Ajusta tu foto dentro del recuadro:</h4>
     <p style="font-size:0.72rem;color:#999;margin:-4px 0 8px">✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom</p>
     <div class="foto-crop-wrap ${selTpl==='h2'||selTpl==='h3'?'square':''}" id="cropWrap">
-      <img id="cropImg" src="${fotoOriginal}" draggable="false">
+      <img id="cropImg" src="${fotoOriginal}" draggable="false"
+        onerror="console.error('cropImg no pudo renderizar la imagen'); this.closest('.foto-crop-wrap').innerHTML='<p style=&quot;color:#ff6b6b;font-size:0.7rem;padding:20px;text-align:center&quot;>❌ No se pudo mostrar la imagen.<br>Usa un JPG o PNG.</p>'">
     </div>
     <div class="crop-controls">
       <div class="crop-ctrl"><label>Zoom</label><input type="range" id="zoomCtrl" min="50" max="250" value="${_ajustePrev.z}" oninput="actualizarFoto()"></div>
@@ -1131,8 +1156,19 @@ async function confirmarFoto() {
   const ctx = canvas.getContext('2d');
 
   const tmpImg = new Image();
-  tmpImg.src = fotoOriginal;
-  await new Promise(r => tmpImg.onload = r);
+  // onerror + timeout: sin esto, una imagen que no decodifica dejaba el
+  // await colgado PARA SIEMPRE y el botón "Confirmar" moría en silencio.
+  const cargaOk = await new Promise(r => {
+    tmpImg.onload = () => r(true);
+    tmpImg.onerror = () => r(false);
+    setTimeout(() => r(false), 10000);
+    tmpImg.src = fotoOriginal;
+  });
+  if (!cargaOk || !tmpImg.naturalWidth) {
+    console.error('confirmarFoto: la imagen no se pudo decodificar');
+    alert(LANG==='en' ? 'Could not process this image — please try a JPG or PNG.' : 'No se pudo procesar esta imagen — prueba con un JPG o PNG.');
+    return;
+  }
 
   const _z = parseFloat(document.getElementById('zoomCtrl').value);
   const _x = parseFloat(document.getElementById('xCtrl').value);

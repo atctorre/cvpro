@@ -2188,6 +2188,39 @@ function fetchIA(url, opciones, segundos) {
     .finally(() => clearTimeout(t));
 }
 
+
+// ══════════ VERIFICACIÓN LOCAL DE CIFRAS ══════════
+// El riesgo número uno es que la IA invente métricas ("reduje costos 30%").
+// Comprobarlo con otra llamada a la IA cuesta ~45 segundos. Pero es un
+// problema NUMÉRICO, y eso se puede verificar en el navegador al instante:
+// toda cifra del CV generado tiene que existir en la fuente del candidato.
+// Si todas cuadran, nos ahorramos la llamada. Si alguna no, la hacemos.
+function verificarCifrasLocal(cv, fuente) {
+  const norm = (s) => String(s || '').replace(/[.,]/g, '');
+  const src = norm(fuente);
+
+  // Números significativos: porcentajes, montos y cantidades de 2+ dígitos.
+  // Los de 1 dígito generan demasiado ruido (fechas, listas, "1 de cada").
+  const encontrados = [...String(cv || '').matchAll(/\b\d[\d.,]*\s*%|\$\s*[\d.,]+|\b\d{2,}[\d.,]*\b/g)]
+    .map(m => norm(m[0]).replace(/[%$\s]/g, ''))
+    .filter(n => n.length >= 2);
+
+  const anioActual = new Date().getFullYear();
+  const sospechosas = [];
+  const vistas = new Set();
+
+  encontrados.forEach(n => {
+    if (vistas.has(n)) return;
+    vistas.add(n);
+    // Los años plausibles no son métricas: se validan aparte
+    const num = Number(n);
+    if (num >= 1950 && num <= anioActual + 1) return;
+    if (!src.includes(n)) sospechosas.push(n);
+  });
+
+  return sospechosas;
+}
+
 async function optimizarCVSubido(texto) {
   iniciarProgreso(); marcarPaso(1);
   // Se dispara YA, sin await: no depende del CV generado, así que corre en
@@ -2197,10 +2230,10 @@ async function optimizarCVSubido(texto) {
   const prompt = `${enIngles?'IMPORTANT: Write the ENTIRE resume in professional English.':'IMPORTANTE: Escribe todo en español profesional.'}
 Actúas como consultor de RRHH, Executive Recruiter y especialista internacional en ATS con 20+ años evaluando candidatos para procesos altamente competitivos. Tu misión: transformar este CV en un documento de nivel ÉLITE que consiga entrevistas.
 PROCESO: 1) ANALIZA profesión, nivel, años, industrias, logros, diferenciadores. 2) REESCRIBE estratégicamente.
-EXTENSIÓN OBLIGATORIA: el CV final debe llenar entre 1½ y 1½-2 páginas A4 (900-1200 palabras). Expande cada experiencia con profundidad de consultor: contexto institucional, alcance, equipos, procesos, impacto. Si el original es corto, DESARROLLA cada función con el conocimiento experto del sector — sin inventar hechos, cargos ni cifras.
+EXTENSIÓN OBLIGATORIA: el CV final debe llenar entre 1½ y 2 páginas A4 (900-1200 palabras). Expande cada experiencia con profundidad de consultor: contexto institucional, alcance, equipos, procesos, impacto. Si el original es corto, DESARROLLA cada función con el conocimiento experto del sector — sin inventar hechos, cargos ni cifras.
 REGLAS ESTRICTAS:
 - PERFIL: MÁXIMO 5 líneas / 90 palabras. Denso pero breve: quién es + años + especialización + valor diferenciador. Un perfil largo se lee peor que uno corto y potente. NUNCA excedas 90 palabras. PROHIBIDO: "responsable", "proactivo", "comprometido", "dinámico", primera persona.
-- EXPERIENCIA: CADA puesto con 4-6 bullets ricos de 15-30 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe alcance, complejidad y contexto verificables — está PROHIBIDO estimar o inferir números del promedio del sector. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
+- EXPERIENCIA: CADA puesto con 4-6 bullets de 22-35 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Empieza SIEMPRE cada bullet con el carácter "•", nunca con guiones ni asteriscos. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe alcance, complejidad y contexto verificables — está PROHIBIDO estimar o inferir números del promedio del sector. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
 - PRESERVA TODAS las secciones del original: certificaciones, membresías, investigación, publicaciones, educación continua, referencias — nada se pierde, todo se profesionaliza.
 - NUNCA inventes cargos, empresas, títulos, certificaciones ni cifras.
 - ATS: integra keywords naturales del sector detectado.
@@ -2211,14 +2244,16 @@ Puesto | Ciudad, País | email | teléfono
 
 ${enIngles?'PROFESSIONAL SUMMARY':'RESUMEN PROFESIONAL'}
 ───────────────────
-(4-5 líneas)
+(4-5 líneas · 60-90 palabras · nunca menos de 60)
 
 ${enIngles?'PROFESSIONAL EXPERIENCE':'EXPERIENCIA PROFESIONAL'}
 ───────────────────────
 Cargo | Empresa | Período
 • bullet 1
 • bullet 2
-(así por cada puesto)
+• bullet 3
+• bullet 4
+(MÍNIMO 4 bullets por puesto, siempre con "•" — repite este bloque para CADA puesto, del más reciente al más antiguo)
 
 ${enIngles?'EDUCATION':'EDUCACIÓN'}
 ─────────
@@ -2244,6 +2279,9 @@ ${enIngles?'Soft skills':'Blandas'}: ...
 ${enIngles?'Languages':'Idiomas'}: Idioma1 (nivel), Idioma2 (nivel) — TODOS los idiomas del candidato en UNA línea
 
 Sin corchetes, sin markdown, sin comentarios — solo el CV completo.
+
+RECORDATORIO FINAL (lo más importante de todo): no inventes ni una sola cifra, porcentaje, cantidad de personas, empresa, cargo, título ni certificación que no aparezca literalmente en el CV original de abajo. Si no hay números, describe alcance y complejidad. Un candidato que no puede defender un dato en la entrevista pierde el puesto — y esa es la única forma en que este CV puede hacerle daño.
+
 CV ORIGINAL:
 ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
   try {
@@ -2261,12 +2299,25 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
     // se quedaba sin nada tras 3 minutos de espera. Ahora cada pasada es
     // opcional: si falla o expira, se conserva la versión anterior.
     const _cvSeguro = cvV1;
+    // ── ¿HACE FALTA LA PASADA 2? ──
+    // Se salta solo si el CV ya está bien Y no hay cifras sin respaldo.
+    // Cuando el CV de origen es bueno, esto entrega el resultado en ~40s
+    // en vez de ~80s, sin renunciar a la garantía de veracidad.
+    const _probs1 = validarCV(cvV1);
+    const _graves = _probs1.filter(p => ['cv_corto','pocos_bullets','bullets_pobres','perfil_debil','corchetes','markdown','placeholder'].includes(p));
+    const _cifrasRaras = verificarCifrasLocal(cvV1, texto);
+    const _necesitaPasada2 = _graves.length > 0 || _cifrasRaras.length > 0;
+
+    console.log(`🔎 Diagnóstico v1: ${_graves.length ? 'problemas [' + _graves.join(', ') + ']' : 'calidad OK'} · ${_cifrasRaras.length ? 'cifras sin respaldo [' + _cifrasRaras.join(', ') + ']' : 'cifras verificadas'} → ${_necesitaPasada2 ? 'SE EJECUTA pasada 2' : 'SE SALTA pasada 2 (más rápido)'}`);
+    if (typeof ev === 'function') ev('pasada2_decision', {necesaria: _necesitaPasada2, problemas: _graves.join(','), cifras: _cifrasRaras.length});
+
     // ── PASADA 2: RECLUTADOR + ATS EN UNA SOLA LLAMADA ──
     // Antes eran dos viajes al servidor de ~25s cada uno. Hacen trabajo
     // complementario sobre el mismo texto, así que se pueden fusionar sin
     // perder calidad y ahorrando una ronda completa.
     marcarPaso(2);
     try {
+      if (!_necesitaPasada2) throw new Error('__saltar__');
       const res2 = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -2287,8 +2338,12 @@ ${cvV1.substring(0,9000)}`})
         if (typeof ev === 'function') ev('truth_check_applied', {fusionada: true});
       }
     } catch(e2) {
-      console.warn('Pasada de revisión omitida (se conserva la v1):', e2.message);
-      if (typeof ev === 'function') ev('pasada2_omitida', {error: String(e2.message).substring(0,80)});
+      if (e2.message === '__saltar__') {
+        console.log('⚡ Pasada 2 omitida: el CV ya cumple calidad y todas las cifras están respaldadas');
+      } else {
+        console.warn('Pasada de revisión omitida (se conserva la v1):', e2.message);
+        if (typeof ev === 'function') ev('pasada2_omitida', {error: String(e2.message).substring(0,80)});
+      }
     }
 
     // Veracidad y auditoría ATS van FUSIONADAS en la pasada anterior.
@@ -2466,12 +2521,21 @@ function validarCV(cv) {
   // 2. LONGITUD Y RIQUEZA
   const palabras = t.split(/\s+/).filter(Boolean).length;
   if (palabras < 350) problemas.push('cv_corto');
-  const bullets = t.split('\n').filter(l => /^\s*[•·▸▪]/.test(l));
+  // Solo contaba bullets con •·▸▪. Cuando la IA usaba "-" o "*", un CV con
+  // 6 bullets perfectos se marcaba como 'pocos_bullets' y disparaba una
+  // regeneración de 60s completamente innecesaria. Falso positivo caro.
+  const bullets = t.split('\n').filter(l => /^\s*[•·▸▪*+\-–—]\s+\S/.test(l));
   if (bullets.length < 4) problemas.push('pocos_bullets');
   const flojos = bullets.filter(b => b.split(/\s+/).length < 10).length;   // acorde a bullets de 22-35 palabras
   if (bullets.length && flojos / bullets.length > 0.4) problemas.push('bullets_pobres');
-  const mRes = t.match(/(?:RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY|PERFIL)[^\n]*\n(?:[─\-═]+\s*\n)?([\s\S]{0,900}?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n|$)/i);
-  if (!mRes || mRes[1].split(/\s+/).filter(Boolean).length < 35) problemas.push('perfil_debil');
+  // El lookahead exigía que el siguiente encabezado fuera seguido de salto
+  // de línea. Si la IA variaba el formato, el perfil "desaparecía" y se
+  // marcaba como débil sin serlo. Ahora corta ante cualquier header conocido.
+  const mRes = t.match(new RegExp(
+    '(?:RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY|PERFIL|SUMMARY)[^\\n]*\\n(?:[─\\-═]+\\s*\\n)?' +
+    '([\\s\\S]{0,1200}?)(?=\\n[ \\t]*(?:' + _HEADERS_CV + ')\\b|\\n══|$)', 'i'));
+  const palabrasPerfil = mRes ? mRes[1].split(/\s+/).filter(Boolean).length : 0;
+  if (palabrasPerfil < 30) problemas.push('perfil_debil');
 
   // 3. CLICHÉS que sobrevivieron
   if (/\b(responsable de|encargado de|me encargu[eé]|fui responsable|proactivo|me considero|ganas de aprender)\b/i.test(t)) problemas.push('cliches');

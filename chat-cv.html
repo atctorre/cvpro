@@ -3223,22 +3223,44 @@ function cargarSDKPayPal() {
 }
 
 async function registrarPago(ordenId, plan, monto, detalles) {
+  const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+  const payload = {
+    orden_id: String(ordenId),
+    codigo_cv: sessionStorage.getItem('cvpro_codigo') || '',
+    plan: plan,
+    monto: parseFloat(monto),
+    moneda: 'USD',
+    email: (detalles && detalles.email) || '',
+    nombre: ((detalles && detalles.nombre) || '').trim(),
+    estado: 'completado',
+    entorno: PP_ENTORNO
+  };
   try {
-    const SB_U = (typeof SUPABASE_URL !== 'undefined') ? SUPABASE_URL : (typeof SUPABASE_URL_C !== 'undefined' ? SUPABASE_URL_C : _SB_U);
-    const SB_K = (typeof SUPABASE_KEY !== 'undefined') ? SUPABASE_KEY : (typeof SUPABASE_KEY_C !== 'undefined' ? SUPABASE_KEY_C : _SB_K);
-    await fetch(`${SB_U}/rest/v1/pagos`, {
+    const res = await fetch(`${SB_U}/rest/v1/pagos`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'resolution=ignore-duplicates'},
-      body: JSON.stringify({
-        orden_id: ordenId,
-        codigo_cv: sessionStorage.getItem('cvpro_codigo') || '',
-        plan, monto: parseFloat(monto), moneda: 'USD',
-        email: (detalles && detalles.email) || '',
-        nombre: (detalles && detalles.nombre) || '',
-        estado: 'completado', entorno: PP_ENTORNO
-      })
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_K,
+        'Authorization': `Bearer ${SB_K}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
     });
-  } catch(e) { console.warn('No se pudo registrar el pago:', e.message); }
+    if (res.ok) {
+      console.log('✅ Pago registrado en Supabase:', payload.orden_id);
+    } else {
+      const txt = await res.text();
+      console.error('❌ Supabase rechazó el pago:', res.status, txt);
+      // Guardar localmente para no perder el registro
+      const pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]');
+      pend.push(payload); localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(pend));
+    }
+  } catch(e) {
+    console.error('❌ Error de red al registrar pago:', e.message);
+    const pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]');
+    pend.push(payload); localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(pend));
+  }
 }
 
 async function abrirMuroPago(planSugerido, alPagar) {

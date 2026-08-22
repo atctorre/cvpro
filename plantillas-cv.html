@@ -709,7 +709,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
     <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
     <button class="btn-carta" id="btnCartaOtro" style="background:#6b4fa8" onclick="generarCarta((_idiomaActual||LANG)==='en'?'es':'en')">✉️ Carta en el otro idioma</button>
-    <button class="btn-carta" id="btnTraducir" style="background:#2563eb" onclick="traducirCV()">🌎 Traducir al inglés</button>
+    <button class="btn-carta" id="btnTraducir" style="background:#2563eb" onclick="traducirCV()">🇺🇸 Convertir a Resume <span style="opacity:.75;font-weight:400">(formato EE.UU.)</span></button>
     <button class="btn-volver" onclick="volverSelector()">← Cambiar plantilla</button>
   </div>
   <div id="cvFinal"></div>
@@ -1266,6 +1266,7 @@ function volverSelector() {
 // ══════════ TRADUCCIÓN DEL CV AL OTRO IDIOMA ══════════
 let _cvOriginalIdioma = null;   // copia del CV antes de traducir
 let _idiomaActual = null;       // 'es' | 'en'
+let _fotoRespaldo = null;       // foto guardada al convertir a resume EE.UU.
 
 async function traducirCV() {
   ev('translate_clicked');
@@ -1292,7 +1293,14 @@ async function traducirCV() {
   if (!cupo.permitido) { avisarCupoAgotado('traduccion', cupo); return; }
 
   btn.disabled = true;
-  btn.textContent = LANG === 'en' ? '⏳ Translating...' : '⏳ Traduciendo...';
+  btn.textContent = hacia === 'en'
+    ? '⏳ Convirtiendo a formato EE.UU...'
+    : (LANG === 'en' ? '⏳ Switching to Spanish...' : '⏳ Volviendo al español...');
+
+  // Respaldo de la foto: si vuelve al español, la recupera
+  if (hacia === 'en' && !_fotoRespaldo && (typeof fotoAjustada !== 'undefined')) {
+    _fotoRespaldo = {ajustada: fotoAjustada, original: fotoOriginal};
+  }
 
   // Guardar el original la primera vez
   if (!_cvOriginalIdioma) {
@@ -1301,10 +1309,29 @@ async function traducirCV() {
   }
 
   const nombreIdioma = hacia === 'en' ? 'inglés' : 'español';
-  const prompt = `Eres traductor profesional especializado en CVs y reclutamiento.
 
-Traduce al ${nombreIdioma} el siguiente CV en formato JSON.
+  // Hacia EE.UU. no basta traducir: un resume tiene convenciones propias y un
+  // CV latinoamericano traducido literalmente se descarta igual. Estas reglas
+  // convierten el documento, no solo el idioma.
+  const REGLAS_USA = hacia === 'en' ? `
 
+CONVERSIÓN A RESUME ESTADOUNIDENSE (no es solo una traducción):
+- El documento destino es un RESUME de EE.UU., no un CV latinoamericano en inglés.
+- ELIMINA por completo, si aparecen: número de identidad (DUI, NUE, CURP, cédula), edad, fecha de nacimiento, estado civil, nacionalidad, género y dirección postal completa. En EE.UU. incluirlos hace que RR.HH. descarte el archivo por riesgo legal de discriminación.
+- En el campo "pais" deja solo ciudad y país (ej: "San Salvador, El Salvador"). Nunca la dirección exacta.
+- El resumen debe ser un "Professional Summary" de 3-4 líneas, directo y orientado a resultados. Sin florituras.
+- Los bullets empiezan con verbo de acción del registro estadounidense: Led, Managed, Built, Reduced, Launched, Coordinated, Supervised, Developed, Implemented.
+- Puesto actual en presente; puestos anteriores en pasado.
+- Sin pronombres personales ("I", "my").
+- Inglés americano: organization, program, analyze, center.
+- Si una institución o credencial extranjera no sería reconocible para un lector estadounidense, añade una aclaración muy breve entre paréntesis, sin exagerar su valor.
+- No inventes nada nuevo: solo reorganiza y adapta lo que ya existe.
+` : '';
+
+  const prompt = `Eres un Executive Recruiter estadounidense especializado en adaptar perfiles internacionales al mercado de EE.UU.
+
+${hacia === 'en' ? 'CONVIERTE a un resume estadounidense' : 'Traduce al español'} el siguiente CV en formato JSON.
+${REGLAS_USA}
 REGLAS ESTRICTAS:
 - Devuelve ÚNICAMENTE el JSON traducido. Sin explicaciones, sin markdown, sin \`\`\`.
 - Conserva EXACTAMENTE la misma estructura y los mismos nombres de campo.
@@ -1342,12 +1369,36 @@ ${JSON.stringify(D)}`;
 
     Object.assign(D, trad);
     _idiomaActual = hacia;
+
+    // La conversión a resume estadounidense debe EJECUTARSE, no solo prometerse:
+    // quitamos la foto y cualquier dato personal protegido que sobreviva.
+    if (hacia === 'en') {
+      fotoAjustada = null;
+      fotoOriginal = null;
+      // Números de identidad nacionales que a veces viajan en el campo de contacto
+      const limpiarId = (s) => String(s || '')
+        .replace(/\b(?:DUI|NUE|CURP|C[ÉE]DULA|RFC|CUIL|CUIT|RUT|NIT|DNI)\s*[:#-]?\s*[\w.-]+/gi, '')
+        .replace(/\s*[|·,;\-]\s*$/, '')      // separador huérfano al final
+        .replace(/^\s*[|·,;\-]\s*/, '')
+        .replace(/\s{2,}/g, ' ').trim();
+      D.puesto = limpiarId(D.puesto);
+      D.pais = limpiarId(D.pais);
+      if (D.linkedin) D.linkedin = String(D.linkedin).trim();
+      mostrarToast('🇺🇸 Foto y datos personales eliminados — convención de EE.UU.');
+    } else if (_fotoRespaldo) {
+      // Al volver al español recuperamos la foto que el usuario había ajustado
+      fotoAjustada = _fotoRespaldo.ajustada;
+      fotoOriginal = _fotoRespaldo.original;
+    }
+
     aplicarEtiquetasIdioma(hacia);
     sessionStorage.setItem('cvData', JSON.stringify(D));
     mostrarCV();
     const _uso = await consumirUso('traduccion');   // traducción aplicada → se descuenta
     ev('translate_completed', {hacia, plan: _uso.plan, usados: _uso.usados});
-    mostrarToast(hacia === 'en' ? '✅ Resume translated to English' : '✅ CV traducido al español');
+    mostrarToast(hacia === 'en'
+      ? '✅ Resume listo — adaptado al formato de EE.UU. (sin foto ni datos personales)'
+      : '✅ CV en español restaurado');
   } catch(e) {
     alert((LANG==='en' ? 'Could not translate: ' : 'No se pudo traducir: ') + (e.message||''));
     ev('translate_failed', {error: e.message});
@@ -1367,16 +1418,23 @@ function aplicarEtiquetasIdioma(l) {
 }
 
 function actualizarBotonTraducir() {
-  const bc = document.getElementById('btnCartaOtro');
-  if (bc) {
-    const otro = (_idiomaActual || LANG) === 'en' ? 'es' : 'en';
-    bc.textContent = otro === 'en' ? '✉️ Cover letter in English' : '✉️ Carta en español';
-  }
-  const btn = document.getElementById('btnTraducir');
-  if (!btn) return;
   const actual = _idiomaActual || LANG;
   const destino = actual === 'en' ? 'es' : 'en';
-  btn.textContent = destino === 'en' ? '🌎 Traducir al inglés' : '🌎 Traducir al español';
+
+  const bc = document.getElementById('btnCartaOtro');
+  if (bc) bc.textContent = destino === 'en' ? '✉️ Cover letter in English' : '✉️ Carta en español';
+
+  const btn = document.getElementById('btnTraducir');
+  if (!btn) return;
+  // "Traducir al inglés" vendía de menos y prometía mal: lo que hacemos es
+  // CONVERTIR el CV al formato de resume estadounidense (sin foto, sin datos
+  // personales protegidos, cargos adaptados). El botón debe decirlo.
+  btn.innerHTML = destino === 'en'
+    ? '🇺🇸 Convertir a Resume <span style="opacity:.75;font-weight:400">(formato EE.UU.)</span>'
+    : '🌎 Volver a CV en español';
+  btn.title = destino === 'en'
+    ? 'Adapta tu CV a las convenciones de Estados Unidos: sin foto, sin datos personales y con los cargos traducidos al mercado americano'
+    : 'Regresa a la versión en español de tu CV';
 }
 
 function mostrarToast(msg) {

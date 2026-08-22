@@ -1405,8 +1405,8 @@ async function mostrarGenerando() {
     catch(ep) { console.error('Parser falló:', ep); cvData = {nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}; }
     sessionStorage.setItem('cvData', JSON.stringify(cvData));
     sessionStorage.setItem('cvTexto', cv);
-    await guardarEnSupabase();
-    guardarCVConCodigo(cv);
+    await guardarCVConCodigo(cv);   // crea el código único (crypto) en sessionStorage
+    await guardarEnSupabase();      // reutiliza ese mismo código, no genera otro
     mostrarResultado(cv);
     localStorage.removeItem('cvpro_chat16');
   } catch(e) {
@@ -1662,15 +1662,27 @@ async function recuperarCVPorCodigo(codigo) {
     if (rows && rows.message) {
       console.error('RPC error:', rows);
       // Fallback: intento directo por si la función aún no está en caché
-      const res2 = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados?codigo=eq.${encodeURIComponent(String(codigo).trim())}&select=*&limit=1`, {
-        headers: {'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}
+      const res2 = await fetch(`${SUPABASE_URL}/rest/v1/rpc/recuperar_cv_any`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+        body: JSON.stringify({p_codigo: String(codigo).trim()})
       });
       rows = await res2.json();
     }
+    // Si la RPC principal no encontró nada, buscar también en la tabla antigua
+    if (Array.isArray(rows) && !rows.length) {
+      const res3 = await fetch(`${SUPABASE_URL}/rest/v1/rpc/recuperar_cv_any`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+        body: JSON.stringify({p_codigo: String(codigo).trim()})
+      });
+      const r3 = await res3.json();
+      if (Array.isArray(r3) && r3.length) rows = r3;
+    }
     if (!Array.isArray(rows) || !rows.length) {
       alert(LANG==='en'
-        ? 'Code not found. Make sure it is the 6-digit code from your resume or email.'
-        : 'Código no encontrado. Verifica que sea el código de 6 dígitos de tu CV o de tu email.');
+        ? 'Code not found. Check the code shown when your resume was saved, or the one in your email.'
+        : 'Código no encontrado. Revisa el código que te mostramos al guardar tu CV, o el que te llegó por email.');
       return false;
     }
     const r = rows[0];
@@ -2853,8 +2865,17 @@ function construirCVData() {
 async function guardarEnSupabase() {
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
-  // Código de recuperación de 6 caracteres
-  const codigo = Math.random().toString(36).substring(2,8).toUpperCase();
+  // Reutiliza el código criptográfico ya creado por guardarCVConCodigo().
+  // Antes generaba uno DISTINTO aquí, lo que producía dos códigos por CV
+  // y hacía que el que se mostraba al usuario no existiera en cvs_guardados.
+  let codigo = sessionStorage.getItem('cvpro_codigo');
+  if (!codigo) {
+    const _b = new Uint32Array(2);
+    (window.crypto || window.msCrypto).getRandomValues(_b);
+    const _A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+    codigo = Array.from({length:8}, (_,i) => _A[(_b[i%2] >>> (i*4)) % _A.length]).join('');
+    sessionStorage.setItem('cvpro_codigo', codigo);
+  }
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
       method:'POST',
@@ -2870,6 +2891,7 @@ async function guardarEnSupabase() {
         cv_data:JSON.stringify(construirCVData())
       })
     });
+    sessionStorage.setItem('cvpro_codigo', codigo);
     localStorage.setItem('cvpro_codigo', codigo);
     // Avisar al usuario de su código
     setTimeout(() => {
@@ -2883,7 +2905,7 @@ async function guardarEnSupabase() {
 
 function mostrarRecuperarHeader() {
   const codigo = prompt(LANG==='en' ? 'Enter your recovery code:' : 'Ingresa tu código de recuperación:');
-  if (codigo && /^\d{6}$/.test(codigo.trim())) {
+  if (codigo && /^[0-9A-Z]{6,8}$/i.test(codigo.trim())) {
     recuperarCVPorCodigo(codigo.trim());
   } else if (codigo) {
     alert(LANG==='en' ? 'Invalid code format.' : 'Formato de código inválido.');
@@ -2897,11 +2919,11 @@ function mostrarRecuperar() {
 }
 
 async function ejecutarRecuperacion() {
-  const codigo = document.getElementById('codigoInput').value.trim();
-  if (codigo.length < 6) return;
+  const codigo = document.getElementById('codigoInput').value.trim().toUpperCase();
+  if (!/^[0-9A-Z]{6,8}$/.test(codigo)) return;
   const err = document.getElementById('recuperarError');
   err.style.display = 'none';
-  const ok = await recuperarConCodigo(codigo);
+  const ok = await recuperarCVPorCodigo(codigo);   // ruta segura vía RPC (antes leía la tabla 'clientes' directo)
   if (ok) {
     // Ir directo a plantillas con el CV cargado
     window.location.href = 'plantillas-cv.html';

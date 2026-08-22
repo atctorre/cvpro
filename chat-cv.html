@@ -1523,10 +1523,10 @@ ${cvTexto.substring(0,5500)}`})
       });
       const dr = await rr.json();
       if (dr.cv && dr.cv.trim().length > cvTexto.length * 0.7) {
-        return await pasadaVeracidad(await pasadaATS(dr.cv.trim(), enIngles), _fuenteRespuestas(), enIngles);
+        return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(dr.cv.trim(), enIngles), _fuenteRespuestas(), enIngles), _fuenteRespuestas(), enIngles);
       }
     } catch(e2) {}
-    return await pasadaVeracidad(await pasadaATS(cvTexto, enIngles), _fuenteRespuestas(), enIngles);
+    return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(cvTexto, enIngles), _fuenteRespuestas(), enIngles), _fuenteRespuestas(), enIngles);
 
   } catch(e) {
     console.error('❌ Error en generarConIA:', e.message);
@@ -1729,7 +1729,25 @@ GENERA EL CV ADAPTADO AHORA:`;
     const data = await res.json();
     if (!data.cv || data.cv.trim().length < 300) throw new Error('respuesta corta');
 
-    cvGenerado = data.cv.trim();
+    let cvAd = data.cv.trim();
+    const _enIng = LANG === 'en';
+    // Filtro 2: revisión de reclutador
+    try {
+      renderMsgAI(_enIng ? '🔍 Elite recruiter review pass...' : '🔍 Pasada de revisión de reclutador élite...');
+      const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+        body: JSON.stringify({prompt: `${_enIng?'Respond ENTIRELY in English.':'Responde en español.'}
+Eres Executive Recruiter élite revisando un CV adaptado a una vacante. CRITICA y MEJORA: elimina bullets débiles, refuerza los que respondan a la oferta, asegura que el perfil venda en 5 segundos. VERIFICA que ninguna cifra sea inventada. NO agregues hechos nuevos. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
+CV:
+${cvAd.substring(0,5500)}`})
+      });
+      const dr = await rr.json();
+      if (dr.cv && dr.cv.trim().length > cvAd.length * 0.7) cvAd = dr.cv.trim();
+    } catch(e2) {}
+    // Filtros 3 y 4
+    cvAd = await pasadaATS(cvAd, _enIng);
+    cvAd = await generarConValidacion(async () => await pasadaVeracidad(cvAd, cvOriginalBackup || cvGenerado, _enIng), cvOriginalBackup || cvGenerado, _enIng);
+    cvGenerado = cvAd;
     sessionStorage.setItem('cvTexto', cvGenerado);
     const cvData = construirCVData();
     sessionStorage.setItem('cvData', JSON.stringify(cvData));
@@ -1831,7 +1849,7 @@ ${cvV1.substring(0,5500)}`})
       if (d2.cv && d2.cv.trim().length > cvV1.length * 0.7) cvV1 = d2.cv.trim();
     } catch(e2) { /* usar v1 si falla */ }
     cvV1 = await pasadaATS(cvV1, enIngles);
-    cvV1 = await pasadaVeracidad(cvV1, texto, enIngles);
+    cvV1 = await generarConValidacion(async () => await pasadaVeracidad(cvV1, texto, enIngles), texto, enIngles);
     cvGenerado = cvV1;
     const m = cvGenerado.match(/^([A-ZÁÉÍÓÚÑ ]{5,60})$/m);
     datos.nombre = m ? m[1].trim() : (datos.nombre||'');
@@ -1913,6 +1931,102 @@ ${cvTxt.substring(0,6000)}`})
     if (d.cv && d.cv.trim().length > cvTxt.length * 0.75) return d.cv.trim();
   } catch(e) { console.warn('Pasada ATS omitida:', e.message); }
   return cvTxt;
+}
+
+
+// ══ VALIDADORES LOCALES (instantáneos, sin API) ══
+function validarCV(cv) {
+  const problemas = [];
+  const t = String(cv || '');
+
+  // 1. FORMATO: restos que nunca deben llegar al cliente
+  if (/\[[^\]]{2,60}\]/.test(t)) problemas.push('corchetes');
+  if (/\*\*|^#{1,6}\s|^\s*[-–—_]{3,}\s*$/m.test(t)) problemas.push('markdown');
+  if (/placeholder|lorem ipsum|\bXXX\b|tu nombre aquí|your name here/i.test(t)) problemas.push('placeholder');
+  if (/\bundefined\b|\bnull\b|\bNaN\b/.test(t)) problemas.push('valores_vacios');
+
+  // 2. LONGITUD Y RIQUEZA
+  const palabras = t.split(/\s+/).filter(Boolean).length;
+  if (palabras < 350) problemas.push('cv_corto');
+  const bullets = t.split('\n').filter(l => /^\s*[•·▸▪]/.test(l));
+  if (bullets.length < 4) problemas.push('pocos_bullets');
+  const flojos = bullets.filter(b => b.split(/\s+/).length < 12).length;
+  if (bullets.length && flojos / bullets.length > 0.4) problemas.push('bullets_pobres');
+  const mRes = t.match(/(?:RESUMEN PROFESIONAL|PROFESSIONAL SUMMARY|PERFIL)[^\n]*\n(?:[─\-═]+\s*\n)?([\s\S]{0,900}?)(?=\n[A-ZÁÉÍÓÚ\s]{4,}\n|$)/i);
+  if (!mRes || mRes[1].split(/\s+/).filter(Boolean).length < 35) problemas.push('perfil_debil');
+
+  // 3. CLICHÉS que sobrevivieron
+  if (/\b(responsable de|encargado de|me encargu[eé]|fui responsable|proactivo|me considero|ganas de aprender)\b/i.test(t)) problemas.push('cliches');
+
+  // 4. FECHAS imposibles
+  const anioActual = new Date().getFullYear();
+  const anios = (t.match(/\b(19|20)\d{2}\b/g) || []).map(Number);
+  if (anios.some(a => a > anioActual)) problemas.push('fecha_futura');
+
+  return problemas;
+}
+
+function limpiarFormatoCV(cv) {
+  let t = String(cv || '');
+  t = t.replace(/\*\*/g, '')
+       .replace(/^#{1,6}\s*/gm, '')
+       .replace(/\[([^\]]{2,60})\]/g, '$1')
+       .replace(/\b(undefined|null|NaN)\b/g, '')
+       .replace(/[ \t]+$/gm, '')
+       .replace(/\n{3,}/g, '\n\n');
+  // Fechas futuras → Actualidad
+  const anioActual = new Date().getFullYear();
+  t = t.replace(/\b(19|20)\d{2}\b/g, (m) => Number(m) > anioActual ? (LANG === 'en' ? 'Present' : 'Actualidad') : m);
+  return t.trim();
+}
+
+function validarContacto(d) {
+  const cap = (s) => String(s||'').trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+  if (d.nombre) d.nombre = cap(d.nombre);
+  if (d.email && !/^[\w.+-]+@[\w.-]+\.\w{2,}$/.test(d.email)) d.email = '';
+  if (d.telefono) {
+    const tel = String(d.telefono).replace(/[^\d+\s()-]/g, '').trim();
+    d.telefono = tel.replace(/\D/g,'').length >= 7 ? tel : '';
+  }
+  // Quitar duplicados en habilidades e idiomas
+  const dedup = (arr, key) => {
+    const vistos = new Set();
+    return (arr||[]).filter(x => {
+      const k = String(x[key]||x||'').toLowerCase().trim();
+      if (!k || vistos.has(k)) return false;
+      vistos.add(k); return true;
+    });
+  };
+  d.habilidades = dedup(d.habilidades, 'nombre');
+  d.idiomas = dedup(d.idiomas, 'nombre');
+  return d;
+}
+
+async function generarConValidacion(fnGenerar, fuente, enIng) {
+  let cv = await fnGenerar();
+  let probs = validarCV(cv);
+  const graves = probs.filter(p => ['cv_corto','pocos_bullets','bullets_pobres','perfil_debil'].includes(p));
+  if (graves.length) {
+    console.warn('⚠️ CV pobre, regenerando:', graves);
+    renderMsgAI(enIng ? '⚡ Reinforcing content depth...' : '⚡ Reforzando la profundidad del contenido...');
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+        body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
+Este CV es demasiado pobre para un candidato profesional. Problemas: ${graves.join(', ')}.
+EXPANDE cada bullet a 25-40 palabras con contexto, alcance y resultado. El perfil debe tener 4-5 líneas densas. CV final de 1000-1500 palabras.
+NO inventes hechos ni cifras nuevas — desarrolla lo que ya está. Mismo formato y headers exactos. Devuelve SOLO el CV completo.
+CV:
+${String(cv).substring(0,6000)}`})
+      });
+      const d = await res.json();
+      if (d.cv && d.cv.trim().length > String(cv).length) cv = d.cv.trim();
+    } catch(e) { console.warn('Refuerzo omitido:', e.message); }
+  }
+  cv = limpiarFormatoCV(cv);
+  const restantes = validarCV(cv);
+  if (restantes.length) console.warn('Validación final — avisos:', restantes);
+  return cv;
 }
 
 // ── RESULTADO ──
@@ -2498,7 +2612,7 @@ function construirCVData() {
     }).filter(Boolean).slice(0,5);
   }
 
-  return {
+  return validarContacto({
     nombre: datos.nombre || '',
     email,
     telefono,
@@ -2511,7 +2625,7 @@ function construirCVData() {
     habilidades: todasHabs.length ? todasHabs : [{ nombre: 'Por definir', nivel: 70 }],
     idiomas: idiomas.length ? idiomas : [{ nombre: 'Español', nivel: 'Nativo' }],
     logros
-  };
+  });
 }
 
 async function guardarEnSupabase() {

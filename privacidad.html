@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Privacidad y Términos | CVPro</title>
 <meta name="description" content="Cómo CVPro trata tus datos personales al crear o analizar tu CV: qué guardamos, por cuánto tiempo y cómo eliminarlo.">
 <link rel="canonical" href="https://getcvpro.com/privacidad.html">
@@ -22,6 +22,51 @@ li{margin-bottom:5px}
 a{color:#FFD000}
 .box{background:#141414;border:1px solid #222;border-radius:12px;padding:16px 20px;margin:16px 0}
 .sw{display:inline-block;margin-bottom:20px;font-size:0.85rem}
+
+/* ══ COMPATIBILIDAD CROSS-BROWSER / iOS ══ */
+/* Safari necesita el prefijo -webkit- para backdrop-filter */
+[style*="backdrop-filter"], .locked::before { -webkit-backdrop-filter: blur(3px); }
+
+/* iOS: la barra del navegador rompe 100vh — usar dvh con fallback */
+@supports (height: 100dvh) {
+  .main-layout, .lang-selector, #muroPago, #confirmaPago, #regresoOverlay, #vacanteOverlay, #cartaOverlay { min-height: 100dvh; }
+}
+
+/* iOS: evitar zoom automático al enfocar inputs (requiere >=16px) */
+input, textarea, select, .chat-input, #soporteInput { font-size: 16px !important; }
+@media (min-width: 768px) {
+  input, textarea, select, .chat-input, #soporteInput { font-size: 15px !important; }
+}
+
+/* Notch del iPhone: respetar zonas seguras */
+body { padding-bottom: env(safe-area-inset-bottom, 0); }
+#testerBadge, #planBadge, .soporte-btn, [style*="position:fixed"][style*="bottom"] {
+  margin-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Scroll suave con inercia en iOS */
+.chat-messages, .soporte-msgs, #muroPago, #confirmaPago, .cv-preview, #cartaBody, #cartaFinal {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Touch targets mínimos de 44px (Apple HIG / WCAG 2.2) */
+@media (pointer: coarse) {
+  button, .btn-pdf, .plan-btn, a.cta, .nav-cta, .sqopt, .tpl-card, .chip, .opt-btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+
+/* Evitar doble-tap zoom en botones (iOS) */
+button, a, .tpl-card { touch-action: manipulation; }
+
+/* Firefox: scrollbar consistente */
+* { scrollbar-width: thin; }
+
+/* Evitar overflow horizontal en móviles pequeños (320px) */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, canvas, video { max-width: 100%; height: auto; }
+
 </style>
 </head>
 <body>

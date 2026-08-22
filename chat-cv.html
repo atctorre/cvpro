@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Crear mi CV | CVPro</title>
 <meta name="description" content="Crea tu CV profesional con IA en minutos. Solo responde 14 preguntas y descarga tu CV listo para conseguir entrevistas.">
 <meta property="og:title" content="Crear CV con IA | CVPro">
@@ -248,6 +248,51 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 .onb-dot{width:6px;height:6px;border-radius:50%;background:#222;transition:all 0.3s}
 .onb-dot.act{background:var(--yellow);width:18px;border-radius:3px}
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #FFD000;outline-offset:2px}/*a11y-focus*/
+
+/* ══ COMPATIBILIDAD CROSS-BROWSER / iOS ══ */
+/* Safari necesita el prefijo -webkit- para backdrop-filter */
+[style*="backdrop-filter"], .locked::before { -webkit-backdrop-filter: blur(3px); }
+
+/* iOS: la barra del navegador rompe 100vh — usar dvh con fallback */
+@supports (height: 100dvh) {
+  .main-layout, .lang-selector, #muroPago, #confirmaPago, #regresoOverlay, #vacanteOverlay, #cartaOverlay { min-height: 100dvh; }
+}
+
+/* iOS: evitar zoom automático al enfocar inputs (requiere >=16px) */
+input, textarea, select, .chat-input, #soporteInput { font-size: 16px !important; }
+@media (min-width: 768px) {
+  input, textarea, select, .chat-input, #soporteInput { font-size: 15px !important; }
+}
+
+/* Notch del iPhone: respetar zonas seguras */
+body { padding-bottom: env(safe-area-inset-bottom, 0); }
+#testerBadge, #planBadge, .soporte-btn, [style*="position:fixed"][style*="bottom"] {
+  margin-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Scroll suave con inercia en iOS */
+.chat-messages, .soporte-msgs, #muroPago, #confirmaPago, .cv-preview, #cartaBody, #cartaFinal {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Touch targets mínimos de 44px (Apple HIG / WCAG 2.2) */
+@media (pointer: coarse) {
+  button, .btn-pdf, .plan-btn, a.cta, .nav-cta, .sqopt, .tpl-card, .chip, .opt-btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+
+/* Evitar doble-tap zoom en botones (iOS) */
+button, a, .tpl-card { touch-action: manipulation; }
+
+/* Firefox: scrollbar consistente */
+* { scrollbar-width: thin; }
+
+/* Evitar overflow horizontal en móviles pequeños (320px) */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, canvas, video { max-width: 100%; height: auto; }
+
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0a0a'/><text y='72' x='50' font-size='60' font-family='sans-serif' font-weight='bold' fill='%23FFD000' text-anchor='middle'>C</text></svg>">
 <meta name="theme-color" content="#0a0a0a">

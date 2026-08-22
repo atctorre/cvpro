@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /plantillas-cv.html
+Sitemap: https://atctorre.github.io/cvpro/sitemap.xml

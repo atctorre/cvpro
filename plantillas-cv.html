@@ -554,6 +554,12 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .cv-m10 .tg{display:inline-block;background:#fdf0ea;color:#5c1f3d;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:600;border:1px solid #c9a96e}
 
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #FFD000;outline-offset:2px}/*a11y-focus*/
+
+/* ── Control de saltos de página en PDF ── */
+.jb, .sk, .li, .bl, .edu-item { page-break-inside: avoid; break-inside: avoid; }
+.st { page-break-after: avoid; break-after: avoid; }
+.hdr { page-break-inside: avoid; }
+
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0a0a'/><text y='72' x='50' font-size='60' font-family='sans-serif' font-weight='bold' fill='%23FFD000' text-anchor='middle'>C</text></svg>">
 <meta name="theme-color" content="#0a0a0a">
@@ -1263,7 +1269,7 @@ async function descargarATS() {
         columns: [
           {text: `${j.titulo||''}${j.empresa?' — '+j.empresa:''}`, fontSize: 10, bold: true, color: '#1a1a1a', width: '*'},
           {text: j.periodo||'', fontSize: 9, color: '#777', width: 'auto'}
-        ], margin: [0,2,0,3]
+        ], margin: [0,2,0,3], unbreakable: true
       });
       content.push({
         ul: (j.bullets||[]).map(b => ({text: b, fontSize: 9.5, color: '#333', lineHeight: 1.3})),
@@ -1290,7 +1296,8 @@ async function descargarATS() {
   const nombre = (d.nombre||'CV').replace(/\s+/g,'_');
   pdfMake.createPdf({
     pageSize: 'A4',
-    pageMargins: [42, 42, 42, 42],
+    pageMargins: [42, 42, 42, 50],
+    footer: (cur, tot) => tot > 1 ? {text: `${cur} / ${tot}`, alignment:'center', fontSize:8, color:'#999', margin:[0,12,0,0]} : null,
     content,
     defaultStyle: {font: 'Roboto'}
   }).download(LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);
@@ -1308,8 +1315,9 @@ async function descargarPDF() {
     margin:0,
     filename:`CV_${nombre}.pdf`,
     image:{type:'jpeg',quality:0.98},
-    html2canvas:{scale:2,useCORS:true,logging:false},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    html2canvas:{scale:2,useCORS:true,logging:false,scrollY:0,windowWidth:794},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+    pagebreak:{mode:['css','legacy'], avoid:['.jb','.sk','.li','.edu-item','.bl']}
   }).from(el).save().then(() => toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas'));
 }
 

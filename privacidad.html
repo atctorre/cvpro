@@ -29,8 +29,21 @@ a{color:#FFD000}
 
 /* iOS: la barra del navegador rompe 100vh — usar dvh con fallback */
 @supports (height: 100dvh) {
-  .main-layout, .lang-selector, #muroPago, #confirmaPago, #regresoOverlay, #vacanteOverlay, #cartaOverlay { min-height: 100dvh; }
+  /* Solo overlays a pantalla completa. .main-layout es un hijo flex que ya
+     recibe su altura del body: forzarle 100dvh lo hacía más alto que el
+     espacio disponible y empujaba la barra de escribir fuera de la pantalla. */
+  .lang-selector, #muroPago, #confirmaPago, #regresoOverlay, #vacanteOverlay, #cartaOverlay { min-height: 100dvh; }
+  html, body { height: 100dvh; }
 }
+/* ══ Badge de tester discreto: se encoge tras unos segundos ══ */
+#testerBadge { transition: all .4s ease; }
+#testerBadge.mini {
+  padding: 6px 8px !important;
+  font-size: 0.95rem !important;
+  opacity: .55;
+}
+#testerBadge.mini:hover { opacity: 1; }
+
 
 /* iOS: evitar zoom automático al enfocar inputs (requiere >=16px) */
 input, textarea, select, .chat-input, #soporteInput { font-size: 16px !important; }

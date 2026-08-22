@@ -567,8 +567,21 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 
 /* iOS: la barra del navegador rompe 100vh — usar dvh con fallback */
 @supports (height: 100dvh) {
-  .main-layout, .lang-selector, #muroPago, #confirmaPago, #regresoOverlay, #vacanteOverlay, #cartaOverlay { min-height: 100dvh; }
+  /* Solo overlays a pantalla completa. .main-layout es un hijo flex que ya
+     recibe su altura del body: forzarle 100dvh lo hacía más alto que el
+     espacio disponible y empujaba la barra de escribir fuera de la pantalla. */
+  .lang-selector, #muroPago, #confirmaPago, #regresoOverlay, #vacanteOverlay, #cartaOverlay { min-height: 100dvh; }
+  html, body { height: 100dvh; }
 }
+/* ══ Badge de tester discreto: se encoge tras unos segundos ══ */
+#testerBadge { transition: all .4s ease; }
+#testerBadge.mini {
+  padding: 6px 8px !important;
+  font-size: 0.95rem !important;
+  opacity: .55;
+}
+#testerBadge.mini:hover { opacity: 1; }
+
 
 /* iOS: evitar zoom automático al enfocar inputs (requiere >=16px) */
 input, textarea, select, .chat-input, #soporteInput { font-size: 16px !important; }
@@ -1495,6 +1508,14 @@ function mostrarBadgeTester() {
   b.style.cssText = 'position:fixed;bottom:14px;left:14px;z-index:99999;background:#1baf7a;color:#fff;padding:7px 14px;border-radius:50px;font-size:0.72rem;font-weight:700;font-family:system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer';
   b.textContent = '🧪 MODO TESTER — acceso completo';
   b.title = 'Clic para salir del modo tester';
+  // Se encoge a un icono tras 5 s para no tapar la barra de escribir.
+  // Al pasar el ratón vuelve a mostrarse completo.
+  setTimeout(() => {
+    b.classList.add('mini');
+    b.textContent = '🧪';
+    b.onmouseenter = () => { b.classList.remove('mini'); b.textContent = '🧪 MODO TESTER — acceso completo'; };
+    b.onmouseleave = () => { b.classList.add('mini'); b.textContent = '🧪'; };
+  }, 5000);
   b.onclick = () => {
     if (confirm('¿Salir del modo tester? Volverás a ver la web como un cliente normal.')) {
       localStorage.removeItem('cvpro_tester');

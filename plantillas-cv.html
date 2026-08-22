@@ -755,14 +755,8 @@ async function generarCarta() {
     });
     const data = await res.json();
     if (data.cv && data.cv.trim().length > 100) {
-      cartaGenerada = data.cv.trim()
-        .replace(/^#{1,6}\s*/gm, '')
-        .replace(/\*\*/g, '')
-        .replace(/\*/g, '')
-        .replace(/^\s*[-–—]{3,}\s*$/gm, '')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-      document.getElementById('cartaFinal').textContent = cartaGenerada;
+      cartaGenerada = limpiarCarta(data.cv);
+      document.getElementById('cartaFinal').textContent = limpiarCarta(cartaGenerada);
       document.getElementById('cartaWrap').style.display = 'block';
       document.getElementById('cartaWrap').scrollIntoView({behavior:'smooth'});
       btn.textContent = LANG==='en' ? '✉️ View cover letter' : '✉️ Ver carta de presentación';
@@ -777,9 +771,25 @@ async function generarCarta() {
 }
 
 
+
+function limpiarCarta(t) {
+  return String(t || '')
+    .replace(/\r/g, '')
+    .replace(/^\s*#{1,6}\s*.*$/gm, '')          // títulos markdown completos
+    .replace(/^\s*[-–—_*]{3,}\s*$/gm, '')       // separadores --- ___ ***
+    .replace(/\*\*/g, '')                        // negritas
+    .replace(/(^|\s)\*(\S)/g, '$1$2')            // asteriscos sueltos
+    .replace(/\*/g, '')
+    .replace(/^\s*>\s?/gm, '')                   // citas
+    .replace(/`/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .split('\n').map(l => l.replace(/\s+$/,'')).join('\n')
+    .trim();
+}
+
 function descargarCartaWord() {
   const el = document.getElementById('cartaFinal');
-  const texto = (el ? el.textContent : cartaGenerada) || '';
+  const texto = limpiarCarta((el ? el.textContent : cartaGenerada) || '');
   if (!texto.trim()) return;
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
   const parrafos = texto.split(/\n{1,}/).map(l => l.trim())
@@ -801,6 +811,7 @@ function descargarCartaWord() {
 function descargarCartaPDF() {
   const el = document.getElementById('cartaFinal');
   if (!el || !cartaGenerada) return;
+  el.textContent = limpiarCarta(el.textContent);
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
   html2pdf().set({
     margin:[18,18,18,18],
@@ -1159,7 +1170,7 @@ async function generarCarta() {
     });
     const data = await res.json();
     if (!data.cv || data.cv.length < 200) throw new Error('short');
-    mostrarCarta(data.cv.trim());
+    mostrarCarta(limpiarCarta(data.cv));
   } catch(e) {
     alert((LANG==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
   }
@@ -1190,7 +1201,7 @@ function descargarCartaPDF() {
   const body = document.getElementById('cartaBody');
   const wrap = document.createElement('div');
   wrap.style.cssText = 'width:794px;padding:60px 70px;background:#fff;font-family:Georgia,serif;font-size:0.92rem;line-height:1.9;color:#222;white-space:pre-wrap';
-  wrap.textContent = body.textContent;
+  wrap.textContent = limpiarCarta(body.textContent);
   document.body.appendChild(wrap);
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
   html2pdf().set({margin:0,filename:LANG==='en'?`Cover_Letter_${nombre}.pdf`:`Carta_${nombre}.pdf`,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4'}}).from(wrap).save().then(()=>wrap.remove());

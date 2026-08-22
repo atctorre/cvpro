@@ -670,8 +670,10 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <!-- ── CV RESULTADO ── -->
 <div class="cv-result" id="cvResult">
   <div class="cv-actions">
-    <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar PDF</button>
-    <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
+    <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar mi CV
+      <span style="display:block;font-size:0.68rem;font-weight:400;opacity:.75;margin-top:2px">Para enviar por email o imprimir</span></button>
+    <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión para portales de empleo
+      <span style="display:block;font-size:0.68rem;font-weight:400;opacity:.85;margin-top:2px">Optimizada para filtros automáticos (ATS)</span></button>
     <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
     <button class="btn-volver" onclick="volverSelector()">← Cambiar plantilla</button>
   </div>
@@ -957,6 +959,10 @@ if (LANG === 'en') {
     if (el.children.length > 0) return;
     const t = el.textContent.trim();
     const map = {
+      '📄 Descargar mi CV': '📄 Download my resume',
+      'Para enviar por email o imprimir': 'To email or print',
+      '📋 Versión para portales de empleo': '📋 Version for job portals',
+      'Optimizada para filtros automáticos (ATS)': 'Optimized for automated filters (ATS)',
       '📄 Descargar PDF': '📄 Download PDF',
       '← Volver': '← Back',
       '← Cambiar plantilla': '← Change template',
@@ -985,7 +991,8 @@ function renderTemplates() {
   const grid = document.getElementById('templatesGrid');
   grid.innerHTML = TPLS[gender].map(t => `
     <div class="tpl-card ${t.id===selTpl?'selected':''}" onclick="seleccionar('${t.id}')">
-      <span class="tpl-selected-badge">✓ Seleccionada</span>
+      <span class="tpl-selected-badge">✓ ${LANG==='en'?'Selected':'Seleccionada'}</span>
+      ${t.id===(gender==='h'?'h1':'m1') ? `<span style="position:absolute;top:8px;left:8px;background:#1baf7a;color:#fff;font-size:.6rem;padding:3px 8px;border-radius:50px;font-weight:700;z-index:2">${LANG==='en'?'★ RECOMMENDED':'★ RECOMENDADA'}</span>` : ''}
       <div class="tpl-preview">
         <div class="mini" id="mini-${t.id}">${buildCV(t.id)}</div>
       </div>

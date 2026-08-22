@@ -568,9 +568,9 @@ const PASOS = [
   {
     key: 'idioma_cv',
     preg: (d) => LANG==='en'
-      ? `One more thing, ${d.nombre.split(' ')[0]} 🌍\n\nIn which language do you want your resume written?\n\nThis is independent from the interface language — you can browse in English and get your resume in Spanish, or the other way around.`
-      : `Una cosa más, ${d.nombre.split(' ')[0]} 🌍\n\n¿En qué idioma quieres que se escriba tu CV?\n\nEsto es independiente del idioma de la web — puedes navegar en español y recibir tu CV en inglés, o al revés.`,
-    hint: () => LANG==='en' ? 'Pick the language of the job market you are applying to' : 'Elige el idioma del mercado laboral al que aplicas',
+      ? `One more thing 🌍\n\nIn which language should your resume be written?`
+      : `Una cosa más 🌍\n\n¿En qué idioma quieres que se escriba tu CV?`,
+    hint: () => LANG==='en' ? 'Independent from the website language — pick your target job market' : 'Independiente del idioma de la web — elige el mercado al que aplicas',
     placeholder: () => LANG==='en' ? 'Spanish or English' : 'Español o inglés',
     opts: () => LANG==='en'
       ? ['🇺🇸 In English','🇪🇸 In Spanish']
@@ -579,9 +579,9 @@ const PASOS = [
   {
     key: 'info_extra',
     preg: (d) => LANG==='en'
-      ? `Last question, ${d.nombre.split(' ')[0]}! 🎉\n\nAnything else for your resume?\n• Availability (immediate, 2 weeks...)\n• Willing to relocate or travel\n• Driver's license / own vehicle\n• LinkedIn or portfolio\n• Awards, volunteering, references\n\nIf nothing else, type "done".`
-      : `¡Última pregunta, ${d.nombre.split(' ')[0]}! 🎉\n\n¿Algo más que quieras incluir en tu CV?\n• Disponibilidad (inmediata, 2 semanas...)\n• Movilidad o disposición a viajar\n• Licencia de conducir / vehículo propio\n• LinkedIn o portafolio\n• Premios, voluntariado, referencias\n\nSi no tienes nada más, escribe "nada más".`,
-    hint: () => LANG==='en' ? 'Any extra detail that adds value' : 'Cualquier detalle extra que sume a tu perfil',
+      ? `Almost done, ${d.nombre.split(' ')[0]}! 🎉\n\nAnything else worth adding? (availability, driver's license, LinkedIn, awards...)\n\nIf not, just type "done".`
+      : `¡Ya casi, ${d.nombre.split(' ')[0]}! 🎉\n\n¿Algo más que sume a tu CV? (disponibilidad, licencia, LinkedIn, premios...)\n\nSi no, escribe "nada más".`,
+    hint: () => LANG==='en' ? 'Availability · Relocation · License · LinkedIn · Awards · Volunteering' : 'Disponibilidad · Movilidad · Licencia · LinkedIn · Premios · Voluntariado',
     placeholder: () => LANG==='en' ? 'E.g.: Immediate availability, type B license, references upon request...' : 'Ej: Disponibilidad inmediata, licencia tipo B, referencias disponibles...',
     multiline: true
   }

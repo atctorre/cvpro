@@ -1678,7 +1678,7 @@ async function asegurarCodigoCV() {
   try {
     const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
     const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-    await fetch(`${SB_U}/rest/v1/cvs_guardados`, {
+    const _r = await fetch(`${SB_U}/rest/v1/cvs_guardados`, {
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
       body: JSON.stringify({
@@ -1688,6 +1688,7 @@ async function asegurarCodigoCV() {
         expira_en: new Date(Date.now() + 90*86400000).toISOString()
       })
     });
+    if (!_r.ok) console.error('⚠️ CV no guardado antes del pago:', _r.status, await _r.text());
   } catch(e) { console.warn('No se pudo guardar el CV antes del pago:', e.message); }
   sessionStorage.setItem('cvpro_codigo', cod);
   return cod;

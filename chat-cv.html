@@ -1669,7 +1669,7 @@ async function recuperarCVPorCodigo(codigo) {
       });
       rows = await res2.json();
     }
-    // Si la RPC principal no encontró nada, buscar también en la tabla antigua
+    // Reintento con la RPC tolerante (normaliza mayúsculas y espacios)
     if (Array.isArray(rows) && !rows.length) {
       const res3 = await fetch(`${SUPABASE_URL}/rest/v1/rpc/recuperar_cv_any`, {
         method: 'POST',
@@ -1716,11 +1716,35 @@ async function guardarCVConCodigo(cv) {
       sessionStorage.setItem('cvpro_codigo', codigo);
     }
     const cvData = construirCVData();
-    await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados`, {
+    const _resGuardado = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados?on_conflict=codigo`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'resolution=merge-duplicates'},
       body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:LANG, plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
     });
+    // Solo avisamos del código si REALMENTE quedó guardado.
+    // Antes se mostraba siempre, incluso cuando el guardado fallaba.
+    let _guardadoOk = _resGuardado.ok;
+    if (!_guardadoOk) {
+      const _err = await _resGuardado.text();
+      console.warn('Upsert falló (' + _resGuardado.status + '), reintentando como insert simple:', _err);
+      // Plan B: si no existe el índice único sobre 'codigo', el upsert falla.
+      // Un insert normal sí funciona y evita perder el CV del usuario.
+      const _r2 = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'},
+        body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:LANG, plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
+      });
+      _guardadoOk = _r2.ok;
+      if (!_guardadoOk) console.error('❌ El CV no se guardó:', _r2.status, await _r2.text());
+    }
+    if (!_guardadoOk) {
+      renderMsgAI(LANG==='en'
+        ? '⚠️ Your resume was generated but we could not save it. Download it now — the recovery code is not available.'
+        : '⚠️ Tu CV se generó pero no pudimos guardarlo. Descárgalo ahora — el código de recuperación no está disponible.');
+      return;
+    }
+    avisarCodigoAlUsuario();
+
     // Enviar el código por email si tenemos uno válido
     const emailCliente = (datos.email_tel || D_EMAIL_FALLBACK()).match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
     if (emailCliente) {
@@ -2863,43 +2887,40 @@ function construirCVData() {
 }
 
 async function guardarEnSupabase() {
+  // ⚠️ La tabla 'clientes' NO tiene columnas codigo / cv_texto / cv_data.
+  // El insert anterior las enviaba, PostgREST rechazaba la fila completa (400)
+  // y el error moría en un catch vacío — pero igual se le mostraba un código
+  // al usuario que nunca existió. Ahora esta tabla se usa solo como registro
+  // de leads, con las columnas que realmente existen.
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
-  // Reutiliza el código criptográfico ya creado por guardarCVConCodigo().
-  // Antes generaba uno DISTINTO aquí, lo que producía dos códigos por CV
-  // y hacía que el que se mostraba al usuario no existiera en cvs_guardados.
-  let codigo = sessionStorage.getItem('cvpro_codigo');
-  if (!codigo) {
-    const _b = new Uint32Array(2);
-    (window.crypto || window.msCrypto).getRandomValues(_b);
-    const _A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-    codigo = Array.from({length:8}, (_,i) => _A[(_b[i%2] >>> (i*4)) % _A.length]).join('');
-    sessionStorage.setItem('cvpro_codigo', codigo);
-  }
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'},
       body: JSON.stringify({
-        nombre:datos.nombre,
-        email:emailM?emailM[0]:'sin-email',
-        pais:datos.pais,
-        puesto:datos.puesto,
-        plan:'basico',
-        codigo:codigo,
-        cv_texto:cvGenerado||'',
-        cv_data:JSON.stringify(construirCVData())
+        nombre: datos.nombre || '',
+        email:  emailM ? emailM[0] : 'sin-email',
+        pais:   datos.pais || '',
+        puesto: datos.puesto || '',
+        plan:   localStorage.getItem('cvpro_plan') || 'basico'
       })
     });
-    sessionStorage.setItem('cvpro_codigo', codigo);
-    localStorage.setItem('cvpro_codigo', codigo);
-    // Avisar al usuario de su código
-    setTimeout(() => {
-      renderMsgAI(LANG==='en'
-        ? `💾 Your resume is saved! Recovery code: *${codigo}*\n\nWrite it down — you can come back anytime, enter your code and re-download or edit your resume without starting over.`
-        : `💾 ¡Tu CV quedó guardado! Código de recuperación: *${codigo}*\n\nAnótalo — puedes volver cuando quieras, ingresar tu código y volver a descargar o editar tu CV sin empezar de cero.`);
-    }, 1200);
-  } catch(e) {}
+    if (!res.ok) console.warn('Registro de lead falló:', res.status, await res.text());
+  } catch(e) {
+    console.warn('Registro de lead falló:', e.message);
+  }
+}
+
+// El aviso del código lo da guardarCVConCodigo(), que es quien SÍ lo guarda.
+function avisarCodigoAlUsuario() {
+  const codigo = sessionStorage.getItem('cvpro_codigo');
+  if (!codigo) return;
+  setTimeout(() => {
+    renderMsgAI(LANG==='en'
+      ? `💾 Your resume is saved! Recovery code: *${codigo}*\n\nWrite it down — you can come back anytime, enter your code and re-download or edit your resume without starting over.`
+      : `💾 ¡Tu CV quedó guardado! Código de recuperación: *${codigo}*\n\nAnótalo — puedes volver cuando quieras, ingresar tu código y volver a descargar o editar tu CV sin empezar de cero.`);
+  }, 1200);
 }
 
 
@@ -2933,21 +2954,7 @@ async function ejecutarRecuperacion() {
 }
 
 // ── RECUPERAR CV CON CÓDIGO ──
-async function recuperarConCodigo(codigo) {
-  try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/clientes?codigo=eq.${encodeURIComponent(codigo.trim().toUpperCase())}&select=cv_texto,cv_data,nombre&limit=1`, {
-      headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`}
-    });
-    const rows = await res.json();
-    if (rows && rows[0] && rows[0].cv_texto) {
-      cvGenerado = rows[0].cv_texto;
-      sessionStorage.setItem('cvTexto', rows[0].cv_texto);
-      if (rows[0].cv_data) sessionStorage.setItem('cvData', rows[0].cv_data);
-      return true;
-    }
-  } catch(e) {}
-  return false;
-}
+// [eliminada: recuperarConCodigo() consultaba clientes.codigo — esa columna NO existe]
 
 // ── ONBOARDING ──
 const ONB_PASOS_ES = [
@@ -3521,7 +3528,7 @@ async function asegurarCodigoCV() {
   try {
     const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
     const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-    await fetch(`${SB_U}/rest/v1/cvs_guardados`, {
+    const _r = await fetch(`${SB_U}/rest/v1/cvs_guardados`, {
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
       body: JSON.stringify({
@@ -3531,6 +3538,7 @@ async function asegurarCodigoCV() {
         expira_en: new Date(Date.now() + 90*86400000).toISOString()
       })
     });
+    if (!_r.ok) console.error('⚠️ CV no guardado antes del pago:', _r.status, await _r.text());
   } catch(e) { console.warn('No se pudo guardar el CV antes del pago:', e.message); }
   sessionStorage.setItem('cvpro_codigo', cod);
   return cod;

@@ -472,17 +472,21 @@ const PASOS = [
   {
     key: 'exp1',
     preg: () => LANG==='en'
-      ? `Let's talk about your main work experience 💼\n\nWhere do/did you work, what's your job title, and for how long?`
-      : `Hablemos de tu experiencia laboral principal 💼\n\n¿Dónde trabajas o trabajaste, cuál es tu cargo y por cuánto tiempo?`,
+      ? `Let's talk about your experience 💼\n\nWhere do/did you work, what's your job title, and for how long?\n\nNo work experience yet? No problem — type "no experience" and we'll build your resume around your education, projects and skills.`
+      : `Hablemos de tu experiencia 💼\n\n¿Dónde trabajas o trabajaste, cuál es tu cargo y por cuánto tiempo?\n\n¿Aún sin experiencia laboral? Sin problema — escribe "sin experiencia" y construimos tu CV con tu formación, proyectos y habilidades.`,
     hint: () => LANG==='en' ? 'Format: Company — Title — Period' : 'Formato: Empresa — Cargo — Período',
     placeholder: () => LANG==='en' ? 'E.g.: US Air Force — Helicopter Pilot — 2018 to 2026' : 'Ej: Fuerza Aérea Salvadoreña — Piloto de Helicóptero — 2018 a 2026',
     opts: () => LANG==='en'
-      ? ['US Air Force — Aviator Pilot — 2018 to 2026','TechCorp — Senior Developer — 2020 to present','National Hospital — Head Nurse — 2019 to 2024']
-      : ['Fuerza Aérea Salvadoreña — Piloto Aviador — 2018 a 2026','TechCorp Colombia — Desarrollador Senior — 2020 a presente','Hospital Nacional — Enfermera Jefe — 2019 a 2024']
+      ? ['TechCorp — Senior Developer — 2020 to present','National Hospital — Head Nurse — 2019 to 2024','🎓 No work experience yet']
+      : ['TechCorp — Desarrollador Senior — 2020 a presente','Hospital Nacional — Enfermera Jefe — 2019 a 2024','🎓 Aún sin experiencia laboral']
   },
   {
     key: 'logros1',
     preg: (d) => {
+      const _sinExp = /sin experiencia|no experience|ninguna|no tengo|primer empleo/i.test(d.exp1||'');
+      if (_sinExp) return LANG==='en'
+        ? `Perfect — many great resumes start here 🎓\n\nTell me about your academic projects, internships, volunteering or courses:\n• What did you build, study or organize?\n• Any team work, presentations or real results?\n• Tools or methods you learned to use`
+        : `Perfecto — muchos CVs excelentes empiezan aquí 🎓\n\nCuéntame sobre tus proyectos académicos, prácticas, voluntariados o cursos:\n• ¿Qué construiste, estudiaste u organizaste?\n• ¿Trabajo en equipo, presentaciones, resultados reales?\n• Herramientas o métodos que aprendiste a usar`;
       const emp = d.exp1?.split(/[—\-|]/)[0]?.trim() || (LANG==='en'?'that job':'ese trabajo');
       const p = (d.puesto||'').toLowerCase();
       if (LANG==='en') {
@@ -581,7 +585,7 @@ const PASOS = [
     preg: (d) => LANG==='en'
       ? `Almost done, ${d.nombre.split(' ')[0]}! 🎉\n\nAnything else worth adding? (availability, driver's license, LinkedIn, awards...)\n\nIf not, just type "done".`
       : `¡Ya casi, ${d.nombre.split(' ')[0]}! 🎉\n\n¿Algo más que sume a tu CV? (disponibilidad, licencia, LinkedIn, premios...)\n\nSi no, escribe "nada más".`,
-    hint: () => LANG==='en' ? 'Availability · Relocation · License · LinkedIn · Awards · Volunteering' : 'Disponibilidad · Movilidad · Licencia · LinkedIn · Premios · Voluntariado',
+    hint: () => LANG==='en' ? 'Availability · License · LinkedIn · Awards · Volunteering · Career break reason' : 'Disponibilidad · Licencia · LinkedIn · Premios · Voluntariado · Motivo de pausa laboral',
     placeholder: () => LANG==='en' ? 'E.g.: Immediate availability, type B license, references upon request...' : 'Ej: Disponibilidad inmediata, licencia tipo B, referencias disponibles...',
     multiline: true
   }
@@ -1525,6 +1529,7 @@ REGLAS (estándar de reclutador ejecutivo élite):
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
 5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
+5a. VACÍOS LABORALES: si detectas un período sin empleo (maternidad, cuidado familiar, salud, estudio, desempleo), NO lo escondas ni inventes trabajos para taparlo. Si el candidato explicó el motivo, redáctalo con dignidad y en una línea (ej: "Pausa profesional por cuidado familiar, con formación continua en X"). Si no lo explicó, simplemente no lo menciones: enfoca el CV en la experiencia y competencias que sí aportó. Un vacío bien manejado no descalifica; una mentira sí.
 5b. SI EL CANDIDATO TIENE POCA O NINGUNA EXPERIENCIA LABORAL: no dejes secciones vacías ni inventes empleos. Construye el CV alrededor de formación académica, proyectos de estudio, prácticas, voluntariado, cursos, competencias técnicas adquiridas y capacidad demostrada. Encabeza con el perfil y la educación en lugar de la experiencia. Un CV honesto de recién graduado bien redactado supera a uno con experiencia fabricada. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
 7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis
@@ -1594,7 +1599,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     console.log('✅ CV generado correctamente:', cvTexto.substring(0,150));
     // ── PASADA 2: AUTOCRÍTICA ──
     try {
-      renderMsgAI(LANG==='en' ? '🔍 Elite recruiter review pass...' : '🔍 Pasada de revisión de reclutador élite...');
+      renderMsgAI(LANG==='en' ? '🔍 A recruiter is reviewing every line...' : '🔍 Un reclutador está revisando cada línea...');
       const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -1831,7 +1836,7 @@ GENERA EL CV ADAPTADO AHORA:`;
     const _enIng = LANG === 'en';
     // Filtro 2: revisión de reclutador
     try {
-      renderMsgAI(_enIng ? '🔍 Elite recruiter review pass...' : '🔍 Pasada de revisión de reclutador élite...');
+      renderMsgAI(_enIng ? '🔍 A recruiter is reviewing every line...' : '🔍 Un reclutador está revisando cada línea...');
       const rr = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${_enIng?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -1980,7 +1985,7 @@ function _fuenteRespuestas() {
 async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng) {
   if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
   try {
-    renderMsgAI(enIng ? '🛡️ Truth check — verifying every fact against your data...' : '🛡️ Verificación de veracidad — contrastando cada dato con tu información...');
+    renderMsgAI(enIng ? '🛡️ Verifying every fact comes from you...' : '🛡️ Verificando que cada dato provenga de ti...');
     const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
@@ -2010,7 +2015,7 @@ async function pasadaATS(cvTxt, enIng) {
   const FECHA_ACTUAL = `${['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][_h.getMonth()]} ${_h.getFullYear()}`;
   const ANIO_ACTUAL = _h.getFullYear();
   try {
-    renderMsgAI(enIng ? '🎯 Final ATS audit — keywords, structure and consistency...' : '🎯 Auditoría ATS final — keywords, estructura y coherencia...');
+    renderMsgAI(enIng ? '🎯 Checking it passes automated filters...' : '🎯 Comprobando que pase los filtros automáticos...');
     const res = await fetch(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}

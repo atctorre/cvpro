@@ -1340,7 +1340,9 @@ async function mostrarGenerando() {
   try {
     const cv = await generarConIA();
     cvGenerado = cv;
-    const cvData = construirCVData();
+    let cvData;
+    try { cvData = construirCVData(); }
+    catch(ep) { console.error('Parser falló:', ep); cvData = {nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}; }
     sessionStorage.setItem('cvData', JSON.stringify(cvData));
     sessionStorage.setItem('cvTexto', cv);
     await guardarEnSupabase();
@@ -1830,8 +1832,13 @@ ${cvV1.substring(0,5500)}`})
     const m = cvGenerado.match(/^([A-ZÁÉÍÓÚÑ ]{5,60})$/m);
     datos.nombre = m ? m[1].trim() : (datos.nombre||'');
     sessionStorage.setItem('cvTexto', cvGenerado);
-    sessionStorage.setItem('cvData', JSON.stringify(construirCVData()));
-    guardarCVConCodigo(cvGenerado);
+    try {
+      sessionStorage.setItem('cvData', JSON.stringify(construirCVData()));
+    } catch(ep) {
+      console.error('Parser falló:', ep);
+      sessionStorage.setItem('cvData', JSON.stringify({nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}));
+    }
+    try { guardarCVConCodigo(cvGenerado); } catch(eg) { console.warn(eg); }
     mostrarResultado(cvGenerado);
   } catch(e) {
     renderMsgAI(LANG==='en' ? '❌ Optimization failed. Wait 30s and reload.' : '❌ Falló la optimización. Espera 30s y recarga.');
@@ -2304,7 +2311,7 @@ function construirCVData() {
   }
 
   // ── EDUCACIÓN ──
-  const educacion = [];
+  let educacion = [];
   const eduRaw = extraerSeccion(/(?:EDUCACIÓN|EDUCATION)[^\n]*\n[─\-═]+\s*\n([\s\S]*?)(?=\nCERTIFICAC|\nHABILIDADES|\nINFORMACIÓN|\n══)/i);
 
   if (eduRaw) {
@@ -2385,7 +2392,7 @@ function construirCVData() {
   if (idiomasM) idiomasTexto = idiomasM[1];
   else idiomasTexto = datos.idiomas_nivel || 'Español nativo';
 
-  const idiomas = idiomasTexto.split(/[,;]/).map(id => {
+  let idiomas = idiomasTexto.split(/[,;]/).map(id => {
     const clean = id.trim().replace(/^[\-•]\s*/, '');
     const partes = clean.split(/\s+/);
     const nombre = partes[0] || '';

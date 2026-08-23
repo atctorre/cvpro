@@ -1429,6 +1429,9 @@ CONVERSIÓN A RESUME ESTADOUNIDENSE (no es solo una traducción):
 - SKILLS equilibradas: combina hard skills (herramientas, software, técnicas concretas del oficio) con las soft skills que el CV original respalde. Las hard skills van PRIMERO — son las que pesca el ATS. No abras la lista con "Teamwork" ni "Communication".
 - SIN EXPERIENCIA LABORAL: si el candidato es recién graduado o no tiene empleos formales, construye el resume sobre educación, proyectos académicos, prácticas, voluntariado, cursos y habilidades transferibles, con esas secciones arriba. Una página. Jamás inventes empleos para llenar el documento.
 - SECCIONES ADICIONALES cuando aporten: Languages (con nivel), Certifications, Volunteer Experience, Projects. "Hobbies/Interests" solo si el CV original las trae y el candidato tiene poca experiencia.
+- NADA EN MAYÚSCULAS SOSTENIDAS dentro del texto: en el mundo anglosajón un bloque en mayúsculas se lee como gritar y cuesta más leerlo. El nombre va en formato normal (John Smith, no JOHN SMITH) y los bullets en minúscula normal. Los CVs latinoamericanos suelen traer el nombre y frases enteras en mayúsculas: conviértelos. (Los encabezados de sección cortos tipo "PROFESSIONAL EXPERIENCE" sí son convención aceptada.)
+- SIN CURSIVA para bloques de texto: dificulta la lectura y algunos parsers ATS la extraen peor.
+- EL RESUME TIENE UN SOLO TRABAJO: conseguir la entrevista, no contar toda la vida laboral. Incluye lo relevante para el puesto y omite lo que no aporta. Deja material para que el candidato tenga algo que contar en la entrevista.
 
 NOTA SOBRE EE.UU. vs REINO UNIDO (este documento es para EE.UU.):
 Las convenciones NO son iguales y mezclarlas delata el documento. Este resume sigue la convención estadounidense: sin foto, sin datos personales protegidos, sin sección References, "Professional Summary" y "Professional Experience", bullets breves orientados a resultado, 1 página, tono directo. (En Reino Unido se usaría "Personal Profile", "Employment History", "References available upon request" es aceptable, hasta 2 páginas y un registro más formal y descriptivo.) NO mezcles ambos registros: un recruiter estadounidense encuentra el CV británico demasiado modesto y difícil de evaluar; un recruiter británico encuentra el resume estadounidense lleno de superlativos y le resulta pretencioso.
@@ -1749,7 +1752,10 @@ function descargarCartaPDF() {
   const nombre = normalizarTipografia(D.nombre || 'Carta').replace(/\s+/g, '_');
   try {
     pdfMake.createPdf({
-      pageSize: 'A4',
+      // EE.UU. y Canadá usan US Letter (8.5x11"), no A4. Un documento en A4
+      // enviado a un empleador estadounidense imprime descuadrado y delata
+      // que viene de fuera. El idioma del documento decide el tamaño.
+      pageSize: (LANG === 'en' ? 'LETTER' : 'A4'),
       pageMargins: [64, 64, 64, 64],
       content,
       defaultStyle: { font: 'Roboto' }
@@ -1882,7 +1888,8 @@ async function descargarATS() {
 
   const nombre = (d.nombre||'CV').replace(/\s+/g,'_');
   pdfMake.createPdf({
-    pageSize: 'A4',
+    // US Letter para el mercado estadounidense, A4 para el resto (ver carta)
+    pageSize: (LANG === 'en' ? 'LETTER' : 'A4'),
     pageMargins: [42, 42, 42, 50],
     footer: (cur, tot) => tot > 1 ? {text: sinLigaduras(`${cur} / ${tot}`), alignment:'center', fontSize:8, color:'#999', margin:[0,12,0,0]} : null,
     content,
@@ -1940,7 +1947,8 @@ async function descargarPDF() {
         }
       }
     },
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+    // 'letter' (215.9 x 279.4 mm) para EE.UU., 'a4' (210 x 297 mm) para el resto
+    jsPDF:{unit:'mm',format:(LANG === 'en' ? 'letter' : 'a4'),orientation:'portrait',compress:true},
     pagebreak:{mode:['css','legacy'], avoid:['.jb','.sk','.li','.edu-item','.bl']}
   }).from(el).save()
     .then(() => {

@@ -1429,6 +1429,7 @@ ${REGLAS_USA}
 REGLAS ESTRICTAS:
 - Devuelve ÚNICAMENTE el JSON traducido. Sin explicaciones, sin markdown, sin \`\`\`.
 - Conserva EXACTAMENTE la misma estructura y los mismos nombres de campo.
+- LOS NOMBRES DE CAMPO QUEDAN EN ESPAÑOL TAL CUAL: "nombre", "puesto", "pais", "resumen", "experiencia", "titulo", "empresa", "periodo", "bullets", "educacion", "institucion", "año", "habilidades", "idiomas", "nivel", "logros". Traducir una CLAVE (p. ej. "experiencia" → "experience") ROMPE el programa que procesa tu respuesta y el usuario pierde la conversión. Solo se traducen los VALORES.
 - NO traduzcas: nombres de personas, nombres de empresas, ciudades, países, URLs, emails ni teléfonos.
 - SÍ traduce: puesto, resumen, títulos de cargo, bullets de logros, títulos académicos, nombres de habilidades e idiomas.
 - Adapta los títulos de cargo al uso real del mercado destino (ej: "Jefe de Ventas" → "Sales Manager", no traducción literal).
@@ -1460,7 +1461,47 @@ ${JSON.stringify(D)}`;
     if (ini < 0 || fin < 0) throw new Error('respuesta sin JSON');
 
     const trad = JSON.parse(txt.slice(ini, fin+1));
-    if (!trad.nombre || !Array.isArray(trad.experiencia)) throw new Error('estructura incompleta');
+
+    // ── NORMALIZADOR DE CLAVES ──
+    // Al convertir a resume, la IA a veces traduce también los NOMBRES de
+    // campo (experiencia→experience, empresa→company) aunque el prompt lo
+    // prohíba. El validador no los encontraba y tiraba "estructura
+    // incompleta" con una conversión perfectamente usable. Traducimos las
+    // claves de vuelta antes de validar.
+    const MAPA = {name:'nombre', full_name:'nombre', role:'puesto', position:'puesto', job_title:'puesto', country:'pais', location:'pais', summary:'resumen', profile:'resumen', professional_summary:'resumen', experience:'experiencia', work_experience:'experiencia', education:'educacion', skills:'habilidades', languages:'idiomas', achievements:'logros', accomplishments:'logros', phone:'telefono'};
+    Object.keys(MAPA).forEach(k => {
+      if (trad[k] !== undefined && trad[MAPA[k]] === undefined) { trad[MAPA[k]] = trad[k]; delete trad[k]; }
+    });
+    if (Array.isArray(trad.experiencia)) trad.experiencia.forEach(j => {
+      if (!j || typeof j !== 'object') return;
+      if (j.title !== undefined && j.titulo === undefined) j.titulo = j.title;
+      if (j.job_title !== undefined && j.titulo === undefined) j.titulo = j.job_title;
+      if (j.company !== undefined && j.empresa === undefined) j.empresa = j.company;
+      if (j.period !== undefined && j.periodo === undefined) j.periodo = j.period;
+      if (j.dates !== undefined && j.periodo === undefined) j.periodo = j.dates;
+      if (j.highlights !== undefined && j.bullets === undefined) j.bullets = j.highlights;
+    });
+    if (Array.isArray(trad.educacion)) trad.educacion.forEach(e => {
+      if (!e || typeof e !== 'object') return;
+      if (e.degree !== undefined && e.titulo === undefined) e.titulo = e.degree;
+      if (e.title !== undefined && e.titulo === undefined) e.titulo = e.title;
+      if (e.institution !== undefined && e.institucion === undefined) e.institucion = e.institution;
+      if (e.year !== undefined && e['año'] === undefined) e['año'] = e.year;
+    });
+    if (Array.isArray(trad.habilidades)) trad.habilidades = trad.habilidades.map(s =>
+      typeof s === 'string' ? {nombre:s, nivel:70}
+      : (s && s.name !== undefined && s.nombre === undefined ? {nombre:s.name, nivel:(s.level ?? s.nivel ?? 70)} : s));
+    if (Array.isArray(trad.idiomas)) trad.idiomas = trad.idiomas.map(l =>
+      typeof l === 'string' ? {nombre:l, nivel:''}
+      : (l && l.name !== undefined && l.nombre === undefined ? {nombre:l.name, nivel:(l.level ?? l.nivel ?? '')} : l));
+
+    if (!trad.nombre || !Array.isArray(trad.experiencia)) {
+      // Dejar la evidencia en consola: sin esto, "estructura incompleta" no
+      // dice QUÉ devolvió la IA y el bug es imposible de diagnosticar.
+      console.error('Conversión inválida. Claves recibidas:', Object.keys(trad).join(', '));
+      console.error('Primeros 600 chars de la respuesta:', txt.substring(0, 600));
+      throw new Error('estructura incompleta');
+    }
 
     Object.assign(D, trad);
     limpiarPlaceholdersCV(D);   // la conversión puede traer sus propios placeholders
@@ -1829,12 +1870,16 @@ async function descargarPDF() {
   if (!el) { _unlock('pdf'); return; }
   const nombre = (D.nombre||'CV').replace(/\s+/g,'_');
 
-  // El CV mide 794px de ancho fijo. Si la ventana está scrolleada o el
-  // contenedor lo recorta, html2canvas capturaba desplazado y el PDF salía
-  // cortado por la izquierda. Llevamos el scroll a 0 y normalizamos el
-  // documento clonado antes de capturar.
+  // El CV mide 794px de ancho fijo. El bug de los lados cortados: con
+  // windowWidth:1000 el contenedor centraba el CV dentro del viewport del
+  // clon (desfase de ~103px) y las opciones x:0/scrollX:0 fuerzan la captura
+  // desde el borde del VIEWPORT, no del elemento — ese desfase se comía un
+  // lado del documento. Solución: el viewport del clon mide EXACTAMENTE lo
+  // que mide el CV, así el centrado no puede desplazar nada.
   const _sx = window.scrollX, _sy = window.scrollY;
   window.scrollTo(0, 0);
+  const _w = el.offsetWidth || 794;
+  const _h = el.scrollHeight;
 
   html2pdf().set({
     margin:0,
@@ -1844,7 +1889,8 @@ async function descargarPDF() {
       scale:2, useCORS:true, logging:false,
       backgroundColor:'#ffffff',
       scrollX:0, scrollY:0, x:0, y:0,
-      windowWidth:1000, windowHeight:Math.max(el.scrollHeight + 80, 1123),
+      width:_w, height:_h,
+      windowWidth:_w, windowHeight:Math.max(_h + 80, 1123),
       onclone: (doc) => {
         doc.documentElement.style.overflow = 'visible';
         doc.documentElement.style.maxWidth = 'none';
@@ -1856,9 +1902,13 @@ async function descargarPDF() {
         if (res) { res.style.maxWidth = 'none'; res.style.padding = '0'; res.style.margin = '0'; }
         const acc = doc.querySelector('.cv-actions');
         if (acc) acc.style.display = 'none';
-        // El CV debe quedar pegado al origen del lienzo
+        // El CV debe quedar pegado al origen del lienzo, sin centrado del padre
         const cv = doc.getElementById('cvFinal');
         if (cv) { cv.style.margin = '0'; cv.style.padding = '0'; }
+        if (cv && cv.firstElementChild) {
+          cv.firstElementChild.style.margin = '0';
+          cv.firstElementChild.style.transform = 'none';
+        }
       }
     },
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},

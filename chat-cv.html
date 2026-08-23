@@ -371,7 +371,26 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <div class="nav-info">
     <div class="tiempo-wrap">⏱ ~<span id="tiempoRestante">10</span> min</div>
     <span class="nav-step" id="navStep">Pregunta <strong id="stepNum">1</strong> de <span id="totalSteps">14</span></span>
-    <span class="nav-reset" onclick="mostrarRecuperarHeader()" role="button" tabindex="0" aria-label="Recuperar CV con código" id="navRecuperar" style="margin-right:14px">🔑</span><span class="nav-reset" onclick="reiniciar()" id="navReset">Reiniciar</span>
+    <span class="nav-reset nav-ayuda" onclick="toggleSoporte()" role="button" tabindex="0" aria-label="Preguntas frecuentes y ayuda" id="navAyuda" style="margin-right:14px">💬</span><span class="nav-reset" onclick="mostrarRecuperarHeader()" role="button" tabindex="0" aria-label="Recuperar CV con código" id="navRecuperar" style="margin-right:14px">🔑</span><span class="nav-reset" onclick="reiniciar()" id="navReset" aria-label="Reiniciar el chat" title="Reiniciar">Reiniciar</span>
+    <script>
+    // En pantallas angostas "Reiniciar" ocupa ~50px que congestionan el
+    // header y hacían que los iconos se montaran sobre el contador.
+    // En ≤480px se vuelve ↺ (mismo clic, mismo aria-label). El texto
+    // largo vive en window._resetTxt para que el traductor EN lo cambie
+    // sin pisar el icono (ver updateNav).
+    (function(){
+      window._resetTxt = 'Reiniciar';
+      window._ajustarNavReset = function(){
+        var nr = document.getElementById('navReset');
+        if (!nr) return;
+        nr.textContent = window.matchMedia('(max-width: 480px)').matches ? '↺' : window._resetTxt;
+      };
+      window._ajustarNavReset();
+      var _mq = window.matchMedia('(max-width: 480px)');
+      if (_mq.addEventListener) _mq.addEventListener('change', window._ajustarNavReset);
+      else if (_mq.addListener) _mq.addListener(window._ajustarNavReset);
+    })();
+    </script>
   </div>
 </nav>
 <div class="progress-bar-chat"><div class="progress-fill-chat" id="progressFill"></div></div>
@@ -1425,7 +1444,9 @@ function actualizarUI() {
   const ts = document.getElementById('totalSteps');
   if (ts) ts.textContent = PASOS.length;
   const nr = document.getElementById('navReset');
-  if (nr && LANG === 'en') nr.textContent = 'Restart';
+  if (LANG === 'en') window._resetTxt = 'Restart';
+  if (typeof window._ajustarNavReset === 'function') window._ajustarNavReset();
+  else if (nr && LANG === 'en') nr.textContent = 'Restart';
   const ns = document.getElementById('navStep');
   if (ns && LANG === 'en') ns.innerHTML = 'Question <strong id="stepNum">' + Math.min(p + 1, PASOS.length) + '</strong> of ' + PASOS.length;
   actualizarTiempo();
@@ -3862,7 +3883,23 @@ window.addEventListener('load', () => {
 
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-@media(max-width:400px){.soporte-panel{width:calc(100vw - 32px);right:16px;bottom:80px}}
+/* El icono de ayuda del header solo existe en móvil/tablet; en desktop manda la burbuja */
+.nav-ayuda{display:none}
+@media(max-width:1024px){
+  /* La burbuja flotante se montaba sobre la barra de escribir del chat en
+     móvil (56px fijos sobre el input) y reaparecía en teléfonos en horizontal
+     y tablets (769-1024px). Ahora solo existe en escritorio real: en todo lo
+     demás, las preguntas frecuentes viven en el header como 💬, junto al 🔑. */
+  .soporte-btn{display:none !important}
+  .nav-ayuda{display:inline}
+}
+@media(max-width:768px){
+  .soporte-panel{width:calc(100vw - 24px);right:12px;left:12px;bottom:calc(12px + env(safe-area-inset-bottom, 0px));max-height:72vh}
+  /* Header descongestionado: menos aire entre iconos para que nada se monte */
+  .nav-info{gap:8px}
+  .nav-info .nav-reset{margin-right:8px !important}
+}
+@media(max-width:400px){.soporte-panel{width:calc(100vw - 24px);right:12px;bottom:calc(12px + env(safe-area-inset-bottom, 0px))}}
 </style>
 
 <!-- BOTÓN FLOTANTE -->

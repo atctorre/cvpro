@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Elige tu plantilla | CVPro</title>
+<meta name="description" content="Elige entre 20 plantillas profesionales para tu CV, aprobadas por reclutadores y optimizadas para sistemas ATS. Descarga en PDF al instante.">
+<link rel="canonical" href="https://getcvpro.com/plantillas-cv.html">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Montserrat',sans-serif;background:#111;color:#fff;min-height:100vh}
+nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 5%;background:rgba(10,10,10,0.97);backdrop-filter:blur(12px);border-bottom:1px solid #222}
+.nav-logo{font-family:'Montserrat',sans-serif;font-size:1.2rem;font-weight:800;color:#FFD000;text-decoration:none}
+.nav-logo span{color:#fff}
+.nav-back{color:#888;font-size:0.85rem;text-decoration:none;cursor:pointer}
+.nav-back:hover{color:#FFD000}
+
+/* ── LAYOUT ── */
+.page{max-width:1100px;margin:0 auto;padding:40px 20px 80px}
+.page-title{text-align:center;margin-bottom:40px}
+.page-title h1{font-family:'Montserrat',sans-serif;font-size:2rem;font-weight:800;color:#FFD000;margin-bottom:8px}
+.page-title p{color:#888;font-size:0.9rem}
+
+/* ── GENDER TABS ── */
+.gender-tabs{display:flex;gap:10px;justify-content:center;margin-bottom:32px}
+.gender-tab{padding:11px 30px;border-radius:50px;font-size:0.88rem;font-weight:700;cursor:pointer;border:2px solid #333;background:transparent;color:#888;transition:all 0.3s;font-family:'Montserrat',sans-serif}
+.gender-tab.active{background:#FFD000;color:#000;border-color:#FFD000}
+
+/* ── PLANTILLAS GRID ── */
+.templates-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:36px}
+@media(max-width:700px){.templates-grid{grid-template-columns:repeat(2,1fr)}}
+.tpl-card{background:#1a1a1a;border:2px solid #2a2a2a;border-radius:14px;overflow:hidden;cursor:pointer;transition:all 0.3s;position:relative}
+.tpl-card:hover{border-color:#FFD000;transform:translateY(-4px)}
+.tpl-card.selected{border-color:#FFD000;box-shadow:0 0 24px rgba(255,208,0,0.3)}
+.tpl-selected-badge{display:none;position:absolute;top:8px;right:8px;background:#FFD000;color:#000;font-size:0.6rem;font-weight:800;padding:3px 8px;border-radius:50px;z-index:2}
+.tpl-card.selected .tpl-selected-badge{display:block}
+
+/* MINIATURAS */
+.tpl-preview{height:160px;overflow:hidden;position:relative;pointer-events:none}
+.tpl-preview .mini{transform:scale(0.22);transform-origin:top left;width:454%;height:454%;pointer-events:none}
+.tpl-name{padding:10px 12px;font-size:0.75rem;font-weight:700;color:#ccc;text-align:center;border-top:1px solid #2a2a2a}
+.tpl-card.selected .tpl-name{color:#FFD000}
+
+/* ── FOTO UPLOAD ── */
+.foto-section{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;padding:24px;margin-bottom:24px}
+.foto-section h3{font-size:0.85rem;font-weight:700;color:#FFD000;margin-bottom:16px;letter-spacing:1px;text-transform:uppercase}
+.foto-upload-area{border:2px dashed #333;border-radius:12px;padding:20px;text-align:center;cursor:pointer;transition:border-color 0.3s;margin-bottom:16px}
+.foto-upload-area:hover{border-color:#FFD000}
+.foto-upload-area input{display:none}
+.foto-upload-area p{color:#888;font-size:0.82rem;margin-top:8px}
+
+/* AJUSTE FOTO */
+.foto-ajuste{display:none}
+.foto-ajuste.visible{display:block}
+.foto-ajuste h4{font-size:0.78rem;color:#aaa;margin-bottom:10px}
+.foto-crop-wrap{position:relative;width:200px;height:200px;margin:0 auto 16px;border-radius:50%;overflow:hidden;border:3px solid #FFD000;background:#222;cursor:move;user-select:none}
+.foto-crop-wrap.square{border-radius:12px}
+.foto-crop-wrap img{position:absolute;cursor:move;transform-origin:center center}
+.crop-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:300px;margin:0 auto}
+.crop-ctrl{display:flex;flex-direction:column;gap:4px}
+.crop-ctrl label{font-size:0.72rem;color:#888}
+.crop-ctrl input[type=range]{width:100%;accent-color:#FFD000}
+.btn-foto-ok{display:block;width:100%;background:#FFD000;color:#000;font-weight:700;font-size:0.85rem;padding:10px;border:none;border-radius:50px;cursor:pointer;margin-top:12px;font-family:'Montserrat',sans-serif}
+
+/* ── BOTÓN GENERAR ── */
+.btn-generar{width:100%;background:#FFD000;color:#000;font-family:'Montserrat',sans-serif;font-weight:800;font-size:1rem;padding:16px;border:none;border-radius:50px;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s;box-shadow:0 0 30px rgba(255,208,0,0.2);margin-top:8px}
+.btn-generar:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(255,208,0,0.4)}
+
+/* ── CV OUTPUT ── */
+.cv-result{display:none;max-width:900px;margin:0 auto;padding:20px}
+.cv-actions{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.btn-pdf{background:#FFD000;color:#000;font-weight:700;padding:12px 28px;border:none;border-radius:50px;cursor:pointer;font-size:0.9rem;transition:transform 0.2s;font-family:'Montserrat',sans-serif}
+.btn-pdf:hover{transform:scale(1.04)}
+.btn-carta{background:#0d1b2a;color:#FFD000;font-weight:700;padding:12px 28px;border:none;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Montserrat',sans-serif;transition:transform 0.2s}
+.btn-carta:hover{transform:scale(1.04)}
+.btn-volver{background:transparent;color:#fff;font-weight:600;padding:12px 28px;border:2px solid #444;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Montserrat',sans-serif}
+.btn-volver:hover{border-color:#FFD000;color:#FFD000}
+#cvFinal{background:#fff}
+
+/* ════════════════════
+   PLANTILLAS CSS
+════════════════════ */
+/* H1 NAVY */
+.cv-h1{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h1 .hdr{background:#0d1b2a;padding:36px 40px;display:flex;gap:24px;align-items:center}
+.cv-h1 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #FFD000;flex-shrink:0;background:#2a4a6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#FFD000}
+.cv-h1 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h1 .nm{font-size:1.8rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h1 .rl{color:#FFD000;font-size:0.82rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:5px 0 12px}
+.cv-h1 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h1 .ci{font-size:0.72rem;color:#ccc}
+.cv-h1 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-h1 .sb{background:#f0f4f8;padding:24px 20px}
+.cv-h1 .mn{padding:24px 26px}
+.cv-h1 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0d1b2a;border-bottom:2px solid #FFD000;padding-bottom:4px;margin-bottom:12px}
+.cv-h1 .sk{margin-bottom:8px}
+.cv-h1 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h1 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h1 .sf{height:100%;background:linear-gradient(90deg,#0d1b2a,#FFD000);border-radius:2px}
+.cv-h1 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #FFD000}
+.cv-h1 .jt{font-size:0.86rem;font-weight:700;color:#0d1b2a}
+.cv-h1 .jm{font-size:0.72rem;color:#666;margin:3px 0 7px}
+.cv-h1 .bl{font-size:0.74rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h1 .bl::before{content:'▸';position:absolute;left:0;color:#0d1b2a;font-size:0.65rem}
+.cv-h1 .li{display:flex;justify-content:space-between;font-size:0.74rem;margin-bottom:5px}
+
+/* H2 NEGRO DORADO */
+.cv-h2{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h2 .hdr{background:#111;padding:32px 36px;display:flex;gap:20px;align-items:center}
+.cv-h2 .ph{width:90px;height:90px;border-radius:10px;overflow:hidden;border:3px solid #FFD000;flex-shrink:0;background:#222;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#FFD000}
+.cv-h2 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h2 .nm{font-size:1.7rem;font-weight:700;color:#fff}
+.cv-h2 .rl{color:#FFD000;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h2 .gl{width:40px;height:2px;background:#FFD000;margin-bottom:10px}
+.cv-h2 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-h2 .ci{font-size:0.7rem;color:#aaa}
+.cv-h2 .bd{display:grid;grid-template-columns:1fr 240px}
+.cv-h2 .mn{padding:24px 28px}
+.cv-h2 .sb{background:#f9f9f9;padding:24px 20px;border-left:1px solid #eee}
+.cv-h2 .st{font-size:0.62rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#111;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.cv-h2 .st::after{content:'';flex:1;height:1px;background:#FFD000}
+.cv-h2 .jb{margin-bottom:16px}
+.cv-h2 .jh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.cv-h2 .jt{font-size:0.86rem;font-weight:700;color:#111}
+.cv-h2 .jd{font-size:0.68rem;background:#111;color:#FFD000;padding:2px 7px;border-radius:3px}
+.cv-h2 .jm{font-size:0.74rem;color:#666;margin-bottom:7px}
+.cv-h2 .bl{font-size:0.73rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative}
+.cv-h2 .bl::before{content:'→';position:absolute;left:0;color:#FFD000;font-size:0.6rem}
+.cv-h2 .tg{display:inline-block;background:#111;color:#FFD000;font-size:0.67rem;padding:3px 8px;border-radius:3px;margin:2px;font-weight:700}
+
+/* H3 MINIMALISTA */
+.cv-h3{font-family:'Lato',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h3 .hdr{padding:30px 36px;border-bottom:3px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center}
+.cv-h3 .ph{width:80px;height:80px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#eee;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#666}
+.cv-h3 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h3 .nm{font-size:2rem;font-weight:900;color:#1a1a1a;letter-spacing:-1px;line-height:1}
+.cv-h3 .rl{font-size:0.8rem;font-weight:300;color:#666;letter-spacing:4px;text-transform:uppercase;margin-top:5px}
+.cv-h3 .ct{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.cv-h3 .ci{font-size:0.72rem;color:#888}
+.cv-h3 .bd{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:26px 36px}
+.cv-h3 .col{padding:0 14px}
+.cv-h3 .col:first-child{padding-left:0;border-right:1px solid #eee}
+.cv-h3 .col:last-child{padding-right:0}
+.cv-h3 .st{font-size:0.58rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#1a1a1a;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #1a1a1a}
+.cv-h3 .jb{margin-bottom:14px}
+.cv-h3 .jt{font-size:0.84rem;font-weight:700;color:#1a1a1a}
+.cv-h3 .jm{font-size:0.7rem;color:#888;margin:2px 0 5px}
+.cv-h3 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h3 .bl::before{content:'·';position:absolute;left:0;font-weight:900}
+.cv-h3 .dr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.cv-h3 .dn{font-size:0.72rem;font-weight:700}
+.cv-h3 .ds{display:flex;gap:3px}
+.cv-h3 .dot{width:7px;height:7px;border-radius:50%;background:#eee}
+.cv-h3 .dot.f{background:#1a1a1a}
+
+/* H4 VERDE OLIVA */
+.cv-h4{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h4 .hdr{background:#2d4a22;padding:32px 36px;display:flex;gap:22px;align-items:flex-start}
+.cv-h4 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c8e6a0;flex-shrink:0;background:#3d6130;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c8e6a0}
+.cv-h4 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h4 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h4 .rl{color:#c8e6a0;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h4 .ct{display:flex;flex-direction:column;gap:4px}
+.cv-h4 .ci{font-size:0.7rem;color:#b0cc96}
+.cv-h4 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-h4 .sb{background:#f4f8f0;padding:22px 18px;border-right:3px solid #c8e6a0}
+.cv-h4 .mn{padding:22px 24px}
+.cv-h4 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2d4a22;margin-bottom:10px;padding:3px 7px;background:#e8f5d8;border-left:3px solid #2d4a22}
+.cv-h4 .sk{margin-bottom:8px}
+.cv-h4 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h4 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h4 .sf{height:100%;background:#2d4a22;border-radius:2px}
+.cv-h4 .jb{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #eee}
+.cv-h4 .jb:last-child{border:none}
+.cv-h4 .jt{font-size:0.84rem;font-weight:700;color:#2d4a22}
+.cv-h4 .jm{font-size:0.7rem;color:#888;margin:3px 0 6px}
+.cv-h4 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h4 .bl::before{content:'▪';position:absolute;left:0;color:#2d4a22}
+
+/* H5 TECH AZUL */
+.cv-h5{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h5 .hdr{background:#0a0a0a;padding:0;display:flex}
+.cv-h5 .ph-rect{width:140px;flex-shrink:0;overflow:hidden;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:#00d4ff;min-height:150px}
+.cv-h5 .ph-rect img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h5 .hdr-info{flex:1;padding:24px 28px;border-left:4px solid #00d4ff}
+.cv-h5 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h5 .rl{color:#00d4ff;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h5 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h5 .ci{font-size:0.7rem;color:#aaa}
+.cv-h5 .bd{display:grid;grid-template-columns:1fr 200px}
+.cv-h5 .mn{padding:22px 26px}
+.cv-h5 .sb{background:#f5f9ff;padding:22px 18px;border-left:1px solid #e0eeff}
+.cv-h5 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0066ff;margin-bottom:12px;border-bottom:2px solid #00d4ff;padding-bottom:3px}
+.cv-h5 .jb{margin-bottom:14px;padding-left:10px;border-left:2px solid #0066ff}
+.cv-h5 .jt{font-size:0.84rem;font-weight:700;color:#0a0a0a}
+.cv-h5 .jm{font-size:0.7rem;color:#666;margin:2px 0 6px}
+.cv-h5 .bl{font-size:0.72rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h5 .bl::before{content:'>';position:absolute;left:0;color:#0066ff;font-weight:700;font-size:0.6rem}
+.cv-h5 .tg{display:inline-block;background:#e0eeff;color:#0066ff;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+.cv-h5 .sk{margin-bottom:8px}
+.cv-h5 .sn{font-size:0.7rem;font-weight:600;margin-bottom:2px}
+.cv-h5 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h5 .sf{height:100%;background:linear-gradient(90deg,#0066ff,#00d4ff);border-radius:2px}
+
+/* M1 ROSA GOLD */
+.cv-m1{font-family:'Playfair Display',serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m1 .hdr{background:linear-gradient(135deg,#2d1b35,#4a2d5c);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m1 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #e8b4d0;flex-shrink:0;background:#3d2448;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e8b4d0}
+.cv-m1 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m1 .nm{font-size:1.8rem;font-weight:700;color:#fff;letter-spacing:0.5px;line-height:1.1}
+.cv-m1 .rl{color:#e8b4d0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px;font-family:'Montserrat',sans-serif}
+.cv-m1 .gl{width:50px;height:2px;background:linear-gradient(90deg,#e8b4d0,#c9a96e);margin-bottom:10px}
+.cv-m1 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m1 .ci{font-size:0.7rem;color:#d4a8c0;font-family:'Montserrat',sans-serif}
+.cv-m1 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m1 .sb{background:#fdf5f8;padding:22px 18px;border-right:1px solid #f0d8e5}
+.cv-m1 .mn{padding:22px 24px}
+.cv-m1 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#4a2d5c;margin-bottom:12px;padding-bottom:4px;border-bottom:2px solid #e8b4d0;font-family:'Montserrat',sans-serif}
+.cv-m1 .sk{margin-bottom:8px}
+.cv-m1 .sn{font-size:0.72rem;color:#555;margin-bottom:2px;font-family:'Montserrat',sans-serif}
+.cv-m1 .sb2{height:4px;background:#f0d8e5;border-radius:2px}
+.cv-m1 .sf{height:100%;background:linear-gradient(90deg,#4a2d5c,#e8b4d0);border-radius:2px}
+.cv-m1 .jb{margin-bottom:16px}
+.cv-m1 .jt{font-size:0.86rem;font-weight:700;color:#2d1b35}
+.cv-m1 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px;font-family:'Montserrat',sans-serif}
+.cv-m1 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative;font-family:'Montserrat',sans-serif}
+.cv-m1 .bl::before{content:'✦';position:absolute;left:0;color:#e8b4d0;font-size:0.45rem;top:4px}
+
+/* M2 TEAL */
+.cv-m2{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m2 .hdr{background:#0d4f4f;padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m2 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #7ecece;flex-shrink:0;background:#1a6b6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#7ecece}
+.cv-m2 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m2 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m2 .rl{color:#7ecece;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m2 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m2 .ci{font-size:0.7rem;color:#aacece}
+.cv-m2 .bd{display:grid;grid-template-columns:1fr 220px}
+.cv-m2 .mn{padding:22px 26px}
+.cv-m2 .sb{background:#f0f8f8;padding:22px 18px;border-left:3px solid #7ecece}
+.cv-m2 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0d4f4f;margin-bottom:12px;border-bottom:2px solid #7ecece;padding-bottom:3px}
+.cv-m2 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #7ecece}
+.cv-m2 .jt{font-size:0.86rem;font-weight:700;color:#0d4f4f}
+.cv-m2 .jm{font-size:0.7rem;color:#888;margin:3px 0 7px}
+.cv-m2 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m2 .bl::before{content:'◆';position:absolute;left:0;color:#0d4f4f;font-size:0.35rem;top:5px}
+.cv-m2 .sk{margin-bottom:8px}
+.cv-m2 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m2 .sb2{height:4px;background:#d8eded;border-radius:2px}
+.cv-m2 .sf{height:100%;background:#0d4f4f;border-radius:2px}
+.cv-m2 .tg{display:inline-block;background:#e0f4f4;color:#0d4f4f;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+
+/* M3 NARANJA */
+.cv-m3{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m3 .hdr{padding:28px 36px;display:flex;gap:22px;align-items:center;border-bottom:4px solid #ff6b35}
+.cv-m3 .ph{width:95px;height:95px;border-radius:50%;overflow:hidden;border:4px solid #ff6b35;flex-shrink:0;background:#fff3ee;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#ff6b35}
+.cv-m3 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m3 .nm{font-size:1.75rem;font-weight:700;color:#1a1a1a}
+.cv-m3 .rl{color:#ff6b35;font-size:0.78rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:3px 0 8px}
+.cv-m3 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m3 .ci{font-size:0.7rem;color:#888}
+.cv-m3 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-m3 .sb{background:#fff8f5;padding:22px 18px;border-right:2px solid #ffe0d4}
+.cv-m3 .mn{padding:22px 24px}
+.cv-m3 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#ff6b35;margin-bottom:10px;padding:3px 7px;background:#fff0ea;border-radius:3px}
+.cv-m3 .jb{margin-bottom:14px}
+.cv-m3 .jt{font-size:0.84rem;font-weight:700;color:#1a1a1a}
+.cv-m3 .jd{display:inline-block;background:#ff6b35;color:#fff;font-size:0.62rem;padding:2px 7px;border-radius:3px;margin-bottom:6px}
+.cv-m3 .jm{font-size:0.7rem;color:#888;margin-bottom:6px}
+.cv-m3 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m3 .bl::before{content:'→';position:absolute;left:0;color:#ff6b35;font-size:0.6rem;font-weight:700}
+.cv-m3 .sk{margin-bottom:8px}
+.cv-m3 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m3 .sb2{height:4px;background:#ffe0d4;border-radius:2px}
+.cv-m3 .sf{height:100%;background:#ff6b35;border-radius:2px}
+
+/* M4 BURDEOS */
+.cv-m4{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m4 .hdr{background:#6b1a1a;padding:32px 36px;display:flex;gap:22px;align-items:center;border-bottom:3px solid #c9a96e}
+.cv-m4 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #c9a96e;flex-shrink:0;background:#8b2a2a;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c9a96e}
+.cv-m4 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m4 .nm{font-size:1.8rem;font-weight:700;color:#fff}
+.cv-m4 .rl{color:#e8d5a0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m4 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m4 .ci{font-size:0.7rem;color:#d4b4a0}
+.cv-m4 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m4 .sb{background:#fdf8f5;padding:22px 18px;border-right:1px solid #f0e0d5}
+.cv-m4 .mn{padding:22px 24px}
+.cv-m4 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#6b1a1a;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #c9a96e}
+.cv-m4 .jb{margin-bottom:16px}
+.cv-m4 .jt{font-size:0.86rem;font-weight:700;color:#6b1a1a}
+.cv-m4 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m4 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m4 .bl::before{content:'◈';position:absolute;left:0;color:#c9a96e;font-size:0.45rem;top:3px}
+.cv-m4 .sk{margin-bottom:8px}
+.cv-m4 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m4 .sb2{height:4px;background:#f0e0d5;border-radius:2px}
+.cv-m4 .sf{height:100%;background:linear-gradient(90deg,#6b1a1a,#c9a96e);border-radius:2px}
+.cv-m4 .tg{display:inline-block;background:#fdf0ea;color:#6b1a1a;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:600;border:1px solid #c9a96e}
+
+/* M5 LAVANDA */
+.cv-m5{font-family:'Lato',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m5 .hdr{background:linear-gradient(135deg,#4a3f8b,#6b5fa0);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m5 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c4b8f0;flex-shrink:0;background:#5a4f9b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c4b8f0}
+.cv-m5 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m5 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m5 .rl{color:#c4b8f0;font-size:0.78rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m5 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m5 .ci{font-size:0.7rem;color:#b0a4e0}
+.cv-m5 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m5 .sb{background:#f7f5ff;padding:22px 18px;border-right:3px solid #c4b8f0}
+.cv-m5 .mn{padding:22px 24px}
+.cv-m5 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#4a3f8b;margin-bottom:12px;border-bottom:2px solid #c4b8f0;padding-bottom:3px}
+.cv-m5 .jb{margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed #e0d8ff}
+.cv-m5 .jb:last-child{border:none}
+.cv-m5 .jt{font-size:0.86rem;font-weight:700;color:#4a3f8b}
+.cv-m5 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m5 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m5 .bl::before{content:'◉';position:absolute;left:0;color:#c4b8f0;font-size:0.4rem;top:5px}
+.cv-m5 .sk{margin-bottom:8px}
+.cv-m5 .sn{font-size:0.72rem;font-weight:700;color:#333;margin-bottom:2px}
+.cv-m5 .sb2{height:4px;background:#e0d8ff;border-radius:2px}
+.cv-m5 .sf{height:100%;background:linear-gradient(90deg,#4a3f8b,#c4b8f0);border-radius:2px}
+.cv-m5 .lb{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.cv-m5 .lbg{background:#4a3f8b;color:#c4b8f0;font-size:0.62rem;padding:2px 6px;border-radius:3px;font-weight:700}
+.sk-list{margin-bottom:4px}.sk-item{font-size:0.72rem;color:#444;line-height:1.7;overflow-wrap:break-word}
+
+/* ── 10 PLANTILLAS NUEVAS (paletas élite) ── */
+.cv-h6{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h6 .hdr{background:#2b2d31;padding:36px 40px;display:flex;gap:24px;align-items:center}
+.cv-h6 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c9a227;flex-shrink:0;background:#2a4a6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c9a227}
+.cv-h6 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h6 .nm{font-size:1.8rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h6 .rl{color:#c9a227;font-size:0.82rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:5px 0 12px}
+.cv-h6 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h6 .ci{font-size:0.72rem;color:#ccc}
+.cv-h6 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-h6 .sb{background:#f0f4f8;padding:24px 20px}
+.cv-h6 .mn{padding:24px 26px}
+.cv-h6 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#2b2d31;border-bottom:2px solid #c9a227;padding-bottom:4px;margin-bottom:12px}
+.cv-h6 .sk{margin-bottom:8px}
+.cv-h6 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h6 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h6 .sf{height:100%;background:linear-gradient(90deg,#2b2d31,#c9a227);border-radius:2px}
+.cv-h6 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #c9a227}
+.cv-h6 .jt{font-size:0.86rem;font-weight:700;color:#2b2d31}
+.cv-h6 .jm{font-size:0.72rem;color:#666;margin:3px 0 7px}
+.cv-h6 .bl{font-size:0.74rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h6 .bl::before{content:'▸';position:absolute;left:0;color:#2b2d31;font-size:0.65rem}
+.cv-h6 .li{display:flex;justify-content:space-between;font-size:0.74rem;margin-bottom:5px}
+.cv-h7{font-family:'Lato',sans-serif;background:#fff;color:#00434d;width:794px}
+.cv-h7 .hdr{padding:30px 36px;border-bottom:3px solid #00434d;display:flex;justify-content:space-between;align-items:center}
+.cv-h7 .ph{width:80px;height:80px;border-radius:6px;overflow:hidden;flex-shrink:0;background:#eee;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#666}
+.cv-h7 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h7 .nm{font-size:2rem;font-weight:900;color:#00434d;letter-spacing:-1px;line-height:1}
+.cv-h7 .rl{font-size:0.8rem;font-weight:300;color:#666;letter-spacing:4px;text-transform:uppercase;margin-top:5px}
+.cv-h7 .ct{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.cv-h7 .ci{font-size:0.72rem;color:#888}
+.cv-h7 .bd{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:26px 36px}
+.cv-h7 .col{padding:0 14px}
+.cv-h7 .col:first-child{padding-left:0;border-right:1px solid #eee}
+.cv-h7 .col:last-child{padding-right:0}
+.cv-h7 .st{font-size:0.58rem;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#00434d;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #00434d}
+.cv-h7 .jb{margin-bottom:14px}
+.cv-h7 .jt{font-size:0.84rem;font-weight:700;color:#00434d}
+.cv-h7 .jm{font-size:0.7rem;color:#888;margin:2px 0 5px}
+.cv-h7 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h7 .bl::before{content:'·';position:absolute;left:0;font-weight:900}
+.cv-h7 .dr{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px}
+.cv-h7 .dn{font-size:0.72rem;font-weight:700}
+.cv-h7 .ds{display:flex;gap:3px}
+.cv-h7 .dot{width:7px;height:7px;border-radius:50%;background:#eee}
+.cv-h7 .dot.f{background:#00434d}
+.cv-h8{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h8 .hdr{background:#3a0d16;padding:32px 36px;display:flex;gap:20px;align-items:center}
+.cv-h8 .ph{width:90px;height:90px;border-radius:10px;overflow:hidden;border:3px solid #d4af37;flex-shrink:0;background:#222;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#d4af37}
+.cv-h8 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h8 .nm{font-size:1.7rem;font-weight:700;color:#fff}
+.cv-h8 .rl{color:#d4af37;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h8 .gl{width:40px;height:2px;background:#d4af37;margin-bottom:10px}
+.cv-h8 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-h8 .ci{font-size:0.7rem;color:#aaa}
+.cv-h8 .bd{display:grid;grid-template-columns:1fr 240px}
+.cv-h8 .mn{padding:24px 28px}
+.cv-h8 .sb{background:#f9f9f9;padding:24px 20px;border-left:1px solid #eee}
+.cv-h8 .st{font-size:0.62rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#3a0d16;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.cv-h8 .st::after{content:'';flex:1;height:1px;background:#d4af37}
+.cv-h8 .jb{margin-bottom:16px}
+.cv-h8 .jh{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.cv-h8 .jt{font-size:0.86rem;font-weight:700;color:#3a0d16}
+.cv-h8 .jd{font-size:0.68rem;background:#3a0d16;color:#d4af37;padding:2px 7px;border-radius:3px}
+.cv-h8 .jm{font-size:0.74rem;color:#666;margin-bottom:7px}
+.cv-h8 .bl{font-size:0.73rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative}
+.cv-h8 .bl::before{content:'→';position:absolute;left:0;color:#d4af37;font-size:0.6rem}
+.cv-h8 .tg{display:inline-block;background:#3a0d16;color:#d4af37;font-size:0.67rem;padding:3px 8px;border-radius:3px;margin:2px;font-weight:700}
+.cv-h9{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h9 .hdr{background:#0a0a0a;padding:0;display:flex}
+.cv-h9 .ph-rect{width:140px;flex-shrink:0;overflow:hidden;background:#1a1a2e;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:#00d4ff;min-height:150px}
+.cv-h9 .ph-rect img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h9 .hdr-info{flex:1;padding:24px 28px;border-left:4px solid #00d4ff}
+.cv-h9 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h9 .rl{color:#00d4ff;font-size:0.78rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h9 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-h9 .ci{font-size:0.7rem;color:#aaa}
+.cv-h9 .bd{display:grid;grid-template-columns:1fr 200px}
+.cv-h9 .mn{padding:22px 26px}
+.cv-h9 .sb{background:#f5f9ff;padding:22px 18px;border-left:1px solid #e0eeff}
+.cv-h9 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#123e93;margin-bottom:12px;border-bottom:2px solid #00d4ff;padding-bottom:3px}
+.cv-h9 .jb{margin-bottom:14px;padding-left:10px;border-left:2px solid #123e93}
+.cv-h9 .jt{font-size:0.84rem;font-weight:700;color:#0a0a0a}
+.cv-h9 .jm{font-size:0.7rem;color:#666;margin:2px 0 6px}
+.cv-h9 .bl{font-size:0.72rem;color:#444;line-height:1.6;margin-bottom:2px;padding-left:8px;position:relative}
+.cv-h9 .bl::before{content:'>';position:absolute;left:0;color:#123e93;font-weight:700;font-size:0.6rem}
+.cv-h9 .tg{display:inline-block;background:#e0eeff;color:#123e93;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+.cv-h9 .sk{margin-bottom:8px}
+.cv-h9 .sn{font-size:0.7rem;font-weight:600;margin-bottom:2px}
+.cv-h9 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h9 .sf{height:100%;background:linear-gradient(90deg,#123e93,#00d4ff);border-radius:2px}
+.cv-h10{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-h10 .hdr{background:#1f3a2d;padding:32px 36px;display:flex;gap:22px;align-items:flex-start}
+.cv-h10 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c8e6a0;flex-shrink:0;background:#3d6130;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c8e6a0}
+.cv-h10 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h10 .nm{font-size:1.7rem;font-weight:700;color:#fff;line-height:1.1}
+.cv-h10 .rl{color:#c8e6a0;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h10 .ct{display:flex;flex-direction:column;gap:4px}
+.cv-h10 .ci{font-size:0.7rem;color:#b0cc96}
+.cv-h10 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-h10 .sb{background:#f4f8f0;padding:22px 18px;border-right:3px solid #c8e6a0}
+.cv-h10 .mn{padding:22px 24px}
+.cv-h10 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#1f3a2d;margin-bottom:10px;padding:3px 7px;background:#e8f5d8;border-left:3px solid #1f3a2d}
+.cv-h10 .sk{margin-bottom:8px}
+.cv-h10 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-h10 .sb2{height:4px;background:#ddd;border-radius:2px}
+.cv-h10 .sf{height:100%;background:#1f3a2d;border-radius:2px}
+.cv-h10 .jb{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #eee}
+.cv-h10 .jb:last-child{border:none}
+.cv-h10 .jt{font-size:0.84rem;font-weight:700;color:#1f3a2d}
+.cv-h10 .jm{font-size:0.7rem;color:#888;margin:3px 0 6px}
+.cv-h10 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-h10 .bl::before{content:'▪';position:absolute;left:0;color:#1f3a2d}
+.cv-m6{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m6 .hdr{background:#0e5c46;padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m6 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #7ecece;flex-shrink:0;background:#1a6b6b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#7ecece}
+.cv-m6 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m6 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m6 .rl{color:#7ecece;font-size:0.78rem;font-weight:500;letter-spacing:2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m6 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m6 .ci{font-size:0.7rem;color:#aacece}
+.cv-m6 .bd{display:grid;grid-template-columns:1fr 220px}
+.cv-m6 .mn{padding:22px 26px}
+.cv-m6 .sb{background:#f0f8f8;padding:22px 18px;border-left:3px solid #7ecece}
+.cv-m6 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#0e5c46;margin-bottom:12px;border-bottom:2px solid #7ecece;padding-bottom:3px}
+.cv-m6 .jb{margin-bottom:16px;padding-left:12px;border-left:3px solid #7ecece}
+.cv-m6 .jt{font-size:0.86rem;font-weight:700;color:#0e5c46}
+.cv-m6 .jm{font-size:0.7rem;color:#888;margin:3px 0 7px}
+.cv-m6 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m6 .bl::before{content:'◆';position:absolute;left:0;color:#0e5c46;font-size:0.35rem;top:5px}
+.cv-m6 .sk{margin-bottom:8px}
+.cv-m6 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m6 .sb2{height:4px;background:#d8eded;border-radius:2px}
+.cv-m6 .sf{height:100%;background:#0e5c46;border-radius:2px}
+.cv-m6 .tg{display:inline-block;background:#e0f4f4;color:#0e5c46;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
+.cv-m7{font-family:'Playfair Display',serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m7 .hdr{background:linear-gradient(135deg,#2d1b35,#7a5c3e);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m7 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #e8b4d0;flex-shrink:0;background:#3d2448;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e8b4d0}
+.cv-m7 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m7 .nm{font-size:1.8rem;font-weight:700;color:#fff;letter-spacing:0.5px;line-height:1.1}
+.cv-m7 .rl{color:#e8b4d0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px;font-family:'Montserrat',sans-serif}
+.cv-m7 .gl{width:50px;height:2px;background:linear-gradient(90deg,#e8b4d0,#c9a96e);margin-bottom:10px}
+.cv-m7 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m7 .ci{font-size:0.7rem;color:#d4a8c0;font-family:'Montserrat',sans-serif}
+.cv-m7 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m7 .sb{background:#fdf5f8;padding:22px 18px;border-right:1px solid #f0d8e5}
+.cv-m7 .mn{padding:22px 24px}
+.cv-m7 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#7a5c3e;margin-bottom:12px;padding-bottom:4px;border-bottom:2px solid #e8b4d0;font-family:'Montserrat',sans-serif}
+.cv-m7 .sk{margin-bottom:8px}
+.cv-m7 .sn{font-size:0.72rem;color:#555;margin-bottom:2px;font-family:'Montserrat',sans-serif}
+.cv-m7 .sb2{height:4px;background:#f0d8e5;border-radius:2px}
+.cv-m7 .sf{height:100%;background:linear-gradient(90deg,#7a5c3e,#e8b4d0);border-radius:2px}
+.cv-m7 .jb{margin-bottom:16px}
+.cv-m7 .jt{font-size:0.86rem;font-weight:700;color:#2d1b35}
+.cv-m7 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px;font-family:'Montserrat',sans-serif}
+.cv-m7 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:12px;position:relative;font-family:'Montserrat',sans-serif}
+.cv-m7 .bl::before{content:'✦';position:absolute;left:0;color:#e8b4d0;font-size:0.45rem;top:4px}
+.cv-m8{font-family:'Poppins',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m8 .hdr{padding:28px 36px;display:flex;gap:22px;align-items:center;border-bottom:4px solid #e2555f}
+.cv-m8 .ph{width:95px;height:95px;border-radius:50%;overflow:hidden;border:4px solid #e2555f;flex-shrink:0;background:#fff3ee;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e2555f}
+.cv-m8 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m8 .nm{font-size:1.75rem;font-weight:700;color:#1a1a1a}
+.cv-m8 .rl{color:#e2555f;font-size:0.78rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin:3px 0 8px}
+.cv-m8 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-m8 .ci{font-size:0.7rem;color:#888}
+.cv-m8 .bd{display:grid;grid-template-columns:220px minmax(0,1fr)}
+.cv-m8 .sb{background:#fff8f5;padding:22px 18px;border-right:2px solid #ffe0d4}
+.cv-m8 .mn{padding:22px 24px}
+.cv-m8 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#e2555f;margin-bottom:10px;padding:3px 7px;background:#fff0ea;border-radius:3px}
+.cv-m8 .jb{margin-bottom:14px}
+.cv-m8 .jt{font-size:0.84rem;font-weight:700;color:#1a1a1a}
+.cv-m8 .jd{display:inline-block;background:#e2555f;color:#fff;font-size:0.62rem;padding:2px 7px;border-radius:3px;margin-bottom:6px}
+.cv-m8 .jm{font-size:0.7rem;color:#888;margin-bottom:6px}
+.cv-m8 .bl{font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m8 .bl::before{content:'→';position:absolute;left:0;color:#e2555f;font-size:0.6rem;font-weight:700}
+.cv-m8 .sk{margin-bottom:8px}
+.cv-m8 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m8 .sb2{height:4px;background:#ffe0d4;border-radius:2px}
+.cv-m8 .sf{height:100%;background:#e2555f;border-radius:2px}
+.cv-m9{font-family:'Lato',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m9 .hdr{background:linear-gradient(135deg,#12557d,#6b5fa0);padding:32px 36px;display:flex;gap:22px;align-items:center}
+.cv-m9 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #c4b8f0;flex-shrink:0;background:#5a4f9b;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c4b8f0}
+.cv-m9 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m9 .nm{font-size:1.75rem;font-weight:700;color:#fff}
+.cv-m9 .rl{color:#c4b8f0;font-size:0.78rem;font-weight:300;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m9 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m9 .ci{font-size:0.7rem;color:#b0a4e0}
+.cv-m9 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m9 .sb{background:#f7f5ff;padding:22px 18px;border-right:3px solid #c4b8f0}
+.cv-m9 .mn{padding:22px 24px}
+.cv-m9 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#12557d;margin-bottom:12px;border-bottom:2px solid #c4b8f0;padding-bottom:3px}
+.cv-m9 .jb{margin-bottom:16px;padding-bottom:14px;border-bottom:1px dashed #e0d8ff}
+.cv-m9 .jb:last-child{border:none}
+.cv-m9 .jt{font-size:0.86rem;font-weight:700;color:#12557d}
+.cv-m9 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m9 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m9 .bl::before{content:'◉';position:absolute;left:0;color:#c4b8f0;font-size:0.4rem;top:5px}
+.cv-m9 .sk{margin-bottom:8px}
+.cv-m9 .sn{font-size:0.72rem;font-weight:700;color:#333;margin-bottom:2px}
+.cv-m9 .sb2{height:4px;background:#e0d8ff;border-radius:2px}
+.cv-m9 .sf{height:100%;background:linear-gradient(90deg,#12557d,#c4b8f0);border-radius:2px}
+.cv-m9 .lb{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.cv-m9 .lbg{background:#12557d;color:#c4b8f0;font-size:0.62rem;padding:2px 6px;border-radius:3px;font-weight:700}
+.cv-m10{font-family:'Raleway',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m10 .hdr{background:#5c1f3d;padding:32px 36px;display:flex;gap:22px;align-items:center;border-bottom:3px solid #c9a96e}
+.cv-m10 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #c9a96e;flex-shrink:0;background:#8b2a2a;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#c9a96e}
+.cv-m10 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m10 .nm{font-size:1.8rem;font-weight:700;color:#fff}
+.cv-m10 .rl{color:#e8d5a0;font-size:0.78rem;font-weight:400;letter-spacing:3px;text-transform:uppercase;margin:4px 0 10px}
+.cv-m10 .ct{display:flex;flex-wrap:wrap;gap:8px}
+.cv-m10 .ci{font-size:0.7rem;color:#d4b4a0}
+.cv-m10 .bd{display:grid;grid-template-columns:210px minmax(0,1fr)}
+.cv-m10 .sb{background:#fdf8f5;padding:22px 18px;border-right:1px solid #f0e0d5}
+.cv-m10 .mn{padding:22px 24px}
+.cv-m10 .st{font-size:0.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#5c1f3d;margin-bottom:12px;padding-bottom:3px;border-bottom:2px solid #c9a96e}
+.cv-m10 .jb{margin-bottom:16px}
+.cv-m10 .jt{font-size:0.86rem;font-weight:700;color:#5c1f3d}
+.cv-m10 .jm{font-size:0.7rem;color:#999;margin:3px 0 7px}
+.cv-m10 .bl{font-size:0.73rem;color:#555;line-height:1.6;margin-bottom:2px;padding-left:10px;position:relative}
+.cv-m10 .bl::before{content:'◈';position:absolute;left:0;color:#c9a96e;font-size:0.45rem;top:3px}
+.cv-m10 .sk{margin-bottom:8px}
+.cv-m10 .sn{font-size:0.72rem;font-weight:600;color:#333;margin-bottom:2px}
+.cv-m10 .sb2{height:4px;background:#f0e0d5;border-radius:2px}
+.cv-m10 .sf{height:100%;background:linear-gradient(90deg,#5c1f3d,#c9a96e);border-radius:2px}
+.cv-m10 .tg{display:inline-block;background:#fdf0ea;color:#5c1f3d;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:600;border:1px solid #c9a96e}
+
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid #FFD000;outline-offset:2px}/*a11y-focus*/
+
+/* ── Control de saltos de página en PDF ── */
+.jb, .sk, .li, .bl, .edu-item { page-break-inside: avoid; break-inside: avoid; }
+.st { page-break-after: avoid; break-after: avoid; }
+.hdr { page-break-inside: avoid; }
+
+
+/* ══ COMPATIBILIDAD CROSS-BROWSER / iOS ══ */
+/* Safari necesita el prefijo -webkit- para backdrop-filter */
+[style*="backdrop-filter"], .locked::before { -webkit-backdrop-filter: blur(3px); }
+
+/* iOS: la barra del navegador rompe 100vh — usar dvh con fallback */
+@supports (height: 100dvh) {
+  /* Solo overlays a pantalla completa. .main-layout es un hijo flex que ya
+     recibe su altura del body: forzarle 100dvh lo hacía más alto que el
+     espacio disponible y empujaba la barra de escribir fuera de la pantalla. */
+  .lang-selector, #muroPago, #confirmaPago, #regresoOverlay, #vacanteOverlay, #cartaOverlay { min-height: 100dvh; }
+  html, body { height: 100dvh; }
+}
+/* ══ Badge de tester discreto: se encoge tras unos segundos ══ */
+#testerBadge { transition: all .4s ease; }
+#testerBadge.mini {
+  padding: 6px 8px !important;
+  font-size: 0.95rem !important;
+  opacity: .55;
+}
+#testerBadge.mini:hover { opacity: 1; }
+
+
+/* iOS: evitar zoom automático al enfocar inputs (requiere >=16px) */
+input, textarea, select, .chat-input, #soporteInput { font-size: 16px !important; }
+@media (min-width: 768px) {
+  input, textarea, select, .chat-input, #soporteInput { font-size: 15px !important; }
+}
+
+/* Notch del iPhone: respetar zonas seguras */
+body { padding-bottom: env(safe-area-inset-bottom, 0); }
+#testerBadge, #planBadge, .soporte-btn, [style*="position:fixed"][style*="bottom"] {
+  margin-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Scroll suave con inercia en iOS */
+.chat-messages, .soporte-msgs, #muroPago, #confirmaPago, .cv-preview, #cartaBody, #cartaFinal {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Touch targets mínimos de 44px (Apple HIG / WCAG 2.2) */
+@media (pointer: coarse) {
+  button, .btn-pdf, .plan-btn, a.cta, .nav-cta, .sqopt, .tpl-card, .chip, .opt-btn {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+
+/* Evitar doble-tap zoom en botones (iOS) */
+button, a, .tpl-card { touch-action: manipulation; }
+
+/* Firefox: scrollbar consistente */
+* { scrollbar-width: thin; }
+
+/* Evitar overflow horizontal en móviles pequeños (320px) */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, canvas, video { max-width: 100%; height: auto; }
+/* Excepción: la foto del recuadro de recorte DEBE poder superar el 100% del
+   contenedor, o el zoom no se ve en la vista previa aunque sí se aplique al
+   PDF — que era justo el desajuste entre lo que veías y lo que descargabas. */
+.foto-crop-wrap img { max-width: none !important; height: auto !important; }
+
+</style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0a0a'/><text y='72' x='50' font-size='60' font-family='sans-serif' font-weight='bold' fill='%23FFD000' text-anchor='middle'>C</text></svg>">
+<meta name="theme-color" content="#0a0a0a">
+</head>
+<body>
+<script>
+// ══ RED DE SEGURIDAD: fetch() no lanza excepción con 400/500, así que un
+// try/catch sin mirar res.ok esconde el fallo por completo. Este envoltorio
+// registra en consola CUALQUIER respuesta no-OK de toda la aplicación.
+// Es diagnóstico: no cambia el comportamiento de ninguna llamada.
+(function() {
+  const _f = window.fetch;
+  window.fetch = async function(...args) {
+    const r = await _f.apply(this, args);
+    if (!r.ok) {
+      const url = (typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '?');
+      console.error(`🌐 fetch ${r.status} ${r.statusText} → ${String(url).substring(0, 120)}`);
+    }
+    return r;
+  };
+})();
+</script>
+
+
+<nav>
+  <a href="formulario-cv.html" class="nav-logo">CV<span>Pro</span></a>
+  <a class="nav-back" onclick="history.back()">← Volver</a>
+</nav>
+
+<!-- ── SELECTOR ── -->
+<div class="page" id="selectorPage">
+  <div class="page-title">
+    <h1>Elige tu plantilla</h1>
+    <p>Selecciona el estilo que mejor refleje tu personalidad profesional</p>
+  </div>
+
+  <div class="gender-tabs">
+    <button class="gender-tab active" onclick="setGender('h')">👔 Hombre</button>
+    <button class="gender-tab" onclick="setGender('m')">👩 Mujer</button>
+  </div>
+
+  <div class="templates-grid" id="templatesGrid"></div>
+
+  <!-- FOTO -->
+  <div class="foto-section">
+    <h3>📸 Tu foto profesional</h3>
+    <div class="foto-upload-area" onclick="document.getElementById('fotoInput').click()">
+      <input type="file" id="fotoInput" accept="image/*" onchange="cargarFoto(event)">
+      <div style="font-size:2rem">📷</div>
+      <p id="uploadTxt"><strong style="color:#FFD000">Haz clic para subir tu foto</strong><br>JPG o PNG recomendado</p>
+    </div>
+
+    <!-- AJUSTE FOTO -->
+    <div class="foto-ajuste" id="fotoAjuste">
+      <h4>Ajusta tu foto dentro del recuadro:</h4>
+    <p style="font-size:0.72rem;color:#999;margin:-4px 0 8px">✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom</p>
+      <div class="foto-crop-wrap" id="cropWrap">
+        <img id="cropImg" draggable="false">
+      </div>
+      <div class="crop-controls">
+        <div class="crop-ctrl">
+          <label>Zoom</label>
+          <input type="range" id="zoomCtrl" min="50" max="200" value="100" oninput="actualizarFoto()">
+        </div>
+        <div class="crop-ctrl">
+          <label>Vertical</label>
+          <input type="range" id="yCtrl" min="-100" max="100" value="0" oninput="actualizarFoto()">
+        </div>
+        <div class="crop-ctrl">
+          <label>Horizontal</label>
+          <input type="range" id="xCtrl" min="-100" max="100" value="0" oninput="actualizarFoto()">
+        </div>
+      </div>
+      <button class="btn-foto-ok" onclick="confirmarFoto()">✅ Confirmar ajuste</button>
+    </div>
+  </div>
+
+  <button class="btn-generar" onclick="mostrarCV()">⚡ Generar mi CV con esta plantilla</button>
+</div>
+
+<!-- ── CV RESULTADO ── -->
+<div class="cv-result" id="cvResult">
+  <div class="cv-actions">
+    <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar PDF</button>
+    <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
+    <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
+    <button class="btn-carta" id="btnCartaOtro" style="background:#6b4fa8" onclick="generarCarta((_idiomaActual||LANG)==='en'?'es':'en')">✉️ Carta en el otro idioma</button>
+    <button class="btn-carta" id="btnTraducir" style="background:#2563eb" onclick="traducirCV()">🇺🇸 Convertir a Resume <span style="opacity:.75;font-weight:400">(formato EE.UU.)</span></button>
+    <button class="btn-volver" onclick="volverSelector()">← Cambiar plantilla</button>
+  </div>
+  <div id="cvFinal"></div>
+
+  <!-- Carta de presentación -->
+  <div id="cartaWrap" style="display:none;margin-top:30px">
+    <div class="cv-actions">
+      <button class="btn-pdf" onclick="descargarCartaPDF()">📄 Descargar carta PDF</button>
+      <button class="btn-pdf" style="background:#2b579a;color:#fff;margin-left:8px" onclick="descargarCartaWord()">📝 Descargar carta Word</button>
+      <button class="btn-volver" onclick="document.getElementById('cartaWrap').style.display='none'">✕ Cerrar</button>
+    </div>
+    <div id="cartaFinal" style="background:#fff;width:794px;padding:60px 70px;font-family:'Lato',sans-serif;color:#1a1a1a;font-size:0.9rem;line-height:1.8;white-space:pre-wrap;margin:0 auto;box-shadow:0 4px 24px rgba(0,0,0,0.15)"></div>
+  </div>
+</div>
+
+<script>
+const TPLS = {
+  h:[
+    {id:'h1',name:'Ejecutivo Navy',color:'#0d1b2a'},
+    {id:'h2',name:'Negro Dorado',color:'#111'},
+    {id:'h3',name:'Minimalista',color:'#1a1a1a'},
+    {id:'h4',name:'Verde Oliva',color:'#2d4a22'},
+    {id:'h5',name:'Tech Azul',color:'#0066ff'},
+    {id:'h6',name:'Grafito Ejecutivo',color:'#2b2d31'},
+    {id:'h7',name:'Carbón Petróleo',color:'#00434d'},
+    {id:'h8',name:'Burdeos Élite',color:'#3a0d16'},
+    {id:'h9',name:'Azul Real',color:'#123e93'},
+    {id:'h10',name:'Bosque Premium',color:'#1f3a2d'},
+  ],
+  m:[
+    {id:'m1',name:'Rosa Gold',color:'#4a2d5c'},
+    {id:'m2',name:'Corporativa Teal',color:'#0d4f4f'},
+    {id:'m3',name:'Moderna Naranja',color:'#ff6b35'},
+    {id:'m4',name:'Sofisticada',color:'#6b1a1a'},
+    {id:'m5',name:'Lavanda',color:'#4a3f8b'},
+    {id:'m6',name:'Esmeralda Ejecutiva',color:'#0e5c46'},
+    {id:'m7',name:'Champagne Élite',color:'#7a5c3e'},
+    {id:'m8',name:'Coral Contemporánea',color:'#e2555f'},
+    {id:'m9',name:'Azul Petróleo',color:'#12557d'},
+    {id:'m10',name:'Vino Elegante',color:'#5c1f3d'},
+  ]
+};
+// Clonado de layouts base para las 10 nuevas plantillas
+const CLONES = {h6:'h1', h7:'h3', h8:'h2', h9:'h5', h10:'h4', m6:'m2', m7:'m1', m8:'m3', m9:'m5', m10:'m4'};
+
+const LANG = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+const T = LANG === 'en' ? {
+  perfil:'Profile', habilidades:'Skills', idiomas:'Languages', educacion:'Education',
+  experiencia:'Professional experience', logros:'Certifications', certificaciones:'Certifications',
+  descargarPDF:'📄 Download PDF', volver:'← Back to templates', elegir:'Choose this template',
+  generar:'⚡ Generate my resume', titulo:'Choose your template', subtitulo:'10 professional designs — pick yours and download instantly',
+  fotoTitulo:'Add your photo (optional)', fotoAviso:'⚠️ US resumes normally have NO photo — recruiters often discard them for anti-discrimination compliance. We recommend continuing without one.', fotoOk:'✓ Use this photo', fotoSaltar:'Continue without photo',
+  hombre:'Men styles', mujer:'Women styles', cargando:'Generating your resume...'
+} : {
+  perfil:'Perfil', habilidades:'Habilidades', idiomas:'Idiomas', educacion:'Educación',
+  experiencia:'Experiencia profesional', logros:'Certificaciones', certificaciones:'Certificaciones',
+  descargarPDF:'📄 Descargar PDF', volver:'← Volver a plantillas', elegir:'Elegir esta plantilla',
+  generar:'⚡ Generar mi CV', titulo:'Elige tu plantilla', subtitulo:'10 diseños profesionales — elige el tuyo y descarga al instante',
+  fotoTitulo:'Agrega tu foto (opcional)', fotoAviso:'', fotoOk:'✓ Usar esta foto', fotoSaltar:'Continuar sin foto',
+  hombre:'Estilos hombre', mujer:'Estilos mujer', cargando:'Generando tu CV...'
+};
+
+let gender = 'h';
+let selTpl = 'h1';
+let fotoOriginal = null;
+let fotoAjustada = null;
+
+// ══ ESTADO GLOBAL — DEBE declararse ANTES de renderTemplates() (línea ~978) ══
+// Lección aprendida: estas variables vivían en la línea ~1330, DESPUÉS de la
+// llamada top-level a renderTemplates(). Como ph() las lee durante el render
+// inicial, el script moría con "Cannot access before initialization" (zona
+// muerta temporal de let/const — ni siquiera `typeof` protege contra ella),
+// abortando TODO el código posterior: la foto salía en negro, _ajustePrev
+// nunca se inicializaba, etc. NUNCA declarar estado con let/const después
+// de una llamada de nivel superior que lo consuma.
+let _cvOriginalIdioma = null;   // copia del CV antes de traducir
+let _idiomaActual = null;       // 'es' | 'en'
+let _fotoRespaldo = null;       // foto guardada al convertir a resume EE.UU.
+// Recuerda el último encuadre de la foto: al pulsar "Reajustar" los
+// deslizadores volvían a 130/0/0 y había que recolocarla desde cero.
+let _ajustePrev = {z:130, x:0, y:0};
+
+// Cargar datos del sessionStorage
+
+// ══ SEGURIDAD XSS: escapar todo dato del usuario antes de insertarlo en el DOM ══
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const capitalizar = (s) => (s||'').split(' ').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+const D = JSON.parse(sessionStorage.getItem('cvData') || 'null') || {
+  nombre:'Carlos Mendoza', email:'carlos@email.com', telefono:'+57 300 000 0000',
+  pais:'Colombia', linkedin:'linkedin.com/in/carlos', puesto:'Desarrollador Web Senior',
+  resumen:'Desarrollador con 5 años transformando ideas en productos digitales. Especialista en React y Node.js.',
+  experiencia:[
+    {titulo:'Senior Frontend Developer',empresa:'TechCorp Colombia',periodo:'2022 — Presente',bullets:['Lideré migración a React reduciendo tiempo de carga 40%','Desarrollé 12 componentes reutilizables','Mentoré a 3 desarrolladores junior']},
+    {titulo:'Web Developer',empresa:'StartupXYZ',periodo:'2020 — 2022',bullets:['Construí plataforma e-commerce con $2M en transacciones','Optimicé base de datos 60%']}
+  ],
+  educacion:[{titulo:'Ing. de Sistemas',institucion:'Universidad Nacional',año:'2019'}],
+  habilidades:[{nombre:'React/Next.js',nivel:90},{nombre:'Node.js',nivel:80},{nombre:'PostgreSQL',nivel:75},{nombre:'AWS',nivel:65}],
+  idiomas:[{nombre:'Español',nivel:'Nativo'},{nombre:'Inglés',nivel:'Intermedio'}],
+  logros:['Mejor desarrollador 2023','Speaker JSConf Colombia 2022']
+};
+
+if (D.nombre) D.nombre = capitalizar(D.nombre);
+
+// ── Red de seguridad: jamás pintar placeholders de período ──
+// La IA escribía "Período no especificado" cuando el CV original no traía
+// fechas, y ese texto llegaba impreso al PDF final (visto en auditoría con
+// CV real). El prompt ya lo prohíbe; esto garantiza que si se cuela, muere
+// antes del render. La ausencia de un dato se omite, nunca se anuncia.
+function limpiarPlaceholdersCV(d) {
+  if (!d) return d;
+  const esPh = v => /^(per[ií]odo?\s+no\s+especificado|no\s+especificado|period\s+not\s+specified|not\s+specified|fechas?\s+no\s+disponibles?|n\/a)\.?$/i.test(String(v || '').trim());
+  (d.experiencia || []).forEach(j => { if (esPh(j.periodo)) j.periodo = ''; });
+  (d.educacion || []).forEach(e => {
+    if (esPh(e['año'])) e['año'] = '';
+    if (esPh(e.anio)) e.anio = '';
+  });
+  return d;
+}
+limpiarPlaceholdersCV(D);
+
+// ── CARTA DE PRESENTACIÓN CON IA ──
+const SUPABASE_URL_C = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const SUPABASE_URL = SUPABASE_URL_C;
+const SUPABASE_KEY_C = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+const SUPABASE_KEY = SUPABASE_KEY_C;
+
+// ── GENDER & TEMPLATES
+function setGender(g) {
+  gender = g;
+  selTpl = g === 'h' ? 'h1' : 'm1';
+  document.querySelectorAll('.gender-tab').forEach((t,i) => t.classList.toggle('active',(g==='h'&&i===0)||(g==='m'&&i===1)));
+  renderTemplates();
+}
+
+let cartaGenerada = '';
+
+// [duplicado eliminado: generarCarta() antigua — la versión vigente está más abajo]
+
+
+
+
+function corregirFechaCarta(t) {
+  const h = new Date();
+  const mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Usaba LANG (fijo al cargar la página): reescribía la fecha en español
+  // encima de una carta en inglés, deshaciendo el encabezado correcto.
+  const _l = (typeof _idiomaActual !== 'undefined' && _idiomaActual) ? _idiomaActual : LANG;
+  const esEN = _l === 'en';
+  const fechaOK = esEN
+    ? `${mesesEN[h.getMonth()]} ${h.getDate()}, ${h.getFullYear()}`
+    : `${h.getDate()} de ${mesesES[h.getMonth()]} de ${h.getFullYear()}`;
+  let out = String(t || '');
+  // Reemplaza "mes de AAAA" o "mes AAAA" en español por la fecha real
+  const reES = new RegExp('(?:\\d{1,2}\\s+de\\s+)?(' + mesesES.join('|') + ')\\s+(?:de\\s+)?(19|20)\\d{2}', 'gi');
+  out = out.replace(reES, fechaOK);
+  // Inglés: "Month DD, YYYY" o "Month YYYY"
+  const reEN = new RegExp('(' + mesesEN.join('|') + ')\\s+\\d{0,2},?\\s*(19|20)\\d{2}', 'gi');
+  out = out.replace(reEN, fechaOK);
+  // ⚠️ Aquí había un bug silencioso: esta línea reemplazaba CUALQUIER año
+  // posterior al actual en todo el texto de la carta. Si el candidato tiene
+  // un puesto "2026 – Actualidad" y el año en curso fuera menor, le
+  // reescribía las fechas de su propia trayectoria sin avisar.
+  // Ahora solo se aplica al bloque de encabezado (primeras 3 líneas),
+  // que es donde vive la fecha de la carta.
+  const lineas = out.split('\n');
+  const cabecera = lineas.slice(0, 3).join('\n')
+    .replace(/\b(19|20)\d{2}\b/g, (m) => Number(m) > h.getFullYear() ? String(h.getFullYear()) : m);
+  out = [cabecera, ...lineas.slice(3)].join('\n');
+  return out;
+}
+
+function limpiarCarta(t) {
+  const _r = String(t || '')
+    .replace(/\r/g, '')
+    .replace(/^\s*#{1,6}\s*.*$/gm, '')          // títulos markdown completos
+    .replace(/^\s*[-–—_*]{3,}\s*$/gm, '')       // separadores --- ___ ***
+    .replace(/\*\*/g, '')                        // negritas
+    .replace(/(^|\s)\*(\S)/g, '$1$2')            // asteriscos sueltos
+    .replace(/\*/g, '')
+    .replace(/^\s*>\s?/gm, '')                   // citas
+    .replace(/`/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .split('\n').map(l => l.replace(/\s+$/,'')).join('\n')
+    .trim();
+  return corregirFechaCarta(_r);
+}
+
+function descargarCartaWord() {
+  // Leía #cartaFinal, pero mostrarCarta() pinta la carta en #cartaBody.
+  // Encontraba el elemento vacío y hacía return en silencio: el botón
+  // parecía roto porque no pasaba absolutamente nada.
+  const el = document.getElementById('cartaBody') || document.getElementById('cartaFinal');
+  const texto = limpiarCarta((el && el.textContent) || '');
+  if (!texto.trim()) {
+    alert(LANG==='en' ? 'Generate the cover letter first.' : 'Genera primero la carta de presentación.');
+    return;
+  }
+  ev('cover_letter_word_downloaded');
+  const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
+  const parrafos = texto.split(/\n{1,}/).map(l => l.trim())
+    .map(l => l ? `<p style="margin:0 0 12pt 0;text-align:justify">${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>` : '<p style="margin:0 0 12pt 0">&nbsp;</p>')
+    .join('');
+  const doc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${LANG==='en'?'Cover Letter':'Carta de Presentación'}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>@page{size:A4;margin:2.5cm} body{font-family:'Calibri','Segoe UI',sans-serif;font-size:11.5pt;line-height:1.6;color:#1a1a1a}</style>
+</head><body>${parrafos}
+</body></html>`;
+  const blob = new Blob(['\ufeff', doc], {type: 'application/msword'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${LANG==='en'?'Cover_Letter':'Carta'}_${nombre}.doc`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+// [duplicado eliminado: descargarCartaPDF() antigua — la versión vigente está más abajo]
+
+// Traducir UI si el cliente es inglés
+if (LANG === 'en') {
+  document.title = 'Choose your template | CVPro';
+  const h1 = document.querySelector('.page-title h1');
+  if (h1) h1.textContent = 'Choose your template';
+  const sub = document.querySelector('.page-title p');
+  if (sub) sub.textContent = '10 professional designs — pick yours and download instantly';
+  const btnGen = document.querySelector('.btn-generar');
+  if (btnGen) btnGen.textContent = '⚡ Generate my resume with this template';
+  const btnPdf = document.querySelector('.btn-pdf');
+  if (btnPdf) btnPdf.textContent = '📄 Download PDF';
+  const btnCarta = document.getElementById('btnCarta');
+  if (btnCarta) btnCarta.textContent = '✉️ Cover letter';
+  const btnVolver = document.querySelector('.btn-volver');
+  if (btnVolver) btnVolver.textContent = '← Change template';
+  const navBack = document.querySelector('.nav-back');
+  if (navBack) navBack.textContent = '← Back';
+  document.querySelectorAll('.btn-foto-ok').forEach(b => { if(b.textContent.includes('Usar')) b.textContent = '✓ Use this photo'; });
+
+  // ⚠️ Convención de EE.UU.: un resume NO lleva foto. Muchos reclutadores lo
+  // descartan por cumplimiento antidiscriminación. Advertirlo evita entregar
+  // un documento que no pasa el primer filtro.
+  // En EE.UU. un resume con foto se descarta por cumplimiento
+  // antidiscriminación. Advertirlo no bastaba: el usuario la subía igual.
+  // En el flujo en inglés ocultamos el bloque de foto por completo.
+
+
+  document.querySelectorAll('button,a,div,h2,h3,p,span,label').forEach(el => {
+    if (el.children.length === 0) {
+      const t = el.textContent.trim();
+      const map = {
+        'Agrega tu foto (opcional)':'Add your photo (optional)',
+        'Continuar sin foto':'Continue without photo',
+        'Volver a plantillas':'Back to templates',
+        '← Volver a plantillas':'← Back to templates',
+        'Elegir otra plantilla':'Choose another template',
+        'Estilos hombre':'Men styles','Estilos mujer':'Women styles',
+        'Hombre':'Men','Mujer':'Women',
+        'Zoom':'Zoom','Mover':'Move'
+      };
+      if (map[t]) el.textContent = map[t];
+    }
+  });
+}
+
+// Aplicar idioma a UI
+if (LANG === 'en') {
+  document.querySelectorAll('button, h1, h2, h3, p, span, div').forEach(el => {
+    if (el.children.length > 0) return;
+    const t = el.textContent.trim();
+    const map = {
+      '📄 Descargar PDF': '📄 Download PDF',
+      '← Volver': '← Back',
+      '← Cambiar plantilla': '← Change template',
+      'Elige tu plantilla': 'Choose your template',
+      '👔 Hombre': '👔 Style A',
+      '👩 Mujer': '👩 Style B',
+      '📸 Tu foto profesional': '📸 Your professional photo',
+      'Haz clic para subir tu foto': 'Click to upload your photo',
+      'Ajusta tu foto dentro del recuadro:': 'Adjust your photo inside the frame:',
+      '⚡ Generar mi CV con esta plantilla': '⚡ Generate my resume with this template',
+      '📄 Descargar carta PDF': '📄 Download letter PDF',
+      '📝 Descargar carta Word': '📝 Download letter Word',
+      '✉️ Generar carta de presentación (IA)': '✉️ Generate cover letter (AI)',
+      '📋 Versión ATS (texto seleccionable)': '📋 ATS version (selectable text)',
+      'Zoom': 'Zoom'
+    };
+    if (map[t]) el.textContent = map[t];
+    if (t.startsWith('Todas las plantillas')) el.textContent = 'All templates are ATS-optimized and recruiter-approved';
+    if (t.startsWith('Elige el estilo')) el.textContent = 'Choose the style that fits you';
+  });
+  document.title = 'Choose your template | CVPro';
+}
+renderTemplates();
+
+function renderTemplates() {
+  const grid = document.getElementById('templatesGrid');
+  grid.innerHTML = TPLS[gender].map(t => `
+    <div class="tpl-card ${t.id===selTpl?'selected':''}" onclick="seleccionar('${t.id}')">
+      <span class="tpl-selected-badge">✓ Seleccionada</span>
+      <div class="tpl-preview">
+        <div class="mini" id="mini-${t.id}">${buildCV(t.id)}</div>
+      </div>
+      <div class="tpl-name">${t.name}</div>
+    </div>
+  `).join('');
+}
+
+function seleccionar(id) {
+  selTpl = id;
+  renderTemplates();
+  const isSquare = id === 'h2' || id === 'h3';
+  document.getElementById('cropWrap').classList.toggle('square', isSquare);
+}
+
+// ── FOTO
+function cargarFoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (!/^image\//.test(file.type)) {
+    alert(LANG==='en' ? 'Please choose an image file (JPG or PNG).' : 'Elige un archivo de imagen (JPG o PNG).');
+    return;
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    alert(LANG==='en' ? 'The image is too large (max 8MB).' : 'La imagen es muy pesada (máx. 8MB).');
+    return;
+  }
+
+  const txt = document.getElementById('uploadTxt');
+  if (txt) txt.innerHTML = '<strong style="color:#FFD000">⏳ Cargando tu foto...</strong>';
+
+  const reader = new FileReader();
+  reader.onerror = () => {
+    console.error('No se pudo leer el archivo de imagen');
+    if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ No se pudo leer la imagen — prueba con otra</strong>';
+  };
+  reader.onload = ev => {
+    const dataUrl = ev.target.result;
+    // ── PRUEBA DE DECODIFICACIÓN ──
+    // FileReader NO decodifica la imagen: solo la convierte a base64. Un HEIC
+    // de iPhone pasa el filtro image/*, se lee sin error… y el <img> del
+    // recorte no puede pintarlo → recuadro negro sin excepción alguna.
+    // Verificamos que el navegador SÍ sabe renderizarla antes de continuar.
+    const probe = new Image();
+    probe.onload = () => {
+      if (!probe.naturalWidth || !probe.naturalHeight) {
+        console.error('Imagen decodificada con dimensiones 0 — formato no soportado');
+        if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">' + (LANG==='en'
+          ? '❌ This image format is not supported — please convert it to JPG or PNG'
+          : '❌ Este formato de imagen no es compatible — conviértela a JPG o PNG') + '</strong>';
+        return;
+      }
+      fotoOriginal = dataUrl;
+      // El aviso se actualiza ANTES de montar el panel: si mostrarAjuste()
+      // lanza una excepción, el usuario ya sabe que su foto sí se leyó, y el
+      // error aparece en consola en vez de dejar la pantalla en negro.
+      if (txt) txt.innerHTML = '<strong style="color:#00C853">' + (LANG==='en' ? '✅ Photo loaded — adjust it below' : '✅ Foto cargada — ajústala abajo') + '</strong>';
+      try {
+        mostrarAjuste();
+      } catch(err) {
+        console.error('Fallo al montar el ajuste de foto:', err);
+        if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ Error al preparar el recorte: ' + err.message + '</strong>';
+      }
+    };
+    probe.onerror = () => {
+      console.error('El navegador no puede decodificar esta imagen. Tipo:', file.type, '· Nombre:', file.name);
+      const esHeic = /heic|heif/i.test(file.type + ' ' + file.name);
+      if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">' + (LANG==='en'
+        ? (esHeic ? '❌ iPhone HEIC photos are not supported by this browser — open the photo and save it as JPG, or take a screenshot of it' : '❌ Your browser cannot read this image — please use a JPG or PNG')
+        : (esHeic ? '❌ Las fotos HEIC de iPhone no son compatibles con este navegador — abre la foto y guárdala como JPG, o hazle una captura de pantalla' : '❌ Tu navegador no puede leer esta imagen — usa un JPG o PNG')) + '</strong>';
+    };
+    probe.src = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function activarDragFoto() {
+  const wrap = document.getElementById('cropWrap');
+  if (!wrap || wrap.dataset.drag) return;
+  // Nota: mostrarAjuste() recrea el #cropWrap cada vez, así que dataset.drag
+  // siempre viene vacío y los listeners de window se acumulaban. Los limpiamos.
+  if (window._dragFotoCleanup) window._dragFotoCleanup();
+  wrap.dataset.drag = '1';
+  wrap.style.cursor = 'grab';
+  wrap.style.touchAction = 'none';
+  let sx=0, sy=0, ox=0, oy=0, activo=false;
+  const X = () => document.getElementById('xCtrl');
+  const Y = () => document.getElementById('yCtrl');
+  const Z = () => document.getElementById('zoomCtrl');
+  const down = (e) => {
+    activo = true; wrap.style.cursor = 'grabbing';
+    const p = e.touches ? e.touches[0] : e;
+    sx = p.clientX; sy = p.clientY;
+    ox = parseInt(X()?.value||0); oy = parseInt(Y()?.value||0);
+    e.preventDefault();
+  };
+  const move = (e) => {
+    if (!activo) return;
+    const p = e.touches ? e.touches[0] : e;
+    if (X()) X().value = Math.max(-150, Math.min(150, ox + (p.clientX - sx)));
+    if (Y()) Y().value = Math.max(-150, Math.min(150, oy + (p.clientY - sy)));
+    actualizarFoto();
+  };
+  const up = () => { activo = false; wrap.style.cursor = 'grab'; };
+  wrap.addEventListener('mousedown', down);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', up);
+  wrap.addEventListener('touchstart', down, {passive:false});
+  window.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('touchend', up);
+  window._dragFotoCleanup = () => {
+    window.removeEventListener('mousemove', move);
+    window.removeEventListener('mouseup', up);
+    window.removeEventListener('touchmove', move);
+    window.removeEventListener('touchend', up);
+  };
+  wrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (Z()) { Z().value = Math.max(50, Math.min(250, parseInt(Z().value) + (e.deltaY < 0 ? 6 : -6))); actualizarFoto(); }
+  }, {passive:false});
+}
+
+// (_ajustePrev se declara en el bloque de estado global, arriba)
+
+function mostrarAjuste() {
+  const ajuste = document.getElementById('fotoAjuste');
+  ajuste.classList.add('visible');
+  ajuste.innerHTML = `
+    <h4>Ajusta tu foto dentro del recuadro:</h4>
+    <p style="font-size:0.72rem;color:#999;margin:-4px 0 8px">✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom</p>
+    <div class="foto-crop-wrap ${selTpl==='h2'||selTpl==='h3'?'square':''}" id="cropWrap">
+      <img id="cropImg" src="${fotoOriginal}" draggable="false"
+        onerror="console.error('cropImg no pudo renderizar la imagen'); this.closest('.foto-crop-wrap').innerHTML='<p style=&quot;color:#ff6b6b;font-size:0.7rem;padding:20px;text-align:center&quot;>❌ No se pudo mostrar la imagen.<br>Usa un JPG o PNG.</p>'">
+    </div>
+    <div class="crop-controls">
+      <div class="crop-ctrl"><label>Zoom</label><input type="range" id="zoomCtrl" min="50" max="250" value="${_ajustePrev.z}" oninput="actualizarFoto()"></div>
+      <div class="crop-ctrl"><label>Vertical</label><input type="range" id="yCtrl" min="-150" max="150" value="${_ajustePrev.y}" oninput="actualizarFoto()"></div>
+      <div class="crop-ctrl"><label>Horizontal</label><input type="range" id="xCtrl" min="-150" max="150" value="${_ajustePrev.x}" oninput="actualizarFoto()"></div>
+    </div>
+    <button class="btn-foto-ok" onclick="confirmarFoto()">✅ Confirmar ajuste</button>
+  `;
+  actualizarFoto();
+  activarDragFoto();
+}
+
+function actualizarFoto() {
+  const zoomEl = document.getElementById('zoomCtrl');
+  const xEl = document.getElementById('xCtrl');
+  const yEl = document.getElementById('yCtrl');
+  if (!zoomEl) return;
+  const zoom = parseFloat(zoomEl.value);
+  const x = xEl.value;
+  const y = yEl.value;
+  const img = document.getElementById('cropImg');
+  if (!img) return;
+  img.style.width = zoom + '%';
+  img.style.height = 'auto';
+  img.style.left = '50%';
+  img.style.top = '50%';
+  img.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+}
+
+async function confirmarFoto() {
+  const wrap = document.getElementById('cropWrap');
+  const isCircle = !wrap.classList.contains('square');
+  const size = 400;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const tmpImg = new Image();
+  // onerror + timeout: sin esto, una imagen que no decodifica dejaba el
+  // await colgado PARA SIEMPRE y el botón "Confirmar" moría en silencio.
+  const cargaOk = await new Promise(r => {
+    tmpImg.onload = () => r(true);
+    tmpImg.onerror = () => r(false);
+    setTimeout(() => r(false), 10000);
+    tmpImg.src = fotoOriginal;
+  });
+  if (!cargaOk || !tmpImg.naturalWidth) {
+    console.error('confirmarFoto: la imagen no se pudo decodificar');
+    alert(LANG==='en' ? 'Could not process this image — please try a JPG or PNG.' : 'No se pudo procesar esta imagen — prueba con un JPG o PNG.');
+    return;
+  }
+
+  const _z = parseFloat(document.getElementById('zoomCtrl').value);
+  const _x = parseFloat(document.getElementById('xCtrl').value);
+  const _y = parseFloat(document.getElementById('yCtrl').value);
+  _ajustePrev = {z:_z, x:_x, y:_y};
+  const zoom = _z / 100;
+  const xOff = _x * 2;
+  const yOff = _y * 2;
+
+  // La vista previa escala SIEMPRE por ancho (`img.style.width = zoom + '%'`
+  // sobre un recuadro de 200px). El canvas escalaba por ALTO cuando la foto
+  // era apaisada, así que salía `ratio` veces más grande que lo que el usuario
+  // había encuadrado. Ahora replicamos exactamente la vista previa.
+  const ratio = tmpImg.naturalWidth / tmpImg.naturalHeight;
+  const iw = size * zoom;
+  const ih = iw / ratio;
+  const ix = (size - iw) / 2 + xOff;
+  const iy = (size - ih) / 2 + yOff;
+
+  // Detectar color dominante de los bordes de la foto
+  const sampleCanvas = document.createElement('canvas');
+  const sw = tmpImg.naturalWidth, sh = tmpImg.naturalHeight;
+  sampleCanvas.width = sw; sampleCanvas.height = sh;
+  const sCtx = sampleCanvas.getContext('2d');
+  sCtx.drawImage(tmpImg, 0, 0);
+
+  // Muestrear píxeles de los 4 bordes
+  let rSum=0, gSum=0, bSum=0, count=0;
+  const step = Math.max(1, Math.floor(Math.min(sw,sh)/20));
+  const borderPx = Math.floor(Math.min(sw,sh) * 0.08); // 8% del borde
+
+  const sampleRegions = [
+    {x:0, y:0, w:borderPx, h:sh},          // borde izquierdo
+    {x:sw-borderPx, y:0, w:borderPx, h:sh}, // borde derecho
+    {x:0, y:0, w:sw, h:borderPx},           // borde superior
+    {x:0, y:sh-borderPx, w:sw, h:borderPx}  // borde inferior
+  ];
+
+  sampleRegions.forEach(r => {
+    for (let x=r.x; x<r.x+r.w; x+=step) {
+      for (let y=r.y; y<r.y+r.h; y+=step) {
+        const px = sCtx.getImageData(Math.min(x,sw-1), Math.min(y,sh-1), 1, 1).data;
+        rSum+=px[0]; gSum+=px[1]; bSum+=px[2]; count++;
+      }
+    }
+  });
+
+  const br = Math.round(rSum/count);
+  const bg = Math.round(gSum/count);
+  const bb = Math.round(bSum/count);
+
+  // Rellenar canvas con color dominante del borde
+  ctx.fillStyle = `rgb(${br},${bg},${bb})`;
+  ctx.fillRect(0, 0, size, size);
+
+  // Clip circular si aplica
+  if (isCircle) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size/2, size/2, size/2, 0, Math.PI*2);
+    ctx.clip();
+  }
+
+  ctx.drawImage(tmpImg, ix, iy, iw, ih);
+  if (isCircle) ctx.restore();
+  fotoAjustada = canvas.toDataURL('image/jpeg', 0.95);
+
+  const ajuste = document.getElementById('fotoAjuste');
+  ajuste.innerHTML = `
+    <div style="text-align:center">
+      <img src="${fotoAjustada}" style="width:90px;height:90px;border-radius:${isCircle?'50%':'10px'};border:3px solid #FFD000;object-fit:cover;margin-bottom:8px">
+      <p style="color:#00C853;font-size:0.82rem;font-weight:700">✅ Foto ajustada correctamente</p>
+      <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+        <button onclick="mostrarAjuste()" style="background:transparent;color:#FFD000;border:1px solid #FFD000;border-radius:20px;padding:5px 14px;font-size:0.75rem;cursor:pointer;font-family:'Montserrat',sans-serif">✏️ Reajustar</button>
+        <button onclick="document.getElementById('fotoInput').click()" style="background:transparent;color:#888;border:1px solid #444;border-radius:20px;padding:5px 14px;font-size:0.75rem;cursor:pointer;font-family:'Montserrat',sans-serif">📷 Cambiar foto</button>
+      </div>
+    </div>`;
+  renderTemplates();
+}
+
+// ── CONSTRUIR CV
+function ph(cls, isRect) {
+  // Bloqueo duro: en un resume estadounidense NUNCA se pinta la foto, sin
+  // importar si el usuario la había subido antes de convertir el documento.
+  const _lang = (typeof _idiomaActual !== 'undefined' && _idiomaActual) ? _idiomaActual : LANG;
+  if (_lang === 'en') {
+    const ini0 = (D.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    return isRect ? `<div class="ph-rect">${ini0}</div>` : `<div class="ph">${ini0}</div>`;
+  }
+  if (fotoAjustada) {
+    if (isRect) return `<div class="ph-rect"><img src="${fotoAjustada}"></div>`;
+    return `<div class="ph"><img src="${fotoAjustada}"></div>`;
+  }
+  const ini = (D.nombre||'?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  if (isRect) return `<div class="ph-rect">${ini}</div>`;
+  return `<div class="ph">${ini}</div>`;
+}
+
+function bls(cls, arr) { return arr.map(b=>`<div class="bl">${esc(b)}</div>`).join(''); }
+function skills(cls, arr) { return `<div class="sk-list">${arr.map(s=>`<div class="sk-item">• ${esc(s.nombre)}</div>`).join('')}</div>`; }
+function jobs(cls, arr) { return arr.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)}${j.periodo?' · '+esc(j.periodo):''}</div>${bls(cls,j.bullets)}</div>`).join(''); }
+function edu(arr) { return arr.map(e=>`<p style="font-size:0.74rem;margin-bottom:6px"><strong>${e.titulo}</strong><br><span style="color:#888">${e.institucion} · ${e.año}</span></p>`).join(''); }
+function ct(cls) { return `<span class="ci">✉ ${esc(D.email)}</span>${D.telefono?`<span class="ci">📱 ${esc(D.telefono)}</span>`:''}${D.pais?`<span class="ci">📍 ${esc(D.pais)}</span>`:''}${D.linkedin?`<span class="ci">🔗 ${esc(D.linkedin)}</span>`:''}` }
+
+function buildCV(id) {
+  const d = D;
+  const resumen = d.resumen || '';
+  const logrosHtml = d.logros?.length ? `<div style="margin-top:14px"><div class="cv-${id} st">${T.logros}</div>${d.logros.map(l=>`<div class="cv-${id} bl">${esc(l)}</div>`).join('')}</div>` : '';
+  // Salía "EspañolNativo" pegado: los dos <span> quedaban sin separación
+  // visual porque .li no siempre aplica space-between en todas las plantillas.
+  const langHtml = (d.idiomas||[]).map(l=>`<div class="li" style="display:flex;justify-content:space-between;gap:10px"><span>${esc(l.nombre)}</span><span style="color:#888;text-align:right;max-width:60%;overflow-wrap:break-word">${l.nivel?'· '+esc(l.nivel):''}</span></div>`).join('');
+
+  const maps = {
+    h1:`<div class="cv-h1"><div class="hdr">${ph('cv-h1',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h1')}</div></div></div><div class="bd"><div class="sb"><div class="st" style="margin-top:0">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:14px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h1',d.habilidades)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h1',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    h2:`<div class="cv-h2"><div class="hdr">${ph('cv-h2',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="gl"></div><div class="ct">${ct('cv-h2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jh"><div class="jt">${esc(j.titulo)}</div><div class="jd">${esc(j.periodo)}</div></div><div class="jm">${esc(j.empresa)}</div>${bls('cv-h2',j.bullets)}</div>`).join('')}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p>${logrosHtml}</div><div class="sb"><div class="st">${T.habilidades}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">${d.habilidades.map(s=>`<div class="tg">${esc(s.nombre)}</div>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${(d.idiomas||[]).map(l=>`<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px"><span>${esc(l.nombre)}</span><span style="color:#FFD000;font-weight:700">${esc(l.nivel)}</span></div>`).join('')}</div></div></div>`,
+
+    h3:`<div class="cv-h3"><div class="hdr"><div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct"><span class="ci">✉ ${d.email}</span>${d.telefono?`<span class="ci">📱 ${d.telefono}</span>`:''}</div></div>${ph('cv-h3',false)}</div><div class="bd"><div class="col"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)}${j.periodo?' · '+esc(j.periodo):''}</div>${bls('cv-h3',j.bullets)}</div>`).join('')}</div><div class="col"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${d.habilidades.map(s=>`<div class="dr"><span class="dn">${esc(s.nombre)}</span><div class="ds">${[1,2,3,4,5].map(i=>`<div class="dot ${s.nivel>=i*20?'f':''}"></div>`).join('')}</div></div>`).join('')}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+
+    h4:`<div class="cv-h4"><div class="hdr">${ph('cv-h4',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h4',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h4',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    h5:`<div class="cv-h5"><div class="hdr">${ph('cv-h5',true)}<div class="hdr-info"><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h5')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h5',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-h5',d.habilidades)}<div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+
+    m1:`<div class="cv-m1"><div class="hdr">${ph('cv-m1',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="gl"></div><div class="ct">${ct('cv-m1')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px;font-family:'Montserrat',sans-serif">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m1',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m1',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    m2:`<div class="cv-m2"><div class="hdr">${ph('cv-m2',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m2',d.experiencia)}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p></div><div class="sb"><div class="st">${T.habilidades}</div>${skills('cv-m2',d.habilidades)}<div class="st">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+
+    m3:`<div class="cv-m3"><div class="hdr">${ph('cv-m3',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m3')}</div></div></div><div class="bd"><div class="sb"><div class="st">Sobre mí</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m3',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jd">${esc(j.periodo)}</div><div class="jm">${esc(j.empresa)}</div>${bls('cv-m3',j.bullets)}</div>`).join('')}${logrosHtml}</div></div></div>`,
+
+    m4:`<div class="cv-m4"><div class="hdr">${ph('cv-m4',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m4',d.habilidades)}<div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m4',d.experiencia)}${logrosHtml}</div></div></div>`,
+
+    m5:`<div class="cv-m5"><div class="hdr">${ph('cv-m5',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-m5')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#666;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-m5',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${(d.idiomas||[]).map(l=>`<div class="lb"><span style="font-size:0.72rem;font-weight:700">${esc(l.nombre)}</span><span class="lbg">${esc(l.nivel)}</span></div>`).join('')}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-m5',d.experiencia)}${logrosHtml}</div></div></div>`
+  };
+  for (const [nuevo, base] of Object.entries(CLONES)) {
+    if (!maps[nuevo]) maps[nuevo] = maps[base].split('cv-'+base).join('cv-'+nuevo);
+  }
+  return maps[id] || maps['h1'];
+}
+
+function mostrarCV() {
+  if (typeof actualizarBotonTraducir === 'function') setTimeout(actualizarBotonTraducir, 0);
+  const html = buildCV(selTpl);
+  document.getElementById('cvFinal').innerHTML = html;
+  document.getElementById('selectorPage').style.display = 'none';
+  document.getElementById('cvResult').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function volverSelector() {
+  document.getElementById('cvResult').style.display = 'none';
+  document.getElementById('selectorPage').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+
+
+
+// ══════════ TRADUCCIÓN DEL CV AL OTRO IDIOMA ══════════
+// (_cvOriginalIdioma, _idiomaActual y _fotoRespaldo se declaran en el
+//  bloque de estado global, arriba — moverlas aquí de vuelta ROMPE la página)
+
+async function traducirCV() {
+  ev('translate_clicked');
+  if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => traducirCV()); return; }
+
+  const btn = document.getElementById('btnTraducir');
+  const desde = _idiomaActual || LANG;
+  const hacia = desde === 'en' ? 'es' : 'en';
+
+  // Si ya tenemos el original guardado y volvemos a él, no gastamos cupo ni IA
+  if (_cvOriginalIdioma && hacia === (_cvOriginalIdioma._lang || LANG)) {
+    Object.assign(D, JSON.parse(JSON.stringify(_cvOriginalIdioma)));
+    _idiomaActual = hacia;
+    aplicarEtiquetasIdioma(hacia);
+    sessionStorage.setItem('cvData', JSON.stringify(D));
+    mostrarCV();
+    actualizarBotonTraducir();
+    return;
+  }
+
+  // Solo comprobamos: si la IA falla o devuelve JSON inválido, el cliente no
+  // puede perder su única traducción sin haber recibido nada.
+  const cupo = await verificarCupo('traduccion');
+  if (!cupo.permitido) { avisarCupoAgotado('traduccion', cupo); return; }
+
+  btn.disabled = true;
+  btn.textContent = hacia === 'en'
+    ? '⏳ Convirtiendo a formato EE.UU...'
+    : (LANG === 'en' ? '⏳ Switching to Spanish...' : '⏳ Volviendo al español...');
+
+  // Respaldo de la foto: si vuelve al español, la recupera
+  if (hacia === 'en' && !_fotoRespaldo && (typeof fotoAjustada !== 'undefined')) {
+    _fotoRespaldo = {ajustada: fotoAjustada, original: fotoOriginal};
+  }
+
+  // Guardar el original la primera vez
+  if (!_cvOriginalIdioma) {
+    _cvOriginalIdioma = JSON.parse(JSON.stringify(D));
+    _cvOriginalIdioma._lang = desde;
+  }
+
+  const nombreIdioma = hacia === 'en' ? 'inglés' : 'español';
+
+  // Hacia EE.UU. no basta traducir: un resume tiene convenciones propias y un
+  // CV latinoamericano traducido literalmente se descarta igual. Estas reglas
+  // convierten el documento, no solo el idioma.
+  const REGLAS_USA = hacia === 'en' ? `
+
+CONVERSIÓN A RESUME ESTADOUNIDENSE (no es solo una traducción):
+- El documento destino es un RESUME de EE.UU., no un CV latinoamericano en inglés.
+- ELIMINA por completo, si aparecen: número de identidad (DUI, NUE, CURP, cédula), edad, fecha de nacimiento, estado civil, nacionalidad, género y dirección postal completa. En EE.UU. incluirlos hace que RR.HH. descarte el archivo por riesgo legal de discriminación.
+- En el campo "pais" deja SOLO la ciudad de residencia que el CV ya declare + el país. Si el CV solo trae el país, deja SOLO el país — PROHIBIDO inferir la ciudad desde la universidad, la empresa o la capital. Una ciudad que el candidato no dio es un dato inventado.
+- TELÉFONO (única excepción a "no traduzcas contactos"): antepón el prefijo internacional del país de residencia si no lo tiene ya (+503 El Salvador, +52 México, +57 Colombia, +502 Guatemala, +504 Honduras, +505 Nicaragua, +506 Costa Rica, +507 Panamá, +51 Perú, +593 Ecuador, +56 Chile, +54 Argentina, +58 Venezuela, +591 Bolivia, +598 Uruguay, +595 Paraguay, +1 Rep. Dominicana). El número en sí NO cambia. Un recruiter en EE.UU. no puede marcar "7267-0044".
+- El resumen debe ser un "Professional Summary" de 3-4 líneas, directo y orientado a resultados. Sin florituras.
+- Los bullets empiezan con verbo de acción del registro estadounidense: Led, Managed, Built, Reduced, Launched, Coordinated, Supervised, Developed, Implemented.
+- Puesto actual en presente; puestos anteriores en pasado. SI EL PUESTO NO TIENE FECHAS, usa PASADO: sin fechas no se puede afirmar que sigue vigente, y afirmar en presente lo que no consta es mentir por el candidato.
+- Si un campo "periodo" está vacío o contiene texto tipo "Período no especificado"/"no especificado", devuélvelo como cadena vacía "". PROHIBIDO escribir "Not specified", "N/A" o equivalentes.
+- Sin pronombres personales ("I", "my").
+- Inglés americano: organization, program, analyze, center.
+- Si una institución o credencial extranjera no sería reconocible para un lector estadounidense, añade una aclaración muy breve entre paréntesis, sin exagerar su valor.
+- No inventes nada nuevo: solo reorganiza y adapta lo que ya existe.
+` : '';
+
+  const prompt = `Eres un Executive Recruiter estadounidense especializado en adaptar perfiles internacionales al mercado de EE.UU.
+
+${hacia === 'en' ? 'CONVIERTE a un resume estadounidense' : 'Traduce al español'} el siguiente CV en formato JSON.
+${REGLAS_USA}
+REGLAS ESTRICTAS:
+- Devuelve ÚNICAMENTE el JSON traducido. Sin explicaciones, sin markdown, sin \`\`\`.
+- Conserva EXACTAMENTE la misma estructura y los mismos nombres de campo.
+- LOS NOMBRES DE CAMPO QUEDAN EN ESPAÑOL TAL CUAL: "nombre", "puesto", "pais", "resumen", "experiencia", "titulo", "empresa", "periodo", "bullets", "educacion", "institucion", "año", "habilidades", "idiomas", "nivel", "logros". Traducir una CLAVE (p. ej. "experiencia" → "experience") ROMPE el programa que procesa tu respuesta y el usuario pierde la conversión. Solo se traducen los VALORES.
+- NO traduzcas: nombres de personas, nombres de empresas, ciudades, países, URLs, emails ni teléfonos.
+- SÍ traduce: puesto, resumen, títulos de cargo, bullets de logros, títulos académicos, nombres de habilidades e idiomas.
+- Adapta los títulos de cargo al uso real del mercado destino (ej: "Jefe de Ventas" → "Sales Manager", no traducción literal).
+- PROHIBIDO CALCAR un cargo palabra por palabra cuando el resultado no exista en el mercado destino. "Colaborador Técnico" NUNCA es "Technical Collaborator" (ese título no existe en EE.UU.): usa el rango funcional real según las funciones descritas — "Project Engineer", "Engineering Technician", "Technical Specialist". "Residente de Proyecto" → "Site Supervisor" o "Resident Engineer". "Auxiliar" → "Assistant" o "Associate" según nivel, nunca "Auxiliary". Si un título compuesto mezcla un calco con un término válido ("Technical Collaborator — Project Site Supervisor"), elimina el calco y conserva solo el término real.
+- CUIDADO CON EL RANGO: adaptar no es degradar ni inflar. El cargo traducido debe reflejar el MISMO nivel jerárquico que el original.
+  · "Profesor/a Titular" (cargo permanente de plantilla en LATAM) → "Professor" o "Tenured Professor". NUNCA "Adjunct Professor" ni "Associate Professor": en EE.UU. "adjunct" es profesorado por horas sin plaza y "associate" es un rango intermedio — ambos degradan el puesto.
+  · "Jefe de Residentes" → "Chief Resident" (correcto, es el término estándar).
+  · "Coordinador/a de Turnos" → "Shift Coordinator" o "Scheduling Coordinator".
+  · "Servicio Social" (obligatorio en LATAM) → "Social Service Physician", y añade una aclaración breve si el lector estadounidense no lo reconocería.
+  · Si dudas entre dos rangos, elige el término NEUTRO y descriptivo antes que uno que altere la jerarquía en cualquier dirección.
+- Mantén los verbos de acción fuertes y el tono profesional de reclutamiento.
+- No inventes, no añadas y no elimines información.
+
+JSON del CV:
+${JSON.stringify(D)}`;
+
+  try {
+    const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_URL}/functions/v1/super-service`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},
+      body: JSON.stringify({prompt})
+    });
+    const data = await res.json();
+    let txt = (data.cv || data.respuesta || data.result || data.text || data.content || '').trim();
+    txt = txt.replace(/^```(?:json)?/i, '').replace(/```$/,'').trim();
+    const ini = txt.indexOf('{'), fin = txt.lastIndexOf('}');
+    if (ini < 0 || fin < 0) throw new Error('respuesta sin JSON');
+
+    const trad = JSON.parse(txt.slice(ini, fin+1));
+
+    // ── NORMALIZADOR DE CLAVES ──
+    // Al convertir a resume, la IA a veces traduce también los NOMBRES de
+    // campo (experiencia→experience, empresa→company) aunque el prompt lo
+    // prohíba. El validador no los encontraba y tiraba "estructura
+    // incompleta" con una conversión perfectamente usable. Traducimos las
+    // claves de vuelta antes de validar.
+    const MAPA = {name:'nombre', full_name:'nombre', role:'puesto', position:'puesto', job_title:'puesto', country:'pais', location:'pais', summary:'resumen', profile:'resumen', professional_summary:'resumen', experience:'experiencia', work_experience:'experiencia', education:'educacion', skills:'habilidades', languages:'idiomas', achievements:'logros', accomplishments:'logros', phone:'telefono'};
+    Object.keys(MAPA).forEach(k => {
+      if (trad[k] !== undefined && trad[MAPA[k]] === undefined) { trad[MAPA[k]] = trad[k]; delete trad[k]; }
+    });
+    if (Array.isArray(trad.experiencia)) trad.experiencia.forEach(j => {
+      if (!j || typeof j !== 'object') return;
+      if (j.title !== undefined && j.titulo === undefined) j.titulo = j.title;
+      if (j.job_title !== undefined && j.titulo === undefined) j.titulo = j.job_title;
+      if (j.company !== undefined && j.empresa === undefined) j.empresa = j.company;
+      if (j.period !== undefined && j.periodo === undefined) j.periodo = j.period;
+      if (j.dates !== undefined && j.periodo === undefined) j.periodo = j.dates;
+      if (j.highlights !== undefined && j.bullets === undefined) j.bullets = j.highlights;
+    });
+    if (Array.isArray(trad.educacion)) trad.educacion.forEach(e => {
+      if (!e || typeof e !== 'object') return;
+      if (e.degree !== undefined && e.titulo === undefined) e.titulo = e.degree;
+      if (e.title !== undefined && e.titulo === undefined) e.titulo = e.title;
+      if (e.institution !== undefined && e.institucion === undefined) e.institucion = e.institution;
+      if (e.year !== undefined && e['año'] === undefined) e['año'] = e.year;
+    });
+    if (Array.isArray(trad.habilidades)) trad.habilidades = trad.habilidades.map(s =>
+      typeof s === 'string' ? {nombre:s, nivel:70}
+      : (s && s.name !== undefined && s.nombre === undefined ? {nombre:s.name, nivel:(s.level ?? s.nivel ?? 70)} : s));
+    if (Array.isArray(trad.idiomas)) trad.idiomas = trad.idiomas.map(l =>
+      typeof l === 'string' ? {nombre:l, nivel:''}
+      : (l && l.name !== undefined && l.nombre === undefined ? {nombre:l.name, nivel:(l.level ?? l.nivel ?? '')} : l));
+
+    if (!trad.nombre || !Array.isArray(trad.experiencia)) {
+      // Dejar la evidencia en consola: sin esto, "estructura incompleta" no
+      // dice QUÉ devolvió la IA y el bug es imposible de diagnosticar.
+      console.error('Conversión inválida. Claves recibidas:', Object.keys(trad).join(', '));
+      console.error('Primeros 600 chars de la respuesta:', txt.substring(0, 600));
+      throw new Error('estructura incompleta');
+    }
+
+    Object.assign(D, trad);
+    limpiarPlaceholdersCV(D);   // la conversión puede traer sus propios placeholders
+    _idiomaActual = hacia;
+
+    // La conversión a resume estadounidense debe EJECUTARSE, no solo prometerse:
+    // quitamos la foto y cualquier dato personal protegido que sobreviva.
+    if (hacia === 'en') {
+      fotoAjustada = null;
+      fotoOriginal = null;
+      // Ocultamos el bloque de foto y explicamos por qué: en EE.UU. un resume
+      // con fotografía se descarta por cumplimiento antidiscriminación.
+      const secFoto = document.querySelector('.foto-section');
+      if (secFoto && !document.getElementById('fotoAvisoEN')) {
+        secFoto.innerHTML =
+          '<div id="fotoAvisoEN" style="background:rgba(255,176,32,.07);border:1px solid rgba(255,176,32,.28);border-radius:14px;padding:16px 20px;max-width:560px;margin:0 auto;text-align:center">' +
+          '<div style="font-size:1.4rem;margin-bottom:6px">🇺🇸</div>' +
+          '<p style="color:#ffb020;font-weight:700;font-size:0.9rem;margin-bottom:6px">No photo on US resumes</p>' +
+          '<p style="color:#aaa;font-size:0.8rem;line-height:1.55;margin:0">Most US employers discard resumes with photos for anti-discrimination compliance. ' +
+          'We build your resume without one — that is what recruiters there expect.</p></div>';
+      }
+      // Números de identidad nacionales que a veces viajan en el campo de contacto
+      const limpiarId = (s) => String(s || '')
+        .replace(/\b(?:DUI|NUE|CURP|C[ÉE]DULA|RFC|CUIL|CUIT|RUT|NIT|DNI)\s*[:#-]?\s*[\w.-]+/gi, '')
+        .replace(/\s*[|·,;\-]\s*$/, '')      // separador huérfano al final
+        .replace(/^\s*[|·,;\-]\s*/, '')
+        .replace(/\s{2,}/g, ' ').trim();
+      D.puesto = limpiarId(D.puesto);
+      D.pais = limpiarId(D.pais);
+      if (D.linkedin) D.linkedin = String(D.linkedin).trim();
+      mostrarToast('🇺🇸 Foto y datos personales eliminados — convención de EE.UU.');
+    } else {
+      // Al volver al español recuperamos la foto y el bloque de subida
+      if (_fotoRespaldo) {
+        fotoAjustada = _fotoRespaldo.ajustada;
+        fotoOriginal = _fotoRespaldo.original;
+      }
+      const avisoEN = document.getElementById('fotoAvisoEN');
+      if (avisoEN) location.reload();   // la sección se reconstruye limpia
+    }
+
+    aplicarEtiquetasIdioma(hacia);
+    sessionStorage.setItem('cvData', JSON.stringify(D));
+    mostrarCV();
+    const _uso = await consumirUso('traduccion');   // traducción aplicada → se descuenta
+    ev('translate_completed', {hacia, plan: _uso.plan, usados: _uso.usados});
+    mostrarToast(hacia === 'en'
+      ? '✅ Resume listo — adaptado al formato de EE.UU. (sin foto ni datos personales)'
+      : '✅ CV en español restaurado');
+  } catch(e) {
+    alert((LANG==='en' ? 'Could not translate: ' : 'No se pudo traducir: ') + (e.message||''));
+    ev('translate_failed', {error: e.message});
+  } finally {
+    btn.disabled = false;
+    actualizarBotonTraducir();
+  }
+}
+
+// Cambia las etiquetas de sección (Perfil/Profile, Habilidades/Skills...)
+function aplicarEtiquetasIdioma(l) {
+  const ES = {perfil:'Perfil', habilidades:'Habilidades', idiomas:'Idiomas', educacion:'Educación',
+              experiencia:'Experiencia profesional', logros:'Certificaciones', certificaciones:'Certificaciones'};
+  const EN = {perfil:'Profile', habilidades:'Skills', idiomas:'Languages', educacion:'Education',
+              experiencia:'Professional experience', logros:'Certifications', certificaciones:'Certifications'};
+  Object.assign(T, l === 'en' ? EN : ES);
+}
+
+function actualizarBotonTraducir() {
+  const actual = _idiomaActual || LANG;
+  const destino = actual === 'en' ? 'es' : 'en';
+
+  const bc = document.getElementById('btnCartaOtro');
+  if (bc) bc.textContent = destino === 'en' ? '✉️ Cover letter in English' : '✉️ Carta en español';
+
+  const btn = document.getElementById('btnTraducir');
+  if (!btn) return;
+  // "Traducir al inglés" vendía de menos y prometía mal: lo que hacemos es
+  // CONVERTIR el CV al formato de resume estadounidense (sin foto, sin datos
+  // personales protegidos, cargos adaptados). El botón debe decirlo.
+  btn.innerHTML = destino === 'en'
+    ? '🇺🇸 Convertir a Resume <span style="opacity:.75;font-weight:400">(formato EE.UU.)</span>'
+    : '🌎 Volver a CV en español';
+  btn.title = destino === 'en'
+    ? 'Adapta tu CV a las convenciones de Estados Unidos: sin foto, sin datos personales y con los cargos traducidos al mercado americano'
+    : 'Regresa a la versión en español de tu CV';
+}
+
+function mostrarToast(msg) {
+  if (typeof toast === 'function') return toast(msg);
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1baf7a;color:#fff;padding:12px 22px;border-radius:50px;font-family:Inter,system-ui,sans-serif;font-size:.85rem;font-weight:600;z-index:100001;box-shadow:0 6px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .35s';
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>{ t.style.opacity='1'; });
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(), 400); }, 3600);
+}
+
+// ── P3: CARTA DE PRESENTACIÓN CON IA ──
+async function generarCarta(idiomaForzado) {
+  ev('cover_letter_clicked');
+  // La carta seguía el LANG de carga de página, así que tras traducir el CV
+  // al inglés la carta se generaba igual en español. Ahora sigue el idioma
+  // actual del CV, y admite forzarlo desde el botón de idioma.
+  const LC = idiomaForzado || _idiomaActual || LANG;
+  if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => generarCarta()); return; }
+  // Solo comprobamos. El cupo se descuenta cuando la carta existe de verdad.
+  const _cupo = await verificarCupo('carta');
+  if (!_cupo.permitido) { avisarCupoAgotado('carta', _cupo); return; }
+  const _hoy = new Date();
+  const _mesesES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const _mesesEN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const FECHA_HOY = LC==='en'
+    ? `${_mesesEN[_hoy.getMonth()]} ${_hoy.getDate()}, ${_hoy.getFullYear()}`
+    : `${_hoy.getDate()} de ${_mesesES[_hoy.getMonth()]} de ${_hoy.getFullYear()}`;
+  const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+  const btn = document.getElementById('btnCarta');
+  btn.disabled = true;
+  btn.textContent = LC==='en' ? '⏳ Writing your cover letter...' : '⏳ Redactando tu carta...';
+  let cvTexto = sessionStorage.getItem('cvTexto') || '';
+  if (cvTexto.length < 100) {
+    // Reconstruir desde cvData si la sesión no lo tiene
+    cvTexto = `${D.nombre} — ${D.puesto} (${D.pais||''})\n${D.resumen||''}\n` +
+      (D.experiencia||[]).map(j=>`${esc(j.titulo)} | ${esc(j.empresa)}${j.periodo?' | '+esc(j.periodo):''}\n${(j.bullets||[]).join('\n')}`).join('\n') +
+      `\nEducación: ${(D.educacion||[]).map(e=>e.titulo+' - '+e.institucion).join('; ')}` +
+      `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
+  }
+  // El encabezado (fecha y datos de contacto) lo componemos NOSOTROS, no la IA:
+  // así garantizamos que siempre esté y con el formato correcto del idioma.
+  const _contacto = [D.pais, [D.email, D.telefono].filter(Boolean).join(' | ')].filter(Boolean);
+  const ENCABEZADO = [FECHA_HOY, '', ...(_contacto.length ? _contacto : [])].join('\n');
+
+  const prompt = LC==='en'
+    ? `You are an elite cover letter ghostwriter. Based on this resume, write a professional cover letter in ENGLISH for ${D.nombre}, applying as ${D.puesto}.
+
+STRUCTURE (follow exactly):
+- Do NOT write a date or contact header — that is added separately. Start directly at the greeting.
+- Greeting: "Dear Hiring Team," (or the company name if the resume names a target employer)
+- 3-4 paragraphs: hook + value proposition + culture fit + call to action
+- Closing: "Sincerely," then the candidate's name and professional title on separate lines
+
+STRICT RULES:
+- Never invent numbers, percentages or metrics. Quantify ONLY with figures that appear in the resume. If there are none, express impact qualitatively.
+- No placeholders, no brackets, nothing left to fill in. Ready to send as-is.
+
+RESUME:
+${cvTexto.substring(0,2500)}`
+    : `Eres un ghostwriter élite de cartas de presentación. Con base en este CV, escribe una carta de presentación profesional en ESPAÑOL para ${D.nombre}, aplicando como ${D.puesto}.
+
+ESTRUCTURA (síguela exactamente):
+- NO escribas fecha ni encabezado de contacto — eso se añade aparte. Empieza directamente por el saludo.
+- Saludo: "Estimado equipo de selección:" (o el nombre de la empresa si el CV menciona un destinatario)
+- 3-4 párrafos: gancho + propuesta de valor + fit cultural + llamado a la acción
+- Cierre: "Atentamente," y después el nombre del candidato y su cargo profesional en líneas separadas
+
+REGLAS ESTRICTAS:
+- Nunca inventes cifras, porcentajes ni métricas. Cuantifica SOLO con datos que aparezcan en el CV. Si no hay ninguno, expresa el impacto de forma cualitativa.
+- Sin corchetes ni placeholders, nada por rellenar. Lista para enviar tal cual.
+
+CV:
+${cvTexto.substring(0,2500)}`;
+  try {
+    const res = await fetch(`${SUPABASE_URL_C}/functions/v1/super-service`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY_C}`},
+      body: JSON.stringify({prompt})
+    });
+    const data = await res.json();
+    if (!data.cv || data.cv.length < 200) throw new Error('short');
+    mostrarCarta(ENCABEZADO + '\n\n' + limpiarCarta(data.cv));
+    const _uso = await consumirUso('carta');   // ya entregada → ahora sí se descuenta
+    ev('cover_letter_consumed', {plan:_uso.plan, usados:_uso.usados});
+  } catch(e) {
+    alert((LC==='en' ? 'Could not generate the letter: ' : 'No se pudo generar la carta: ') + (e.message||''));
+  }
+  btn.disabled = false;
+  btn.textContent = LC==='en' ? '✉️ Generate cover letter (AI)' : '✉️ Generar carta de presentación (IA)';
+}
+
+function mostrarCarta(texto) {
+  const overlay = document.createElement('div');
+  overlay.id = 'cartaOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:16px;max-width:700px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 24px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
+        <strong style="font-family:Montserrat,sans-serif">${LANG==='en'?'✉️ Your cover letter':'✉️ Tu carta de presentación'}</strong>
+        <button onclick="document.getElementById('cartaOverlay').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer">✕</button>
+      </div>
+      <div id="cartaBody" contenteditable="true" style="padding:28px 32px;overflow-y:auto;font-family:Georgia,serif;font-size:0.9rem;line-height:1.8;color:#222;white-space:pre-wrap;outline:none">${texto}</div>
+      <div style="padding:14px 24px;border-top:1px solid #eee;display:flex;gap:10px">
+        <button onclick="descargarCartaPDF()" style="flex:1;background:#FFD000;border:none;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">${LANG==='en'?'📄 PDF':'📄 PDF'}</button>
+        <button onclick="descargarCartaWord()" style="flex:1;background:#2b579a;color:#fff;border:none;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Montserrat,sans-serif">${LANG==='en'?'📝 Word':'📝 Word'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function descargarCartaPDF() {
+  // Antes se generaba con html2canvas: el PDF salía como IMAGEN, sin texto
+  // seleccionable. El reclutador no podía copiar nada y ningún ATS podía
+  // leerla. Ahora usamos pdfMake, igual que la versión ATS del CV.
+  const body = document.getElementById('cartaBody');
+  if (!body) return;
+  const texto = normalizarTipografia(limpiarCarta(body.textContent || ''));
+  if (!texto.trim()) { alert(LANG==='en' ? 'The letter is empty.' : 'La carta está vacía.'); return; }
+
+  const parrafos = texto.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  const content = parrafos.map((p, idx) => ({
+    text: sinLigaduras(p),
+    fontSize: 11,
+    lineHeight: 1.45,
+    alignment: 'left',
+    margin: [0, idx === 0 ? 0 : 10, 0, 0]
+  }));
+
+  const nombre = normalizarTipografia(D.nombre || 'Carta').replace(/\s+/g, '_');
+  try {
+    pdfMake.createPdf({
+      pageSize: 'A4',
+      pageMargins: [64, 64, 64, 64],
+      content,
+      defaultStyle: { font: 'Roboto' }
+    }).download(LANG === 'en' ? `Cover_Letter_${nombre}.pdf` : `Carta_${nombre}.pdf`);
+    ev('cover_letter_downloaded');
+    toast(LANG === 'en' ? '✅ Cover letter downloaded (selectable text)' : '✅ Carta descargada (texto seleccionable)');
+  } catch (e) {
+    console.error('Fallo al generar la carta:', e);
+    alert(LANG === 'en' ? 'Could not generate the PDF.' : 'No se pudo generar el PDF.');
+  }
+}
+
+
+// ══ PDF ATS: TEXTO REAL SELECCIONABLE (pasa filtros ATS) ══
+
+// ══════════ NORMALIZACIÓN TIPOGRÁFICA PARA PDF ══════════
+// La fuente Roboto de pdfMake no tiene glifos para las ligaduras tipográficas
+// (ﬁ ﬂ ﬀ...). Cuando el texto las contiene, pdfMake las OMITE: el ATS leía
+// "Perfl" en vez de "Perfil" y "certifcación" en vez de "certificación".
+// En pantalla se veía bien; el daño solo aparecía en la extracción.
+function normalizarTipografia(s) {
+  return String(s == null ? '' : s)
+    .replace(/\uFB00/g, 'ff').replace(/\uFB01/g, 'fi').replace(/\uFB02/g, 'fl')
+    .replace(/\uFB03/g, 'ffi').replace(/\uFB04/g, 'ffl').replace(/\uFB05/g, 'st')
+    .replace(/\u00A0/g, ' ')                 // espacio duro
+    .replace(/[\u2018\u2019]/g, "'")        // comillas curvas
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/\u2026/g, '...')
+    .replace(/[\u2013\u2014]/g, '-')        // guiones largos
+    .replace(/\u2212/g, '-')
+    .replace(/\*\*(.+?)\*\*/g, '$1')        // markdown residual
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/[*_`]/g, '');
+}
+
+// Aplica la normalización a todo un objeto de CV, recursivamente
+function normalizarCVData(d) {
+  const rec = (v) => {
+    if (typeof v === 'string') return normalizarTipografia(v);
+    if (Array.isArray(v)) return v.map(rec);
+    if (v && typeof v === 'object') {
+      const o = {};
+      for (const k in v) o[k] = rec(v[k]);
+      return o;
+    }
+    return v;
+  };
+  return rec(d);
+}
+
+// pdfMake/Roboto sustituye "fi", "fl" y "ff" por un glifo de ligadura cuyo
+// mapa ToUnicode apunta solo a "f" — verificado en el PDF generado: el glifo
+// 00ed → 'f'. En pantalla se ve "certificación"; al extraer el texto sale
+// "certifcación". Como el ATS lee la extracción, la palabra clave se pierde.
+// Solución: partir el texto en fragmentos separados justo entre las dos
+// letras. El shaper no forma ligaduras a través de fragmentos distintos y la
+// extracción los concatena sin añadir ningún carácter invisible.
+function sinLigaduras(s) {
+  const t = normalizarTipografia(s);
+  if (!/f[ifl]/i.test(t)) return t;
+  const partes = [];
+  let ini = 0;
+  for (let i = 0; i < t.length - 1; i++) {
+    if (/f/i.test(t[i]) && /[ifl]/i.test(t[i + 1])) {
+      partes.push(t.slice(ini, i + 1));
+      ini = i + 1;
+    }
+  }
+  partes.push(t.slice(ini));
+  return partes.filter(p => p !== '');
+}
+
+
+async function descargarATS() {
+  if (!_lock('ats')) return;
+  ev('ats_download_clicked');
+  if (!(await accesoVerificado('basico'))) { _unlock('ats'); abrirMuroPago(null, () => descargarATS()); return; }
+  const d = normalizarCVData(D);
+  // Usaba LANG (fijo al cargar la página), así que tras convertir a resume
+  // los encabezados seguían en español: "EXPERIENCIA PROFESIONAL" dentro de
+  // un documento en inglés. Mezcla de idiomas = descarte inmediato en EE.UU.
+  const _LA = (typeof _idiomaActual !== 'undefined' && _idiomaActual) ? _idiomaActual : LANG;
+  const A = _LA === 'en'
+    ? {perfil:'PROFESSIONAL SUMMARY', exp:'PROFESSIONAL EXPERIENCE', edu:'EDUCATION', skills:'SKILLS', langs:'Languages', tec:'Technical'}
+    : {perfil:'RESUMEN PROFESIONAL', exp:'EXPERIENCIA PROFESIONAL', edu:'EDUCACIÓN', skills:'HABILIDADES', langs:'Idiomas', tec:'Técnicas'};
+
+  const contacto = [d.email, d.telefono, d.pais, d.linkedin].filter(Boolean).join('  |  ');
+  const content = [
+    {text: sinLigaduras((d.nombre||'').toUpperCase()), fontSize: 20, bold: true, color: '#0d1b2a'},
+    {text: sinLigaduras(d.puesto||''), fontSize: 11, color: '#666', margin: [0,2,0,2]},
+    {text: sinLigaduras(contacto), fontSize: 9, color: '#555', margin: [0,0,0,4]},
+    {canvas: [{type:'line', x1:0, y1:0, x2:515, y2:0, lineWidth:1.5, lineColor:'#0d1b2a'}], margin:[0,4,0,12]},
+  ];
+
+  if (d.resumen) {
+    content.push({text: sinLigaduras(A.perfil), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,4]});
+    content.push({text: sinLigaduras(d.resumen), fontSize: 9.5, color: '#333', lineHeight: 1.35, margin: [0,0,0,12]});
+  }
+
+  if (d.experiencia?.length) {
+    content.push({text: sinLigaduras(A.exp), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,6]});
+    d.experiencia.forEach(j => {
+      content.push({
+        columns: [
+          {text: sinLigaduras(`${j.titulo||''}${j.empresa?' — '+j.empresa:''}`), fontSize: 10, bold: true, color: '#1a1a1a', width: '*'},
+          {text: sinLigaduras(j.periodo||''), fontSize: 9, color: '#777', width: 'auto'}
+        ], margin: [0,2,0,3], unbreakable: true
+      });
+      content.push({
+        ul: (j.bullets||[]).map(b => ({text: sinLigaduras(b), fontSize: 9.5, color: '#333', lineHeight: 1.3})),
+        margin: [0,0,0,8]
+      });
+    });
+  }
+
+  if (d.educacion?.length) {
+    content.push({text: sinLigaduras(A.edu), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,4,0,5]});
+    d.educacion.forEach(e => {
+      content.push({text: sinLigaduras(`${e.titulo||''} — ${e.institucion||''}${e['año']?' ('+e['año']+')':''}`), fontSize: 9.5, color: '#333', margin: [0,0,0,3]});
+    });
+  }
+
+  const habs = (d.habilidades||[]).map(h => h.nombre||h).filter(Boolean);
+  const idiomas = (d.idiomas||[]).map(l => `${esc(l.nombre)}${l.nivel?' ('+l.nivel+')':''}`).join(', ');
+  if (habs.length || idiomas) {
+    content.push({text: sinLigaduras(A.skills), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,8,0,5]});
+    if (habs.length) content.push({text: sinLigaduras(`${A.tec}: ${habs.join(', ')}`), fontSize: 9.5, color: '#333', lineHeight: 1.3, margin: [0,0,0,3]});
+    if (idiomas) content.push({text: sinLigaduras(`${A.langs}: ${idiomas}`), fontSize: 9.5, color: '#333'});
+  }
+
+  const nombre = (d.nombre||'CV').replace(/\s+/g,'_');
+  pdfMake.createPdf({
+    pageSize: 'A4',
+    pageMargins: [42, 42, 42, 50],
+    footer: (cur, tot) => tot > 1 ? {text: sinLigaduras(`${cur} / ${tot}`), alignment:'center', fontSize:8, color:'#999', margin:[0,12,0,0]} : null,
+    content,
+    defaultStyle: {font: 'Roboto'}
+  }).download(LANG==='en' ? `Resume_ATS_${nombre}.pdf` : `CV_ATS_${nombre}.pdf`);
+  toast(LANG==='en' ? '✅ ATS version downloaded' : '✅ Versión ATS descargada');
+}
+
+async function descargarPDF() {
+  if (!_lock('pdf')) return;
+  ev('pdf_download_clicked');
+  if (!(await accesoVerificado('basico'))) { _unlock('pdf'); abrirMuroPago(null, () => descargarPDF()); return; }
+  const el = document.getElementById('cvFinal').firstElementChild;
+  if (!el) { _unlock('pdf'); return; }
+  const nombre = (D.nombre||'CV').replace(/\s+/g,'_');
+
+  // El CV mide 794px de ancho fijo. El bug de los lados cortados: con
+  // windowWidth:1000 el contenedor centraba el CV dentro del viewport del
+  // clon (desfase de ~103px) y las opciones x:0/scrollX:0 fuerzan la captura
+  // desde el borde del VIEWPORT, no del elemento — ese desfase se comía un
+  // lado del documento. Solución: el viewport del clon mide EXACTAMENTE lo
+  // que mide el CV, así el centrado no puede desplazar nada.
+  const _sx = window.scrollX, _sy = window.scrollY;
+  window.scrollTo(0, 0);
+  const _w = el.offsetWidth || 794;
+  const _h = el.scrollHeight;
+
+  html2pdf().set({
+    margin:0,
+    filename:`CV_${nombre}.pdf`,
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{
+      scale:2, useCORS:true, logging:false,
+      backgroundColor:'#ffffff',
+      scrollX:0, scrollY:0, x:0, y:0,
+      width:_w, height:_h,
+      windowWidth:_w, windowHeight:Math.max(_h + 80, 1123),
+      onclone: (doc) => {
+        doc.documentElement.style.overflow = 'visible';
+        doc.documentElement.style.maxWidth = 'none';
+        doc.body.style.overflow = 'visible';
+        doc.body.style.maxWidth = 'none';
+        doc.body.style.margin = '0';
+        doc.body.style.padding = '0';
+        const res = doc.querySelector('.cv-result');
+        if (res) { res.style.maxWidth = 'none'; res.style.padding = '0'; res.style.margin = '0'; }
+        const acc = doc.querySelector('.cv-actions');
+        if (acc) acc.style.display = 'none';
+        // El CV debe quedar pegado al origen del lienzo, sin centrado del padre
+        const cv = doc.getElementById('cvFinal');
+        if (cv) { cv.style.margin = '0'; cv.style.padding = '0'; }
+        if (cv && cv.firstElementChild) {
+          cv.firstElementChild.style.margin = '0';
+          cv.firstElementChild.style.transform = 'none';
+        }
+      }
+    },
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+    pagebreak:{mode:['css','legacy'], avoid:['.jb','.sk','.li','.edu-item','.bl']}
+  }).from(el).save()
+    .then(() => {
+      window.scrollTo(_sx, _sy);
+      toast(LANG==='en' ? '✅ PDF downloaded — check your Downloads folder' : '✅ PDF descargado — revisa tu carpeta de Descargas');
+    })
+    .catch(e => {
+      window.scrollTo(_sx, _sy);
+      console.error('Fallo al generar el PDF:', e);
+      alert(LANG==='en' ? 'Could not generate the PDF. Try the ATS version.' : 'No se pudo generar el PDF. Prueba la versión ATS.');
+    })
+    .finally(() => _unlock('pdf'));
+}
+
+renderTemplates();
+</script>
+<script>
+// ══ MODO TESTER: acceso completo para el equipo de pruebas ══
+const _SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+const _SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+// ⚠️ SEGURIDAD: antes leía localStorage → cualquiera obtenía Premium gratis
+// con un solo localStorage.setItem desde la consola. Ahora el token vive en
+// sessionStorage y va firmado con un sello de sesión impredecible.
+function esTester() {
+  try {
+    const t = JSON.parse(sessionStorage.getItem('cvpro_tester') || 'null');
+    return !!(t && t.ok === _TESTER_SELLO && (Date.now() - t.ts) < 12*3600000);
+  } catch(e) { return false; }
+}
+
+const _TESTER_SELLO = (() => {
+  const b = new Uint32Array(2);
+  (window.crypto || window.msCrypto).getRandomValues(b);
+  return b[0].toString(36) + b[1].toString(36);
+})();
+
+async function revalidarTester() {
+  const cod = localStorage.getItem('cvpro_tester_cod');
+  if (!cod) return false;
+  const ok = await validarTesterEnServidor(cod);
+  if (!ok) {
+    localStorage.removeItem('cvpro_tester_cod');
+    sessionStorage.removeItem('cvpro_tester');
+    localStorage.removeItem('cvpro_plan');
+  }
+  return ok;
+}
+
+async function validarTesterEnServidor(codigo) {
+  try {
+    const res = await fetch(`${_SB_U}/rest/v1/rpc/validar_tester`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':_SB_K,'Authorization':`Bearer ${_SB_K}`},
+      body: JSON.stringify({p_codigo: String(codigo).trim()})
+    });
+    if (!res.ok) { console.warn('validar_tester HTTP', res.status); return false; }
+    const ok = await res.json();
+    if (ok === true) {
+      sessionStorage.setItem('cvpro_tester', JSON.stringify({ok:_TESTER_SELLO, ts:Date.now()}));
+      localStorage.setItem('cvpro_tester_cod', String(codigo).trim());
+      localStorage.setItem('cvpro_plan', 'premium');
+      return true;
+    }
+  } catch(e) { console.warn('Validación tester falló:', e.message); }
+  return false;
+}
+
+async function activarTester(codigo) {
+  return await validarTesterEnServidor(codigo);
+}
+
+(async function initTester() {
+  const _L = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+  const p = new URLSearchParams(location.search).get('tester');
+  if (p) {
+    const ok = await activarTester(p);
+    // Limpiar la URL para no dejar el código a la vista
+    const url = new URL(location.href);
+    url.searchParams.delete('tester');
+    history.replaceState({}, '', url.toString());
+    if (ok) mostrarBadgeTester();
+    else alert(_L==='en' ? 'Invalid tester code.' : 'Código de tester inválido.');
+  } else {
+    // Revalida contra el servidor en cada carga: si revocas el código en
+    // config_app, el acceso cae de inmediato en la siguiente página.
+    if (await revalidarTester()) mostrarBadgeTester();
+  }
+})();
+
+function mostrarBadgeTester() {
+  if (document.getElementById('testerBadge')) return;
+  const b = document.createElement('div');
+  b.id = 'testerBadge';
+  b.style.cssText = 'position:fixed;bottom:14px;left:14px;z-index:99999;background:#1baf7a;color:#fff;padding:7px 14px;border-radius:50px;font-size:0.72rem;font-weight:700;font-family:system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer';
+  b.textContent = '🧪 MODO TESTER — acceso completo';
+  b.title = 'Clic para salir del modo tester';
+  // Se encoge a un icono tras 5 s para no tapar la barra de escribir.
+  // Al pasar el ratón vuelve a mostrarse completo.
+  setTimeout(() => {
+    b.classList.add('mini');
+    b.textContent = '🧪';
+    b.onmouseenter = () => { b.classList.remove('mini'); b.textContent = '🧪 MODO TESTER — acceso completo'; };
+    b.onmouseleave = () => { b.classList.add('mini'); b.textContent = '🧪'; };
+  }, 5000);
+  b.onclick = () => {
+    const _L2 = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+    const _msg = _L2==='en'
+      ? 'Exit tester mode? You will see the site as a regular customer.'
+      : '¿Salir del modo tester? Volverás a ver la web como un cliente normal.';
+    if (confirm(_msg)) {
+      sessionStorage.removeItem('cvpro_tester');
+      localStorage.removeItem('cvpro_tester_cod');
+      localStorage.removeItem('cvpro_plan');
+      location.reload();
+    }
+  };
+  document.body.appendChild(b);
+}
+</script>
+<script>
+// ══════════ SISTEMA DE PAGO PAYPAL ══════════
+const PP_CLIENT_ID = 'BAArSKzmXrrmOvMwGD0gx8etTbUmpdcGvUTGF1sDW43HE5mpa8IiJxZq-xcj-0QOx0NbarG4ynxxtehm94';
+const PP_ENTORNO = 'sandbox'; // cambiar a 'live' con el Client ID de producción
+const PLANES = {
+  basico:   {precio:'4.99',  nombre:{es:'Básico',   en:'Basic'}},
+  estandar: {precio:'9.99',  nombre:{es:'Estándar', en:'Standard'}},
+  premium:  {precio:'14.99', nombre:{es:'Premium',  en:'Premium'}}
+};
+
+function planActual() {
+  return localStorage.getItem('cvpro_plan') || 'basico';
+}
+
+// tieneAcceso() ELIMINADA: solo se permite accesoVerificado() contra el servidor
+
+
+function yaPago() {
+  if (typeof esTester === 'function' && esTester()) return true;
+  const p = JSON.parse(localStorage.getItem('cvpro_pago') || 'null');
+  return !!(p && p.ok);
+}
+
+function cargarSDKPayPal() {
+  return new Promise((resolve, reject) => {
+    if (window.paypal) return resolve();
+    const s = document.createElement('script');
+    s.src = `https://www.paypal.com/sdk/js?client-id=${PP_CLIENT_ID}&currency=USD&intent=capture&disable-funding=paylater`;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('SDK no disponible'));
+    document.head.appendChild(s);
+  });
+}
+
+async function registrarPago(ordenId, plan, monto, detalles) {
+  const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+  const payload = {
+    orden_id: String(ordenId),
+    codigo_cv: sessionStorage.getItem('cvpro_codigo') || '',
+    plan: plan,
+    monto: parseFloat(monto),
+    moneda: 'USD',
+    email: (detalles && detalles.email) || '',
+    nombre: ((detalles && detalles.nombre) || '').trim(),
+    estado: 'completado',
+    entorno: PP_ENTORNO
+  };
+  try {
+    const res = await fetch(`${SB_U}/rest/v1/pagos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_K,
+        'Authorization': `Bearer ${SB_K}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      console.log('✅ Pago registrado en Supabase:', payload.orden_id);
+      enviarCodigoTrasPago(payload);   // ahora sí: el código viaja por email
+    } else {
+      const txt = await res.text();
+      console.error('❌ Supabase rechazó el pago:', res.status, txt);
+      // Guardar localmente para no perder el registro
+      const pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]');
+      pend.push(payload); localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(pend));
+    }
+  } catch(e) {
+    console.error('❌ Error de red al registrar pago:', e.message);
+    const pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]');
+    pend.push(payload); localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(pend));
+  }
+}
+
+// ── EMAIL DEL CÓDIGO TRAS EL PAGO ──
+// El correo de recuperación se envía con el pago confirmado, no antes.
+// Destinatario: el email del CV (D.email) y como respaldo el del pagador.
+async function enviarCodigoTrasPago(payload) {
+  try {
+    const codigo = (payload && payload.codigo_cv) || sessionStorage.getItem('cvpro_codigo') || '';
+    if (!codigo) { console.log('Sin código: no se envía email tras el pago'); return; }
+    const m = String((typeof D !== 'undefined' && D && D.email) || '').match(/[\w.+-]+@[\w.-]+\.\w{2,}/)
+           || String((payload && payload.email) || '').match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+    if (!m) { console.log('Sin email del cliente: código solo en pantalla'); return; }
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/enviar-codigo`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({email: m[0], nombre: ((typeof D!=='undefined' && D && D.nombre) || (payload && payload.nombre) || '').trim(), codigo, lang: LANG})
+    });
+    if (r.ok) { console.log('📧 Código enviado por email tras el pago a', m[0]); if (typeof ev==='function') ev('code_email_sent_paid'); }
+    else { console.error('❌ Email del código tras el pago falló:', r.status, await r.text()); }
+  } catch(e) { console.error('❌ Email del código tras el pago falló:', e.message); }
+}
+
+
+// ══ VALIDACIÓN DE PAGO CONTRA EL SERVIDOR (no confiar en localStorage) ══
+async function verificarPagoServidor() {
+  const codigo = sessionStorage.getItem('cvpro_codigo') || '';
+  if (!codigo) return null;
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_U}/rest/v1/rpc/verificar_pago`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`},
+      body: JSON.stringify({p_codigo: codigo})
+    });
+    const rows = await res.json();
+    const r = Array.isArray(rows) ? rows[0] : rows;
+    if (r && r.pagado) {
+      localStorage.setItem('cvpro_pago', JSON.stringify({ok:true, plan:r.plan, verificado:true, ts:Date.now()}));
+      return r.plan;
+    }
+    // El servidor dice que NO hay pago → limpiar cualquier localStorage falsificado
+    const local = JSON.parse(localStorage.getItem('cvpro_pago') || 'null');
+    if (local && local.ok && !(typeof esTester === 'function' && esTester())) {
+      localStorage.removeItem('cvpro_pago');
+      console.warn('Pago no verificado en servidor — acceso revocado');
+    }
+    return null;
+  } catch(e) { console.warn('No se pudo verificar el pago:', e.message); return null; }
+}
+
+
+// ══════════ LÍMITES DE USO POR PLAN (verificados en servidor) ══════════
+// Básico: 0 · Estándar: 1 de cada · Premium: ilimitado
+
+// Comprueba el cupo SIN consumirlo. El cupo solo se descuenta cuando el
+// entregable llega de verdad (ver consumirUso), nunca al abrir un modal ni
+// antes de una llamada a la IA que puede fallar.
+async function verificarCupo(tipo) {
+  if (typeof esTester === 'function' && esTester()) return {permitido:true, plan:'premium', limite:-1, usados:0};
+  const codigo = sessionStorage.getItem('cvpro_codigo') || '';
+  if (!codigo) return {permitido:false, plan:'ninguno', limite:0, usados:0};
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_U}/rest/v1/rpc/consultar_usos`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`},
+      body: JSON.stringify({p_codigo: codigo, p_tipo: tipo})
+    });
+    if (!res.ok) return {permitido:false, plan:'error', limite:0, usados:0};
+    const rows = await res.json();
+    const r = (Array.isArray(rows) ? rows[0] : rows) || {};
+    const limite = Number.isFinite(+r.limite) ? +r.limite : 0;
+    const usados = Number.isFinite(+r.usados) ? +r.usados : 0;
+    return {permitido: limite === -1 || (limite > 0 && usados < limite), plan: r.plan || 'ninguno', limite, usados};
+  } catch(e) {
+    console.warn('No se pudo consultar el cupo:', e.message);
+    return {permitido:false, plan:'error', limite:0, usados:0};
+  }
+}
+
+async function consumirUso(tipo) {
+  // Los testers no consumen cupo
+  if (typeof esTester === 'function' && esTester()) return {permitido:true, plan:'premium', limite:-1, usados:0};
+  const codigo = sessionStorage.getItem('cvpro_codigo') || '';
+  if (!codigo) return {permitido:false, plan:'ninguno', limite:0, usados:0};
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const res = await fetch(`${SB_U}/rest/v1/rpc/consumir_uso`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`},
+      body: JSON.stringify({p_codigo: codigo, p_tipo: tipo})
+    });
+    const rows = await res.json();
+    const r = Array.isArray(rows) ? rows[0] : rows;
+    return r || {permitido:false, plan:'ninguno', limite:0, usados:0};
+  } catch(e) {
+    console.warn('No se pudo verificar el cupo:', e.message);
+    return {permitido:false, plan:'error', limite:0, usados:0};
+  }
+}
+
+// Mensaje honesto cuando se agota el cupo del plan
+function avisarCupoAgotado(tipo, r) {
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  const nombres = {
+    carta:      {es:'cartas de presentación', en:'cover letters'},
+    vacante:    {es:'adaptaciones a vacantes', en:'job-posting adaptations'},
+    traduccion: {es:'traducciones', en:'translations'}
+  };
+  const q = (nombres[tipo] || {es:'usos', en:'uses'})[L];
+  const msg = L === 'en'
+    ? `Your Standard plan includes 1 of these. You've already used it.\n\nUpgrade to Premium ($14.99) for unlimited ${q}.`
+    : `Tu plan Estándar incluye 1. Ya la usaste.\n\nSube a Premium ($14.99) para tener ${q} ilimitadas.`;
+  if (confirm(msg + (L==='en' ? '\n\nSee Premium?' : '\n\n¿Ver Premium?'))) {
+    if (typeof abrirMuroPago === 'function') abrirMuroPago('premium', null);
+  }
+}
+
+async function accesoVerificado(nivelMinimo) {
+  if (typeof esTester === 'function' && esTester()) return true;
+  const planSrv = await verificarPagoServidor();
+  if (!planSrv) return false;
+  const orden = ['basico','estandar','premium'];
+  return orden.indexOf(planSrv) >= orden.indexOf(nivelMinimo || 'basico');
+}
+
+
+// ══ Anti doble-click / race conditions ══
+const _enCurso = {};
+function _lock(k) { if (_enCurso[k]) return false; _enCurso[k] = true; setTimeout(()=>{_enCurso[k]=false;}, 4000); return true; }
+function _unlock(k) { _enCurso[k] = false; }
+
+
+// ══ P0 FIX: garantizar código de CV antes de cobrar (nunca cobrar sin poder entregar) ══
+async function asegurarCodigoCV() {
+  let cod = sessionStorage.getItem('cvpro_codigo');
+  if (cod && cod.length >= 6) return cod;
+  // No hay código: generar uno y guardar el CV ahora mismo
+  const buf = new Uint32Array(2);
+  (window.crypto || window.msCrypto).getRandomValues(buf);
+  const ALF = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  cod = Array.from({length:8}, (_,i) => ALF[(buf[i%2] >>> (i*4)) % ALF.length]).join('');
+  try {
+    const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+    const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+    const _r = await fetch(`${SB_U}/rest/v1/cvs_guardados`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        codigo: cod, nombre: D.nombre || '', email: D.email || '',
+        cv_texto: sessionStorage.getItem('cvTexto') || '',
+        cv_data: D, lang: LANG,
+        expira_en: new Date(Date.now() + 90*86400000).toISOString()
+      })
+    });
+    if (!_r.ok) console.error('⚠️ CV no guardado antes del pago:', _r.status, await _r.text());
+  } catch(e) { console.warn('No se pudo guardar el CV antes del pago:', e.message); }
+  sessionStorage.setItem('cvpro_codigo', cod);
+  return cod;
+}
+
+// ══ P1 FIX: reintentar pagos que no llegaron a Supabase ══
+async function reintentarPagosPendientes() {
+  let pend = [];
+  try { pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]'); } catch(e) { return; }
+  if (!pend.length) return;
+  const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+  const quedan = [];
+  for (const pago of pend) {
+    try {
+      const r = await fetch(`${SB_U}/rest/v1/pagos`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
+        body: JSON.stringify(pago)
+      });
+      if (!r.ok && r.status !== 409) quedan.push(pago);
+      else console.log('✅ Pago pendiente recuperado:', pago.orden_id);
+    } catch(e) { quedan.push(pago); }
+  }
+  localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(quedan));
+}
+window.addEventListener('load', () => setTimeout(reintentarPagosPendientes, 2500));
+
+
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0d1b2a;color:#fff;padding:12px 22px;border-radius:50px;font-size:.83rem;font-family:Inter,system-ui,sans-serif;z-index:100002;box-shadow:0 6px 24px rgba(0,0,0,.35);opacity:0;transition:opacity .3s';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>{ t.style.opacity='1'; });
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(), 400); }, 3800);
+}
+
+function mostrarConfirmacionPago(plan, orden, monto) {
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  const nombresPlan = {basico:{es:'Básico',en:'Basic'}, estandar:{es:'Estándar',en:'Standard'}, premium:{es:'Premium',en:'Premium'}};
+  const incluye = {
+    basico:{es:['CV profesional en PDF','Versión ATS con texto real','20 plantillas','Recuperación 30 días'], en:['Professional PDF resume','ATS version with real text','20 templates','30-day recovery']},
+    estandar:{es:['Todo lo del Básico','1 carta de presentación con IA','1 adaptación a vacante','1 traducción ES↔EN','Recuperación 90 días'], en:['Everything in Basic','1 AI cover letter','1 job-posting adaptation','1 translation ES↔EN','90-day recovery']},
+    premium:{es:['Todo lo del Estándar','Adaptaciones ILIMITADAS','Cartas ILIMITADAS','Traducciones ILIMITADAS','Recuperación 6 meses','Soporte prioritario por email'], en:['Everything in Standard','UNLIMITED adaptations','UNLIMITED cover letters','UNLIMITED translations','6-month recovery','Priority email support']}
+  };
+  const cod = sessionStorage.getItem('cvpro_codigo') || '';
+  const items = (incluye[plan] || incluye.basico)[L];
+  const ov = document.createElement('div');
+  ov.id = 'confirmaPago';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:20px;max-width:420px;width:100%;padding:30px;font-family:Inter,system-ui,sans-serif;text-align:center;max-height:92vh;overflow-y:auto">
+      <div style="font-size:2.6rem;line-height:1">✅</div>
+      <h2 style="font-size:1.3rem;color:#111;margin:10px 0 4px">${L==='en'?'Payment successful!':'¡Pago confirmado!'}</h2>
+      <p style="color:#666;font-size:.86rem;margin-bottom:16px">${L==='en'?'Plan':'Plan'} <b>${(nombresPlan[plan]||nombresPlan.basico)[L]}</b> · $${monto} USD</p>
+      <div style="background:#f6f6f6;border-radius:12px;padding:14px 16px;text-align:left;margin-bottom:14px">
+        <div style="font-size:.72rem;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">${L==='en'?'What you get':'Qué incluye'}</div>
+        ${items.map(i=>`<div style="font-size:.82rem;color:#333;margin-bottom:4px">✓ ${i}</div>`).join('')}
+      </div>
+      <div style="background:#fffbe6;border:2px solid #FFD000;border-radius:12px;padding:13px;margin-bottom:14px">
+        <div style="font-size:.72rem;color:#7a6500;margin-bottom:4px">${L==='en'?'🔑 Your recovery code — save it':'🔑 Tu código de recuperación — guárdalo'}</div>
+        <div style="font-size:1.4rem;font-weight:800;letter-spacing:4px;color:#0d1b2a">${cod}</div>
+        <div style="font-size:.7rem;color:#999;margin-top:5px">${L==='en'?'Also sent to your email. Use it to download again anytime.':'También enviado a tu email. Úsalo para descargar de nuevo cuando quieras.'}</div>
+      </div>
+      <p style="font-size:.68rem;color:#aaa;margin-bottom:14px">${L==='en'?'Order':'Orden'}: ${orden}</p>
+      <button onclick="document.getElementById('confirmaPago').remove()" style="width:100%;background:#FFD000;border:none;padding:14px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;font-size:.92rem">${L==='en'?'Continue to my resume →':'Continuar a mi CV →'}</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+async function abrirMuroPago(planSugerido, alPagar) {
+  if (document.getElementById('muroPago')) return;
+  ev('checkout_started', {plan: planSugerido || planActual()});
+  const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+  let planSel = planSugerido || planActual();
+
+  const ov = document.createElement('div');
+  ov.id = 'muroPago';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  ov.innerHTML = `
+    <div style="background:#fff;border-radius:20px;max-width:440px;width:100%;padding:28px;font-family:Inter,system-ui,sans-serif;max-height:94vh;overflow-y:auto">
+      <div style="text-align:right;margin-top:-10px"><button onclick="document.getElementById('muroPago').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#999">✕</button></div>
+      <h2 style="font-size:1.25rem;color:#111;margin-bottom:4px">${L==='en'?'Your resume is ready 🎉':'Tu CV está listo 🎉'}</h2>
+      <p style="color:#666;font-size:.87rem;line-height:1.55;margin-bottom:18px">${L==='en'?'One-time payment. No subscriptions, no recurring charges. Download instantly.':'Pago único. Sin suscripciones ni cobros recurrentes. Descarga al instante.'}</p>
+      <div id="planesMuro" style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px"></div>
+      <div id="paypalBtns" style="min-height:52px"></div>
+      <p style="text-align:center;font-size:.72rem;color:#999;margin-top:14px">🔒 ${L==='en'?'Secure payment via PayPal · Card accepted':'Pago seguro con PayPal · Aceptamos tarjeta'}</p>
+      <p style="text-align:center;font-size:.72rem;color:#7dd3a8;margin-top:6px">🛡️ ${L==='en'?'7-day money-back guarantee':'Garantía de 7 días — te devolvemos tu dinero'}</p>
+    </div>`;
+  document.body.appendChild(ov);
+
+  function pintarPlanes() {
+    const cont = document.getElementById('planesMuro');
+    const desc = {
+      basico:   {es:'CV con IA · 20 plantillas · PDF + versión ATS', en:'AI resume · 20 templates · PDF + ATS version'},
+      estandar: {es:'+ 1 carta · 1 adaptación a vacante · 1 traducción', en:'+ 1 cover letter · 1 job adaptation · 1 translation'},
+      premium:  {es:'+ Cartas, adaptaciones y traducciones ILIMITADAS · 6 meses', en:'+ UNLIMITED letters, adaptations & translations · 6 months'}
+    };
+    cont.innerHTML = Object.entries(PLANES).map(([k,v]) => `
+      <label style="display:flex;align-items:center;gap:11px;border:2px solid ${k===planSel?'#FFD000':'#e5e5e5'};background:${k===planSel?'#fffbe6':'#fff'};border-radius:12px;padding:11px 13px;cursor:pointer">
+        <input type="radio" name="planPago" value="${k}" ${k===planSel?'checked':''} style="accent-color:#FFD000">
+        <span style="flex:1">
+          <b style="font-size:.9rem;color:#111">${v.nombre[L]}</b>
+          <span style="display:block;font-size:.73rem;color:#777;line-height:1.4">${desc[k][L]}</span>
+        </span>
+        <b style="font-size:1.05rem;color:#111">$${v.precio}</b>
+      </label>`).join('');
+    cont.querySelectorAll('input[name=planPago]').forEach(r => {
+      r.onchange = () => { planSel = r.value; localStorage.setItem('cvpro_plan', planSel); pintarPlanes(); renderBotones(); };
+    });
+  }
+
+  async function renderBotones() {
+    const cont = document.getElementById('paypalBtns');
+    cont.innerHTML = '';
+    try {
+      await cargarSDKPayPal();
+      window.paypal.Buttons({
+        style: {layout:'vertical', color:'gold', shape:'pill', label:'pay', height:46},
+        createOrder: (data, actions) => actions.order.create({
+          purchase_units: [{
+            description: `CVPro ${PLANES[planSel].nombre[L]}`,
+            amount: {value: PLANES[planSel].precio, currency_code: 'USD'}
+          }]
+        }),
+        onApprove: async (data, actions) => {
+          const det = await actions.order.capture();
+          const payer = (det && det.payer) || {};
+          // Monto REAL cobrado por PayPal (no el del frontend)
+          let montoReal = PLANES[planSel].precio;
+          try {
+            const pu = det.purchase_units && det.purchase_units[0];
+            const cap = pu && pu.payments && pu.payments.captures && pu.payments.captures[0];
+            if (cap && cap.amount && cap.amount.value) montoReal = cap.amount.value;
+          } catch(e) {}
+          // El plan se deriva del monto real, no de lo que diga el frontend
+          const planReal = parseFloat(montoReal) >= 14.99 ? 'premium'
+                         : parseFloat(montoReal) >= 9.99 ? 'estandar'
+                         : parseFloat(montoReal) >= 4.99 ? 'basico' : 'ninguno';
+          localStorage.setItem('cvpro_pago', JSON.stringify({ok:true, plan:planReal, orden:det.id, ts:Date.now()}));
+          await registrarPago(det.id, planReal, montoReal, {
+            email: payer.email_address || '',
+            nombre: ((payer.name||{}).given_name||'') + ' ' + ((payer.name||{}).surname||'')
+          });
+          ev('payment_success', {plan: planReal, monto: montoReal});
+          document.getElementById('muroPago')?.remove();
+          mostrarConfirmacionPago(planReal, det.id, montoReal);
+          if (typeof alPagar === 'function') setTimeout(() => alPagar(planReal), 400);
+        },
+        onCancel: () => {
+          ev('payment_cancelled');
+          const cont2 = document.getElementById('paypalBtns');
+          if (cont2) {
+            const aviso = document.createElement('p');
+            aviso.style.cssText = 'text-align:center;font-size:.8rem;color:#888;margin-top:10px';
+            aviso.textContent = L==='en' ? 'Payment cancelled — your resume is safe, you can try again anytime.' : 'Pago cancelado — tu CV está guardado, puedes intentarlo cuando quieras.';
+            cont2.parentElement.appendChild(aviso);
+          }
+        },
+        onError: (err) => {
+          console.error('PayPal error:', err);
+          cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center;line-height:1.5">${L==='en'?'Payment error. If you were charged, email hola@getcvpro.com with your order number and we will fix it immediately.':'Error en el pago. Si te cobraron, escríbenos a hola@getcvpro.com con tu número de orden y lo resolvemos de inmediato.'}</p>`;
+        }
+      }).render('#paypalBtns');
+    } catch(e) {
+      cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center">${L==='en'?'Could not load PayPal. Check your connection.':'No se pudo cargar PayPal. Revisa tu conexión.'}</p>`;
+    }
+  }
+
+  await asegurarCodigoCV();
+  pintarPlanes();
+  renderBotones();
+}
+</script>
+<script>
+// ══ ANALYTICS: eventos del funnel (se envían a Supabase, sin cookies de terceros) ══
+function ev(nombre, extra) {
+  try {
+    const d = {evento: nombre, pagina: location.pathname, lang: (localStorage.getItem('cvpro_lang_cv')||'es'), ts: new Date().toISOString(), extra: extra||null};
+    const cola = JSON.parse(localStorage.getItem('cvpro_eventos') || '[]');
+    cola.push(d);
+    if (cola.length > 40) cola.shift();
+    localStorage.setItem('cvpro_eventos', JSON.stringify(cola));
+    if (window.gtag) window.gtag('event', nombre, extra || {});
+    // Enviar al servidor (sin bloquear la navegación)
+    try {
+      const _U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co/rest/v1/eventos';
+      const _K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+      fetch(_U, {method:'POST', keepalive:true,
+        headers:{'Content-Type':'application/json','apikey':_K,'Authorization':`Bearer ${_K}`,'Prefer':'return=minimal'},
+        body: JSON.stringify({evento:nombre, pagina:d.pagina, lang:d.lang, extra:extra||null})
+      }).catch(()=>{});
+    } catch(e) {}
+    console.debug('📊', nombre, extra || '');
+  } catch(e) {}
+}
+</script>
+<script>
+(async function badgePlan() {
+  try {
+    if (typeof esTester === 'function' && esTester()) return;
+    const plan = await verificarPagoServidor();
+    if (!plan || plan === 'ninguno') return;
+    const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
+    const n = {basico:{es:'Básico',en:'Basic'}, estandar:{es:'Estándar',en:'Standard'}, premium:{es:'Premium',en:'Premium'}}[plan];
+    if (document.getElementById('planBadge')) return;
+    const b = document.createElement('div');
+    b.id = 'planBadge';
+    b.style.cssText = 'position:fixed;top:12px;right:12px;z-index:9999;background:#1baf7a;color:#fff;padding:6px 14px;border-radius:50px;font-size:.72rem;font-weight:700;font-family:Inter,system-ui,sans-serif;box-shadow:0 3px 12px rgba(0,0,0,.25)';
+    b.textContent = `✓ ${L==='en'?'Plan':'Plan'} ${n[L]}`;
+    document.body.appendChild(b);
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>

@@ -419,14 +419,14 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <!-- COLUMNA PREVIEW -->
   <div class="preview-col">
     <div class="preview-header">
-      <span class="preview-title">Vista previa de tu CV</span>
-      <span class="preview-badge">En vivo</span>
+      <span class="preview-title" id="previewTitle">Vista previa de tu CV</span>
+      <span class="preview-badge" id="previewBadge">En vivo</span>
     </div>
     <div class="preview-scroll">
       <div id="cvPreviewLive">
         <div class="preview-placeholder">
           <div class="ph-icon">📄</div>
-          <p>Tu CV aparecerá aquí mientras respondes las preguntas</p>
+          <p id="previewPlaceholder">Tu CV aparecerá aquí mientras respondes las preguntas</p>
         </div>
       </div>
     </div>
@@ -666,7 +666,7 @@ function actualizarPreview() {
 
   // Sin datos aún
   if (!nombre && !puesto) {
-    el.innerHTML = `<div class="preview-placeholder"><div class="ph-icon">📄</div><p>Tu CV aparecerá aquí mientras respondes las preguntas</p></div>`;
+    el.innerHTML = `<div class="preview-placeholder"><div class="ph-icon">📄</div><p>${LANG==='en'?'Your resume will appear here as you answer':'Tu CV aparecerá aquí mientras respondes las preguntas'}</p></div>`;
     return;
   }
 
@@ -710,7 +710,7 @@ function actualizarPreview() {
       <div class="cv-prev-photo">${esc(ini||'?')}</div>
       <div>
         <div class="cv-prev-name">${esc(nombre||'Tu nombre')}</div>
-        <div class="cv-prev-role">${esc(puesto||'Tu puesto')}</div>
+        <div class="cv-prev-role">${esc(puesto || (LANG==='en'?'Your job title':'Tu puesto'))}</div>
         <div class="cv-prev-contact">
           ${email?`<span class="cv-prev-ci">✉ ${email}</span>`:''}
           ${pais?`<span class="cv-prev-ci">📍 ${pais}</span>`:''}
@@ -722,7 +722,7 @@ function actualizarPreview() {
         ${habsArr.length?`
         <div class="cv-prev-st">${LANG==='en'?'Skills':'Habilidades'}</div>
         ${habsArr.map(h=>`<div class="cv-prev-sk"><div class="cv-prev-sn">${esc(h.nombre)}</div><div class="cv-prev-sb2"><div class="cv-prev-sf" style="width:${h.nivel}%"></div></div></div>`).join('')}
-        `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:10px 0">Las habilidades<br>aparecerán aquí</div>`}
+        `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:10px 0">${LANG==='en'?'Skills will<br>appear here':'Las habilidades<br>aparecerán aquí'}</div>`}
 
         ${idiomasArr.length?`
         <div class="cv-prev-st" style="margin-top:10px">${LANG==='en'?'Languages':'Idiomas'}</div>
@@ -747,7 +747,7 @@ function actualizarPreview() {
           <div class="cv-prev-jm">${exp1parts[1]||''} ${exp1parts[2]?'· '+exp1parts[2]:''}</div>
           ${logros1.map(b=>`<div class="cv-prev-bl">${b.substring(0,90)}${b.length>90?'...':''}</div>`).join('')}
         </div>
-        `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:20px 0">La experiencia<br>aparecerá aquí</div>`}
+        `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:20px 0">${LANG==='en'?'Experience will<br>appear here':'La experiencia<br>aparecerá aquí'}</div>`}
       </div>
     </div>
   </div>`;
@@ -1021,8 +1021,21 @@ const AYUDA = {
   info_extra: { titulo:'➕ Dato adicional útil', ejemplos:['Licencia de conducir tipo B, vehículo propio','Referencias disponibles a solicitud','Si no tienes nada más escribe: nada más'] }
 };
 
+// Ayudas contextuales en inglés. Si una clave no está aquí, se usa la
+// española como respaldo (mejor un ejemplo en español que ninguna ayuda).
+const AYUDA_EN = {
+  puesto: { titulo:'💡 Job title examples', ejemplos:['Commercial Helicopter Pilot','Senior Full Stack Developer','General Accountant','ICU Head Nurse','Regional Sales Manager','Mathematics Teacher','Freelance Graphic Designer'] },
+  email_tel: { titulo:'📋 Recommended format', ejemplos:['name@gmail.com, +1 555 0100','name@company.com / +1 555 0199'] },
+  linkedin: { titulo:'🔗 Example', ejemplos:['linkedin.com/in/jorge-perez',"If you don't have one, type: none"] },
+  resumen_personal: { titulo:'💡 Tell me in your own words — I\'ll polish it', ejemplos:[
+    'I have 8 years flying helicopters, I like training new pilots and I have never had an incident',
+    'I worked 5 years in accounting, I handle Excel well and I closed the books every month'] },
+  exp1: { titulo:'📋 Format: Company — Role — Period', ejemplos:['Delta Airlines — Commercial Pilot — 2018 to 2026','TechCorp — Senior Developer — 2020 to present','General Hospital — Head Nurse — 2019 to 2024'] },
+  info_extra: { titulo:'➕ Useful extra detail', ejemplos:["Driver's license, own vehicle",'References available upon request','If you have nothing else, type: nothing else'] }
+};
+
 function renderAyuda(key) {
-  const h = AYUDA[key];
+  const h = (LANG === 'en' && AYUDA_EN[key]) ? AYUDA_EN[key] : AYUDA[key];
   if (!h) return '';
   return `<div class="ctx-help" style="margin-top:8px;max-width:82%">
     <div class="ctx-help-title">${h.titulo}</div>
@@ -1075,6 +1088,7 @@ function elegirIdiomaCV(langElegido) {
   datos.idioma_cv = langElegido === 'en' ? 'Solo en inglés 🇺🇸' : 'Solo en español 🇪🇸';
   localStorage.setItem('cvpro_lang_cv', langElegido);
   LANG = langElegido === 'en' ? 'en' : 'es';
+  localStorage.setItem('cvpro_lang_sesion', LANG);   // para detectar cambios de idioma
 
   // Ocultar selector inmediatamente
   document.getElementById('langSelector').style.display = 'none';
@@ -1450,6 +1464,15 @@ function actualizarUI() {
   else if (nr && LANG === 'en') nr.textContent = 'Restart';
   const ns = document.getElementById('navStep');
   if (ns && LANG === 'en') ns.innerHTML = 'Question <strong id="stepNum">' + Math.min(p + 1, PASOS.length) + '</strong> of ' + PASOS.length;
+  // Encabezado del panel de vista previa (texto fijo del HTML)
+  if (LANG === 'en') {
+    const _pt = document.getElementById('previewTitle');
+    if (_pt) _pt.textContent = 'Your resume preview';
+    const _pb = document.getElementById('previewBadge');
+    if (_pb) _pb.textContent = 'Live';
+    const _pp = document.getElementById('previewPlaceholder');
+    if (_pp) _pp.textContent = 'Your resume will appear here as you answer';
+  }
   actualizarTiempo();
 }
 
@@ -3861,6 +3884,21 @@ window.addEventListener('load', () => {
 
   // Si hay idioma — ocultar selector y arrancar
   if (langFinal) {
+    // ── SESIÓN EN OTRO IDIOMA ──
+    // El historial se guarda con el TEXTO ya renderizado. Si el usuario venía
+    // de una sesión en español y entra con ?lang=en, repetir ese historial
+    // deja el chat mezclado (saludo en español, preguntas nuevas en inglés).
+    // Si el idioma pedido por URL difiere del de la sesión guardada, se
+    // empieza limpio en el idioma nuevo.
+    if (langParam) {
+      const _langSesion = localStorage.getItem('cvpro_lang_sesion');
+      const _pedido = langParam === 'en' ? 'en' : 'es';
+      if (_langSesion && _langSesion !== _pedido) {
+        console.log('Idioma distinto al de la sesión guardada — se empieza limpio en', _pedido);
+        localStorage.removeItem('cvpro_chat16');
+      }
+      localStorage.setItem('cvpro_lang_sesion', _pedido);
+    }
     LANG = langFinal === 'en' ? 'en' : 'es';
     datos.idioma_cv = langFinal === 'en' ? 'Solo en inglés 🇺🇸' : 'Solo en español 🇪🇸';
     localStorage.setItem('cvpro_lang_cv', langFinal);

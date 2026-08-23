@@ -1238,6 +1238,7 @@ async function init() {
 // ── RENDER ──
 function renderMsg(tipo, texto, opts=[], animar=true, pasoIdx=null, chips=null) {
   const msgs = document.getElementById('chatMessages');
+  if (!msgs) { console.log('Chat no visible — mensaje omitido:', String(texto).substring(0,60)); return; }
   const div = document.createElement('div');
   div.className = `msg ${tipo}`;
   if (!animar) div.style.animation = 'none';
@@ -1771,6 +1772,7 @@ async function recuperarCVPorCodigo(codigo) {
     sessionStorage.setItem('cvTexto', cvGenerado);
     sessionStorage.setItem('cvData', JSON.stringify(r.cv_data||{}));
     sessionStorage.setItem('cvpro_codigo', codigo);
+    sessionStorage.setItem('cvpro_codigo_guardado', codigo);   // recuperado = existe en la base
     if (r.cv_data) {
       datos.nombre = r.cv_data.nombre || '';
       datos.puesto = r.cv_data.puesto || '';
@@ -1819,11 +1821,16 @@ async function guardarCVConCodigo(cv) {
       if (!_guardadoOk) console.error('❌ El CV no se guardó:', _r2.status, await _r2.text());
     }
     if (!_guardadoOk) {
+      // El código quedó en sessionStorage pero NO recupera nada: marcarlo
+      // como no-guardado para que ni la confirmación de pago ni el email
+      // entreguen un código huérfano.
+      sessionStorage.removeItem('cvpro_codigo_guardado');
       renderMsgAI(LANG==='en'
         ? '⚠️ Your resume was generated but we could not save it. Download it now — the recovery code is not available.'
         : '⚠️ Tu CV se generó pero no pudimos guardarlo. Descárgalo ahora — el código de recuperación no está disponible.');
       return;
     }
+    sessionStorage.setItem('cvpro_codigo_guardado', codigo);   // guardado confirmado
     // ── CÓDIGO Y EMAIL: SOLO CON PAGO CONFIRMADO (o modo tester) ──
     // El código de recuperación es parte del producto pagado. Antes se
     // mostraba en pantalla Y se enviaba por email al generar, sin pagar.
@@ -1842,7 +1849,8 @@ async function guardarCVConCodigo(cv) {
       avisarGuardadoSinCodigo();
     }
 
-    if (emailCliente && (_testerAhora || _pagadoYa)) {
+    const _yaEmailed = sessionStorage.getItem('cvpro_codigo_emailed') === codigo;
+    if (emailCliente && (_testerAhora || _pagadoYa) && !_yaEmailed) {
       // Antes: .then(() => console.log('enviado')) se ejecutaba AUNQUE el
       // servidor devolviera 500, y el .catch estaba vacío. Decía "enviado"
       // pasara lo que pasara. Ahora comprobamos la respuesta de verdad.
@@ -1855,6 +1863,7 @@ async function guardarCVConCodigo(cv) {
           });
           const cuerpo = await rEmail.text();
           if (rEmail.ok) {
+            sessionStorage.setItem('cvpro_codigo_emailed', codigo);
             console.log('📧 Código enviado por email a', emailCliente[0]);
             ev('code_email_sent');
           } else {
@@ -3702,6 +3711,15 @@ function avisarGuardadoSinCodigo() {
   }, 1200);
 }
 
+// ¿El código actual quedó realmente guardado en la base?
+// Evita entregar (en pantalla o email) un código huérfano tras un guardado fallido.
+function _codigoGuardadoOk() {
+  try {
+    const cod = sessionStorage.getItem('cvpro_codigo');
+    return !!cod && sessionStorage.getItem('cvpro_codigo_guardado') === cod;
+  } catch(e) { return false; }
+}
+
 // ¿Puede verse el código en la interfaz? Solo tester o pago hecho.
 // (Compuerta de UX, no de seguridad: el acceso real siempre se valida
 // en el servidor con verificar_pago.)
@@ -4301,6 +4319,12 @@ async function enviarCodigoTrasPago(payload) {
   try {
     const codigo = (payload && payload.codigo_cv) || sessionStorage.getItem('cvpro_codigo') || '';
     if (!codigo) { console.log('Sin código: no se envía email tras el pago'); return; }
+    if (typeof _codigoGuardadoOk === 'function' && !_codigoGuardadoOk()) {
+      console.log('Código sin guardado confirmado: email pospuesto (saldrá al guardarse)'); return;
+    }
+    if (sessionStorage.getItem('cvpro_codigo_emailed') === codigo) {
+      console.log('Código ya enviado por email antes — no se duplica'); return;
+    }
     const emailCV = ((typeof datos !== 'undefined' && datos && datos.email_tel) || D_EMAIL_FALLBACK() || '');
     const m = String(emailCV).match(/[\w.+-]+@[\w.-]+\.\w{2,}/) || String((payload && payload.email) || '').match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
     if (!m) { console.log('Sin email del cliente: código solo en pantalla'); return; }
@@ -4309,7 +4333,7 @@ async function enviarCodigoTrasPago(payload) {
       headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({email: m[0], nombre: ((typeof datos!=='undefined' && datos && datos.nombre) || (payload && payload.nombre) || '').trim(), codigo, lang: LANG})
     });
-    if (r.ok) { console.log('📧 Código enviado por email tras el pago a', m[0]); ev('code_email_sent_paid'); }
+    if (r.ok) { sessionStorage.setItem('cvpro_codigo_emailed', codigo); console.log('📧 Código enviado por email tras el pago a', m[0]); ev('code_email_sent_paid'); }
     else { console.error('❌ Email del código tras el pago falló:', r.status, await r.text()); ev('code_email_failed', {fase:'post_pago', status:r.status}); }
   } catch(e) { console.error('❌ Email del código tras el pago falló:', e.message); }
 }
@@ -4324,7 +4348,8 @@ function mostrarConfirmacionPagoChat(plan, monto, orden, alCerrar) {
     if (document.getElementById('confirmaPago')) return;
     const L = (typeof LANG !== 'undefined' && LANG === 'en') ? 'en' : 'es';
     const nombres = {basico:{es:'Básico',en:'Basic'}, estandar:{es:'Estándar',en:'Standard'}, premium:{es:'Premium',en:'Premium'}};
-    const cod = sessionStorage.getItem('cvpro_codigo') || '------';
+    const _codOk = (typeof _codigoGuardadoOk === 'function') ? _codigoGuardadoOk() : true;
+    const cod = _codOk ? (sessionStorage.getItem('cvpro_codigo') || '') : '';
     const ov = document.createElement('div');
     ov.id = 'confirmaPago';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
@@ -4333,11 +4358,13 @@ function mostrarConfirmacionPagoChat(plan, monto, orden, alCerrar) {
         <div style="font-size:2.6rem;line-height:1">✅</div>
         <h2 style="font-size:1.3rem;color:#111;margin:10px 0 4px">${L==='en'?'Payment successful!':'¡Pago confirmado!'}</h2>
         <p style="color:#666;font-size:.86rem;margin-bottom:16px">${L==='en'?'Plan':'Plan'} <b>${(nombres[plan]||nombres.basico)[L]}</b> · $${monto} USD</p>
-        <div style="background:#fffbe6;border:2px solid #FFD000;border-radius:12px;padding:13px;margin-bottom:14px">
+        ${cod ? `<div style="background:#fffbe6;border:2px solid #FFD000;border-radius:12px;padding:13px;margin-bottom:14px">
           <div style="font-size:.72rem;color:#7a6500;margin-bottom:4px">${L==='en'?'🔑 Your recovery code — save it':'🔑 Tu código de recuperación — guárdalo'}</div>
           <div style="font-size:1.4rem;font-weight:800;letter-spacing:4px;color:#0d1b2a">${cod}</div>
           <div style="font-size:.7rem;color:#999;margin-top:5px">${L==='en'?'Also sent to your email. Use it to download again anytime.':'También enviado a tu email. Úsalo para descargar de nuevo cuando quieras.'}</div>
-        </div>
+        </div>` : `<div style="background:#f4f4f4;border-radius:12px;padding:13px;margin-bottom:14px">
+          <div style="font-size:.78rem;color:#555">${L==='en'?'🔑 Your recovery code will appear here (and reach your email) as soon as your resume is saved.':'🔑 Tu código de recuperación aparecerá aquí (y llegará a tu email) en cuanto tu CV quede guardado.'}</div>
+        </div>`}
         <p style="font-size:.68rem;color:#aaa;margin-bottom:14px">${L==='en'?'Order':'Orden'}: ${orden}</p>
         <button id="btnContinuarPago" style="width:100%;background:#FFD000;border:none;padding:14px;border-radius:50px;font-weight:800;cursor:pointer;font-family:Inter,sans-serif;font-size:.92rem">${L==='en'?'Continue →':'Continuar →'}</button>
       </div>`;
@@ -4486,8 +4513,9 @@ async function asegurarCodigoCV() {
         expira_en: new Date(Date.now() + 90*86400000).toISOString()
       })
     });
-    if (!_r.ok) console.error('⚠️ CV no guardado antes del pago:', _r.status, await _r.text());
-  } catch(e) { console.warn('No se pudo guardar el CV antes del pago:', e.message); }
+    if (_r.ok) sessionStorage.setItem('cvpro_codigo_guardado', cod);
+    else { sessionStorage.removeItem('cvpro_codigo_guardado'); console.error('⚠️ CV no guardado antes del pago:', _r.status, await _r.text()); }
+  } catch(e) { sessionStorage.removeItem('cvpro_codigo_guardado'); console.warn('No se pudo guardar el CV antes del pago:', e.message); }
   sessionStorage.setItem('cvpro_codigo', cod);
   return cod;
 }

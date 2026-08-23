@@ -97,7 +97,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <h2>Dónde se procesan</h2>
 <ul>
 <li>El texto de tu CV se envía a la API de Anthropic (Claude) para generar o analizar el contenido. Anthropic no usa estos datos para entrenar sus modelos.</li>
-<li>Si generas un CV, guardamos su texto y tu email en nuestra base de datos (Supabase, alojada en la UE/EE.UU.) asociados a un código de recuperación de 6 dígitos.</li>
+<li>Si generas un CV, guardamos su texto y tu email en nuestra base de datos (Supabase, alojada en la UE/EE.UU.) asociados a un código de recuperación de 8 caracteres.</li>
 <li>Los archivos que subes al analizador se procesan <strong>en tu propio navegador</strong>: extraemos el texto localmente y solo ese texto viaja a la IA. El archivo nunca se sube a nuestros servidores.</li>
 </ul>
 
@@ -150,7 +150,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <h2>Where it is processed</h2>
 <ul>
 <li>Your resume text is sent to the Anthropic (Claude) API to generate or analyze content. Anthropic does not use this data to train its models.</li>
-<li>If you generate a resume, we store its text and your email in our database (Supabase) linked to a 6-digit recovery code.</li>
+<li>If you generate a resume, we store its text and your email in our database (Supabase) linked to an 8-character recovery code.</li>
 <li>Files uploaded to the analyzer are processed <strong>inside your own browser</strong>: we extract the text locally and only that text reaches the AI. The file itself never reaches our servers.</li>
 </ul>
 <h2>Retention</h2>

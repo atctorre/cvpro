@@ -2026,8 +2026,15 @@ GENERA EL CV ADAPTADO AHORA:`;
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({prompt})
     });
+    // Un 429/500 del servidor parseado a ciegas se disfrazaba de 'respuesta
+    // corta' y el usuario veía siempre el mismo mensaje sin causa. Ahora el
+    // estado HTTP viaja en el error y el alert dice qué pasó de verdad.
+    if (!res.ok) {
+      const cuerpo = await res.text().catch(() => '');
+      throw new Error('HTTP ' + res.status + (cuerpo ? ' — ' + cuerpo.substring(0, 100) : ''));
+    }
     const data = await res.json();
-    if (!data.cv || data.cv.trim().length < 300) throw new Error('respuesta corta');
+    if (!data.cv || data.cv.trim().length < 300) throw new Error('respuesta corta del servidor');
 
     let cvAd = data.cv.trim();
     const _enIng = LANG === 'en';
@@ -2069,7 +2076,20 @@ ${cvAd.substring(0,12000)}`})
       }
     }, 100);
   } catch(e) {
-    alert(LANG==='en' ? 'Could not adapt right now. Try again in 30 seconds.' : 'No se pudo adaptar en este momento. Intenta en 30 segundos.');
+    console.error('Adaptación a vacante falló:', e);
+    if (typeof ev === 'function') ev('adapt_job_failed', {detalle: String((e && e.message) || e).substring(0, 80)});
+    const esTimeout = e && e.name === 'AbortError';
+    const esLimite = /HTTP 429/.test(String(e && e.message));
+    const causa = esTimeout
+      ? (LANG==='en' ? 'The connection took too long (slow network). ' : 'La conexión tardó demasiado (red lenta). ')
+      : esLimite
+      ? (LANG==='en' ? 'Too many requests right now. ' : 'Hay mucho tráfico en este momento. ')
+      : '';
+    const detalle = (!causa && e && e.message) ? '\n(' + String(e.message).substring(0, 90) + ')' : '';
+    alert((LANG==='en' ? 'Could not adapt your resume. ' : 'No se pudo adaptar tu CV. ')
+      + causa
+      + (LANG==='en' ? 'Try again in 30 seconds.' : 'Intenta de nuevo en 30 segundos.')
+      + detalle);
     btn.disabled = false;
     btn.textContent = LANG==='en' ? '⚡ Adapt my resume' : '⚡ Adaptar mi CV';
   }

@@ -80,6 +80,14 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .btn-volver{background:transparent;color:#fff;font-weight:600;padding:12px 28px;border:2px solid #444;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Montserrat',sans-serif}
 .btn-volver:hover{border-color:#FFD000;color:#FFD000}
 #cvFinal{background:#fff}
+/* Justificado profesional para el CV en español (la convención estadounidense
+   es alineación izquierda, por eso solo aplica al documento en español) */
+#cvFinal.justificado .bl{text-align:justify}
+#cvFinal.justificado [data-edit="resumen"]{display:block;text-align:justify}
+/* Modo edición: marca sutil sobre cada texto tocable, visible solo en pantalla */
+#cvFinal.editando [data-edit]{cursor:text;transition:outline-color .15s}
+#cvFinal.editando [data-edit]:hover{outline:1.5px dashed #FFD000;outline-offset:2px;border-radius:2px}
+#cvFinal.editando [data-edit]:focus{outline:2px solid #FFD000;outline-offset:2px;border-radius:2px;background:#fffbe6}
 
 /* ════════════════════
    PLANTILLAS CSS
@@ -207,7 +215,8 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .cv-h5 .sf{height:100%;background:linear-gradient(90deg,#0066ff,#00d4ff);border-radius:2px}
 
 /* M1 ROSA GOLD */
-.cv-m1{font-family:'Playfair Display',serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m1{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m1 .nm{font-family:'Playfair Display',serif}
 .cv-m1 .hdr{background:linear-gradient(135deg,#2d1b35,#4a2d5c);padding:32px 36px;display:flex;gap:22px;align-items:center}
 .cv-m1 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #e8b4d0;flex-shrink:0;background:#3d2448;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e8b4d0}
 .cv-m1 .ph img{width:100%;height:100%;object-fit:cover;display:block}
@@ -464,7 +473,8 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .cv-m6 .sb2{height:4px;background:#d8eded;border-radius:2px}
 .cv-m6 .sf{height:100%;background:#0e5c46;border-radius:2px}
 .cv-m6 .tg{display:inline-block;background:#e0f4f4;color:#0e5c46;font-size:0.65rem;padding:2px 7px;border-radius:3px;margin:2px;font-weight:700}
-.cv-m7{font-family:'Playfair Display',serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m7{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;width:794px}
+.cv-m7 .nm{font-family:'Playfair Display',serif}
 .cv-m7 .hdr{background:linear-gradient(135deg,#2d1b35,#7a5c3e);padding:32px 36px;display:flex;gap:22px;align-items:center}
 .cv-m7 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:4px solid #e8b4d0;flex-shrink:0;background:#3d2448;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#e8b4d0}
 .cv-m7 .ph img{width:100%;height:100%;object-fit:cover;display:block}
@@ -707,6 +717,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <!-- ── CV RESULTADO ── -->
 <div class="cv-result" id="cvResult">
   <div class="cv-actions">
+    <button class="btn-editar" onclick="toggleEdicion()" id="btnEditar" style="background:#fff;border:2px solid #FFD000;color:#0d1b2a;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;width:100%;margin-bottom:8px;font-family:inherit;font-size:0.9rem">✏️ Editar textos del CV</button>
     <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar PDF</button>
     <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
     <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
@@ -1299,19 +1310,21 @@ function ph(cls, isRect) {
   return `<div class="ph">${ini}</div>`;
 }
 
-function bls(cls, arr) { return arr.map(b=>`<div class="bl">${esc(b)}</div>`).join(''); }
-function skills(cls, arr) { return `<div class="sk-list">${arr.map(s=>`<div class="sk-item">• ${esc(s.nombre)}</div>`).join('')}</div>`; }
-function jobs(cls, arr) { return arr.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)}${j.periodo?' · '+esc(j.periodo):''}</div>${bls(cls,j.bullets)}</div>`).join(''); }
-function edu(arr) { return arr.map(e=>`<p style="font-size:0.74rem;margin-bottom:6px"><strong>${e.titulo}</strong><br><span style="color:#888">${e.institucion} · ${e.año}</span></p>`).join(''); }
-function ct(cls) { return `<span class="ci">✉ ${esc(D.email)}</span>${D.telefono?`<span class="ci">📱 ${esc(D.telefono)}</span>`:''}${D.pais?`<span class="ci">📍 ${esc(D.pais)}</span>`:''}${D.linkedin?`<span class="ci">🔗 ${esc(D.linkedin)}</span>`:''}` }
+function bls(cls, arr, base) { return arr.map((b,j)=>`<div class="bl"${base?` data-edit="${base}.${j}"`:''}>${esc(b)}</div>`).join(''); }
+function skills(cls, arr) { return `<div class="sk-list">${arr.map((s,i)=>`<div class="sk-item">• <span data-edit="habilidades.${i}.nombre">${esc(s.nombre)}</span></div>`).join('')}</div>`; }
+function jobs(cls, arr) { return arr.map((j,i)=>`<div class="jb"><div class="jt" data-edit="experiencia.${i}.titulo">${esc(j.titulo)}</div><div class="jm" data-edit="experiencia.${i}.meta">${esc(j.empresa)}${j.periodo?' · '+esc(j.periodo):''}</div>${bls(cls,j.bullets,`experiencia.${i}.bullets`)}</div>`).join(''); }
+function edu(arr) { return arr.map((e,i)=>`<p style="font-size:0.74rem;margin-bottom:6px"><strong data-edit="educacion.${i}.titulo">${esc(e.titulo)}</strong><br><span style="color:#888" data-edit="educacion.${i}.meta">${esc(e.institucion)}${e.año?' · '+esc(e.año):''}</span></p>`).join(''); }
+function ct(cls) { return `<span class="ci">✉ <span data-edit="email">${esc(D.email)}</span></span>${D.telefono?`<span class="ci">📱 <span data-edit="telefono">${esc(D.telefono)}</span></span>`:''}${D.pais?`<span class="ci">📍 <span data-edit="pais">${esc(D.pais)}</span></span>`:''}${D.linkedin?`<span class="ci">🔗 <span data-edit="linkedin">${esc(D.linkedin)}</span></span>`:''}` }
 
 function buildCV(id) {
   const d = D;
-  const resumen = d.resumen || '';
-  const logrosHtml = d.logros?.length ? `<div style="margin-top:14px"><div class="cv-${id} st">${T.logros}</div>${d.logros.map(l=>`<div class="cv-${id} bl">${esc(l)}</div>`).join('')}</div>` : '';
+  // El resumen se insertaba SIN escapar (hueco XSS con datos propios) y sin
+  // posibilidad de edición. El span lo resuelve todo de una vez.
+  const resumen = `<span data-edit="resumen">${esc(d.resumen || '')}</span>`;
+  const logrosHtml = d.logros?.length ? `<div style="margin-top:14px"><div class="cv-${id} st">${T.logros}</div>${d.logros.map((l,i)=>`<div class="cv-${id} bl" data-edit="logros.${i}">${esc(l)}</div>`).join('')}</div>` : '';
   // Salía "EspañolNativo" pegado: los dos <span> quedaban sin separación
   // visual porque .li no siempre aplica space-between en todas las plantillas.
-  const langHtml = (d.idiomas||[]).map(l=>`<div class="li" style="display:flex;justify-content:space-between;gap:10px"><span>${esc(l.nombre)}</span><span style="color:#888;text-align:right;max-width:60%;overflow-wrap:break-word">${l.nivel?'· '+esc(l.nivel):''}</span></div>`).join('');
+  const langHtml = (d.idiomas||[]).map((l,i)=>`<div class="li" style="display:flex;justify-content:space-between;gap:10px"><span data-edit="idiomas.${i}.nombre">${esc(l.nombre)}</span><span style="color:#888;text-align:right;max-width:60%;overflow-wrap:break-word">${l.nivel?`· <span data-edit="idiomas.${i}.nivel">${esc(l.nivel)}</span>`:''}</span></div>`).join('');
 
   const maps = {
     h1:`<div class="cv-h1"><div class="hdr">${ph('cv-h1',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h1')}</div></div></div><div class="bd"><div class="sb"><div class="st" style="margin-top:0">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:14px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h1',d.habilidades)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h1',d.experiencia)}${logrosHtml}</div></div></div>`,
@@ -1344,10 +1357,103 @@ function mostrarCV() {
   if (typeof actualizarBotonTraducir === 'function') setTimeout(actualizarBotonTraducir, 0);
   const html = buildCV(selTpl);
   document.getElementById('cvFinal').innerHTML = html;
+  // Nombre y puesto van por-plantilla (clases .nm/.rl) — se anotan aquí
+  const _fin = document.getElementById('cvFinal');
+  _fin.querySelectorAll('.nm').forEach(e => e.setAttribute('data-edit','nombre'));
+  _fin.querySelectorAll('.rl').forEach(e => e.setAttribute('data-edit','puesto'));
+  // Justificado solo para el documento en español (en EE.UU. la convención
+  // es ragged right); el idioma del DOCUMENTO manda, no el de la página
+  const _docLang = (typeof _idiomaActual !== 'undefined' && _idiomaActual) ? _idiomaActual : LANG;
+  _fin.classList.toggle('justificado', _docLang !== 'en');
+  if (_modoEdicion) aplicarModoEdicion(true);   // conservar el modo al cambiar plantilla
   document.getElementById('selectorPage').style.display = 'none';
   document.getElementById('cvResult').style.display = 'block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+// ══════════ EDICIÓN FINAL SOBRE LA PLANTILLA ══════════
+// Últimos arreglos ANTES de descargar: el usuario toca cualquier texto del
+// CV montado y lo corrige en el sitio. Cada cambio se escribe de vuelta en
+// D y se persiste, así sobrevive al cambio de plantilla y llega igual al
+// PDF visual (captura el DOM) y al PDF ATS (se construye desde D).
+let _modoEdicion = false;
+
+function toggleEdicion() {
+  _modoEdicion = !_modoEdicion;
+  aplicarModoEdicion(_modoEdicion);
+  const b = document.getElementById('btnEditar');
+  if (b) b.innerHTML = _modoEdicion
+    ? (LANG==='en' ? '✅ Done editing' : '✅ Terminar edición')
+    : (LANG==='en' ? '✏️ Edit resume text' : '✏️ Editar textos del CV');
+  if (_modoEdicion && !sessionStorage.getItem('cvpro_hint_edicion')) {
+    sessionStorage.setItem('cvpro_hint_edicion','1');
+    alert(LANG==='en'
+      ? 'Tap any text in the resume to fix it. Changes save automatically and will appear in the PDF.'
+      : 'Toca cualquier texto del CV para corregirlo. Los cambios se guardan solos y saldrán así en el PDF.');
+  }
+  if (typeof ev === 'function') ev(_modoEdicion ? 'edit_mode_on' : 'edit_mode_off');
+}
+
+function aplicarModoEdicion(on) {
+  const fin = document.getElementById('cvFinal');
+  if (!fin) return;
+  fin.classList.toggle('editando', on);
+  fin.querySelectorAll('[data-edit]').forEach(el => {
+    if (on) el.setAttribute('contenteditable', 'true');
+    else el.removeAttribute('contenteditable');
+  });
+}
+
+// Cada edición se escribe de vuelta en D según la ruta del data-edit
+function escribirEdicion(ruta, valor) {
+  const v = String(valor).replace(/\n+/g, ' ').trim();
+  const partes = ruta.split('.');
+  try {
+    if (partes.length === 1) {
+      // nombre, puesto, resumen, email, telefono, pais, linkedin
+      D[partes[0]] = v;
+    } else if (partes[0] === 'experiencia') {
+      const i = +partes[1], campo = partes[2];
+      if (!D.experiencia || !D.experiencia[i]) return;
+      if (campo === 'meta') {
+        // "Empresa · Período" → separar por el primer " · "
+        const idx = v.indexOf(' · ');
+        if (idx >= 0) { D.experiencia[i].empresa = v.slice(0, idx).trim(); D.experiencia[i].periodo = v.slice(idx+3).trim(); }
+        else { D.experiencia[i].empresa = v; D.experiencia[i].periodo = ''; }
+      } else if (campo === 'bullets') {
+        const j = +partes[3];
+        if (Array.isArray(D.experiencia[i].bullets)) D.experiencia[i].bullets[j] = v;
+      } else D.experiencia[i][campo] = v;
+    } else if (partes[0] === 'educacion') {
+      const i = +partes[1], campo = partes[2];
+      if (!D.educacion || !D.educacion[i]) return;
+      if (campo === 'meta') {
+        const idx = v.indexOf(' · ');
+        if (idx >= 0) { D.educacion[i].institucion = v.slice(0, idx).trim(); D.educacion[i]['año'] = v.slice(idx+3).trim(); }
+        else { D.educacion[i].institucion = v; D.educacion[i]['año'] = ''; }
+      } else D.educacion[i][campo] = v;
+    } else if (partes[0] === 'habilidades') {
+      const i = +partes[1];
+      if (D.habilidades && D.habilidades[i]) D.habilidades[i].nombre = v;
+    } else if (partes[0] === 'idiomas') {
+      const i = +partes[1], campo = partes[2];
+      if (D.idiomas && D.idiomas[i]) D.idiomas[i][campo] = v;
+    } else if (partes[0] === 'logros') {
+      const i = +partes[1];
+      if (Array.isArray(D.logros)) D.logros[i] = v;
+    }
+    sessionStorage.setItem('cvData', JSON.stringify(D));
+  } catch(e) { console.error('No se pudo guardar la edición', ruta, e.message); }
+}
+
+// Guardar al salir de cada campo (delegado, un solo listener)
+document.addEventListener('focusout', (e) => {
+  const el = e.target;
+  if (!_modoEdicion || !el || !el.getAttribute) return;
+  const ruta = el.getAttribute('data-edit');
+  if (!ruta || !el.closest('#cvFinal')) return;
+  escribirEdicion(ruta, el.textContent);
+});
 
 function volverSelector() {
   document.getElementById('cvResult').style.display = 'none';
@@ -1741,13 +1847,60 @@ function descargarCartaPDF() {
   if (!texto.trim()) { alert(LANG==='en' ? 'The letter is empty.' : 'La carta está vacía.'); return; }
 
   const parrafos = texto.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
-  const content = parrafos.map((p, idx) => ({
-    text: sinLigaduras(p),
-    fontSize: 11,
-    lineHeight: 1.45,
-    alignment: 'left',
-    margin: [0, idx === 0 ? 0 : 10, 0, 0]
-  }));
+
+  // ── CARTA COMERCIAL CON ESTRUCTURA REAL ──
+  // Antes todos los párrafos salían idénticos (fecha, saludo, cuerpo y firma
+  // con el mismo tamaño y alineación): la carta se veía plana y descuidada.
+  // Ahora cada pieza recibe su tratamiento: membrete con el nombre, fecha a
+  // la derecha, cuerpo justificado (en español; en inglés la convención es
+  // izquierda), y bloque de firma diferenciado.
+  const esEN = LANG === 'en';
+  const esFecha = t => /\d{4}/.test(t) && t.length < 70 && !/[.!?]$/.test(t.replace(/\.$/,''));
+  const esSaludo = t => /^(estimad|dear|a quien|hiring)/i.test(t);
+  const esDespedida = t => /^(atentamente|cordialmente|saludos cordiales|sincerely|best regards|kind regards)[,.]?$/i.test(t.trim());
+
+  const content = [];
+
+  // Membrete: nombre + puesto + contacto (desde los datos, siempre coherente)
+  content.push({ text: sinLigaduras(normalizarTipografia(D.nombre || '')), fontSize: 17, bold: true, color: '#0d1b2a', margin: [0,0,0,1] });
+  if (D.puesto) content.push({ text: sinLigaduras(normalizarTipografia(D.puesto)), fontSize: 10, color: '#666', margin: [0,0,0,3] });
+  const contacto = [D.email, D.telefono, D.pais].filter(Boolean).join('  ·  ');
+  if (contacto) content.push({ text: sinLigaduras(contacto), fontSize: 8.5, color: '#999', margin: [0,0,0,6] });
+  content.push({ canvas: [{ type:'line', x1:0, y1:0, x2:467, y2:0, lineWidth:1.2, lineColor:'#0d1b2a' }], margin:[0,0,0,18] });
+
+  let i = 0;
+  // Fecha (si el primer párrafo lo es) → a la derecha, gris
+  if (parrafos.length && esFecha(parrafos[0]) && !esSaludo(parrafos[0])) {
+    content.push({ text: sinLigaduras(parrafos[0]), fontSize: 10, color: '#555', alignment: 'right', margin: [0,0,0,16] });
+    i = 1;
+  }
+  // Localizar la despedida para tratar la firma aparte
+  let idxDespedida = -1;
+  for (let k = parrafos.length - 1; k > i; k--) {
+    if (esDespedida(parrafos[k])) { idxDespedida = k; break; }
+  }
+  const finCuerpo = idxDespedida > -1 ? idxDespedida : parrafos.length;
+
+  for (; i < finCuerpo; i++) {
+    const t = parrafos[i];
+    content.push({
+      text: sinLigaduras(t),
+      fontSize: 11,
+      lineHeight: 1.5,
+      // Saludo y cuerpo: el cuerpo va justificado en español (convención
+      // profesional hispana); en inglés, alineado a la izquierda (convención EE.UU.)
+      alignment: (esSaludo(t) || esEN) ? 'left' : 'justify',
+      margin: [0, content.length <= 4 ? 0 : 11, 0, 0]
+    });
+  }
+
+  // Bloque de firma: despedida + nombre + puesto
+  if (idxDespedida > -1) {
+    content.push({ text: sinLigaduras(parrafos[idxDespedida]), fontSize: 11, margin: [0,20,0,14] });
+    const resto = parrafos.slice(idxDespedida + 1).join(' ').trim();
+    content.push({ text: sinLigaduras(normalizarTipografia(D.nombre || resto || '')), fontSize: 12, bold: true, color: '#0d1b2a', margin: [0,0,0,1] });
+    if (D.puesto) content.push({ text: sinLigaduras(normalizarTipografia(D.puesto)), fontSize: 9.5, color: '#666' });
+  }
 
   const nombre = normalizarTipografia(D.nombre || 'Carta').replace(/\s+/g, '_');
   try {
@@ -1830,6 +1983,10 @@ function sinLigaduras(s) {
 
 
 async function descargarATS() {
+  if (typeof _modoEdicion !== 'undefined' && _modoEdicion && document.activeElement) {
+    document.activeElement.blur();
+    await new Promise(r => setTimeout(r, 60));
+  }
   if (!_lock('ats')) return;
   ev('ats_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('ats'); abrirMuroPago(null, () => descargarATS()); return; }
@@ -1852,7 +2009,7 @@ async function descargarATS() {
 
   if (d.resumen) {
     content.push({text: sinLigaduras(A.perfil), fontSize: 11, bold: true, color: '#0d1b2a', margin: [0,0,0,4]});
-    content.push({text: sinLigaduras(d.resumen), fontSize: 9.5, color: '#333', lineHeight: 1.35, margin: [0,0,0,12]});
+    content.push({text: sinLigaduras(d.resumen), alignment: (LANG==='en'?'left':'justify'), fontSize: 9.5, color: '#333', lineHeight: 1.35, margin: [0,0,0,12]});
   }
 
   if (d.experiencia?.length) {
@@ -1865,7 +2022,7 @@ async function descargarATS() {
         ], margin: [0,2,0,3], unbreakable: true
       });
       content.push({
-        ul: (j.bullets||[]).map(b => ({text: sinLigaduras(b), fontSize: 9.5, color: '#333', lineHeight: 1.3})),
+        ul: (j.bullets||[]).map(b => ({text: sinLigaduras(b), alignment: (LANG==='en'?'left':'justify'), fontSize: 9.5, color: '#333', lineHeight: 1.3})),
         margin: [0,0,0,8]
       });
     });
@@ -1899,6 +2056,12 @@ async function descargarATS() {
 }
 
 async function descargarPDF() {
+  // Si hay un campo de edición abierto, cerrarlo primero: el focusout guarda
+  // el último cambio en D antes de capturar.
+  if (typeof _modoEdicion !== 'undefined' && _modoEdicion && document.activeElement) {
+    document.activeElement.blur();
+    await new Promise(r => setTimeout(r, 60));
+  }
   if (!_lock('pdf')) return;
   ev('pdf_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('pdf'); abrirMuroPago(null, () => descargarPDF()); return; }
@@ -1941,6 +2104,11 @@ async function descargarPDF() {
         // El CV debe quedar pegado al origen del lienzo, sin centrado del padre
         const cv = doc.getElementById('cvFinal');
         if (cv) { cv.style.margin = '0'; cv.style.padding = '0'; }
+        // El modo edición jamás debe imprimirse: sin marcas ni cursores en el PDF
+        if (cv) {
+          cv.classList.remove('editando');
+          cv.querySelectorAll('[contenteditable]').forEach(e => e.removeAttribute('contenteditable'));
+        }
         if (cv && cv.firstElementChild) {
           cv.firstElementChild.style.margin = '0';
           cv.firstElementChild.style.transform = 'none';

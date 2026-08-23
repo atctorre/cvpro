@@ -655,15 +655,18 @@ function actualizarPreview() {
 
   // Habilidades — usar enriquecidas si existen, filtrar texto largo
   const habsRaw = datos.habilidades_tecnicas_enriquecido || d.habilidades_tecnicas || '';
-  // Filtrar headers de sección y basura colada en habilidades
-  habsTexto = (habsTexto||'').split(',').map(s=>s.trim())
+  // Filtrar headers de sección y basura colada en habilidades.
+  // BUG HISTÓRICO: este bloque leía `habsTexto` sin declararla (nombre copiado
+  // del parser) → ReferenceError al responder la 1ª pregunta y el chat moría
+  // sin avanzar. Ahora se declara, filtra habsRaw y habsArr consume lo filtrado.
+  let habsTexto = (habsRaw || '').split(',').map(s=>s.trim())
     .filter(s => s && s.length>1 && s.length<70 && !ES_HEADER.test(s) && !/^[─\-═\.]+$/.test(s))
     .join(', ');
   if (!habsTexto) habsTexto = (datos.habilidades_tecnicas_enriquecido || datos.habilidades_tecnicas || '')
     .split(/[,;\n]/).map(s=>s.replace(/^[\s•·▸▪\-\*]+/,'').trim())
     .filter(s=>s && s.length>1 && s.length<70 && !ES_HEADER.test(s)).slice(0,14).join(', ');
 
-  const habsArr = habsRaw.split(/[,;]/)
+  const habsArr = habsTexto.split(/[,;]/)
     .map((h,i)=>({nombre:h.trim().replace(/^[•·\-\s]+/,'').trim(), nivel:Math.max(55,88-i*8)}))
     .filter(h=>h.nombre && h.nombre.length>1 && h.nombre.length<45)
     .slice(0,6);

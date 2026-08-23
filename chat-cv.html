@@ -1056,7 +1056,7 @@ function editarRespuesta(pasoIdx) {
   input.focus();
   autoResize(input);
   const hint = document.getElementById('inputHint');
-  hint.textContent = `✏️ Editando pregunta ${pasoIdx + 1} — presiona Enter para guardar`;
+  hint.textContent = LANG==='en' ? `✏️ Editing question ${pasoIdx + 1} — press Enter to save` : `✏️ Editando pregunta ${pasoIdx + 1} — presiona Enter para guardar`;
   hint.style.color = 'var(--yellow)';
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
 }
@@ -1535,7 +1535,25 @@ async function generarConIA() {
   const idiomaCV = datos.idioma_cv || 'Solo en español';
   const enIngles = idiomaCV.toLowerCase().includes('ingl');
   const idiomaInstruccion = enIngles
-    ? 'IMPORTANT: Write the ENTIRE CV in professional English. Every word, section label, and bullet must be in English.'
+    ? `IMPORTANT: Write the ENTIRE resume in professional English. Every word, section label, and bullet must be in English.
+US RESUME STANDARDS (this is a US resume, not a translated Latin American CV):
+- NO photo, age, date of birth, marital status, nationality, gender or national ID number. Including them gets the file discarded for discrimination risk.
+- NO "References" section and NO "References available upon request" — obsolete in the US for over a decade.
+- NO "Curriculum Vitae" or "CV" heading — in the US that designates an academic document. The resume starts with the candidate's name.
+- Standard ATS headings only: Professional Summary · Professional Experience · Education · Skills · Certifications. Never "Objective".
+- LANGUAGES: the resume MUST state English proficiency (e.g. "English — Professional working proficiency", "Spanish — Native"). A US resume with no declared English level is an immediate red flag. Use the standard scale: Native / Fluent / Professional working proficiency / Intermediate / Basic. If the candidate never stated their English level, do NOT invent one — list only the languages they actually declared.
+- DATES in consistent US format throughout: "Jan 2024 – Present", "Mar 2019 – Dec 2022". Never mix formats.
+- LENGTH: 1 page for under 10 years of experience, up to 2 pages beyond that. Prioritise recent and relevant.
+- RESULTS-ORIENTED BULLETS: US convention rewards outcome over duty. Preferred shape: action verb + what was done + what resulted. E.g. "Led a team of 10, exceeding sales targets by 20%" rather than "Responsible for the sales team". BUT truthfulness overrides style: quantify ONLY with figures the candidate actually gave. With no figures, express scope concretely and qualitatively — never invent a number or an "industry-typical" percentage.
+- EDUCATION in US format: "Degree | Institution, City | Year". Include honours only if stated (Magna Cum Laude, Honors). If the candidate holds a university degree, omit secondary school unless it is their highest credential.
+- BALANCED SKILLS: combine hard skills (tools, software, concrete techniques of the trade) with soft skills the candidate's answers support. Hard skills come FIRST — those are what the ATS matches. Never open the list with "Teamwork" or "Communication".
+- NO WORK EXPERIENCE: for a recent graduate or someone without formal jobs, build the resume on education, academic projects, internships, volunteering, coursework and transferable skills, with those sections at the top. One page. Never invent jobs to fill the document.
+- ADDITIONAL SECTIONS when they add value: Languages (with level), Certifications, Volunteer Experience, Projects.
+- Current role in present tense, previous roles in past tense. If a role has no dates, use PAST tense — never claim an ongoing position that is not stated.
+- Action verbs a US recruiter expects: Led, Managed, Built, Reduced, Launched, Coordinated, Supervised, Developed, Implemented.
+- Job titles adapted to the US market, NEVER calqued word for word ("Colaborador Técnico" is never "Technical Collaborator" — use the real functional rank, e.g. Project Engineer).
+- No personal pronouns ("I", "my"). American spelling: organization, program, analyze, center.
+- If a foreign institution or credential would not be recognisable to a US reader, add a very brief clarification in parentheses without inflating its value.`
     : 'IMPORTANTE: Escribe el CV completo en español profesional.';
 
   // FIX 3 — Usar datos enriquecidos si existen

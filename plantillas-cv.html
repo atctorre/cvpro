@@ -1046,12 +1046,12 @@ function cargarFoto(e) {
   }
 
   const txt = document.getElementById('uploadTxt');
-  if (txt) txt.innerHTML = '<strong style="color:#FFD000">⏳ Cargando tu foto...</strong>';
+  if (txt) txt.innerHTML = (LANG==='en' ? '<strong style="color:#FFD000">⏳ Loading your photo...</strong>' : '<strong style="color:#FFD000">⏳ Cargando tu foto...</strong>');
 
   const reader = new FileReader();
   reader.onerror = () => {
     console.error('No se pudo leer el archivo de imagen');
-    if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ No se pudo leer la imagen — prueba con otra</strong>';
+    if (txt) txt.innerHTML = (LANG==='en' ? '<strong style="color:#ff6b6b">❌ Could not read the image — try another one</strong>' : '<strong style="color:#ff6b6b">❌ No se pudo leer la imagen — prueba con otra</strong>');
   };
   reader.onload = ev => {
     const dataUrl = ev.target.result;
@@ -1078,7 +1078,7 @@ function cargarFoto(e) {
         mostrarAjuste();
       } catch(err) {
         console.error('Fallo al montar el ajuste de foto:', err);
-        if (txt) txt.innerHTML = '<strong style="color:#ff6b6b">❌ Error al preparar el recorte: ' + err.message + '</strong>';
+        if (txt) txt.innerHTML = ('<strong style="color:#ff6b6b">❌ ' + (LANG==='en'?'Could not prepare the crop: ':'Error al preparar el recorte: ') + err.message + '</strong>');
       }
     };
     probe.onerror = () => {
@@ -1419,6 +1419,19 @@ CONVERSIÓN A RESUME ESTADOUNIDENSE (no es solo una traducción):
 - Puesto actual en presente; puestos anteriores en pasado. SI EL PUESTO NO TIENE FECHAS, usa PASADO: sin fechas no se puede afirmar que sigue vigente, y afirmar en presente lo que no consta es mentir por el candidato.
 - Si un campo "periodo" está vacío o contiene texto tipo "Período no especificado"/"no especificado", devuélvelo como cadena vacía "". PROHIBIDO escribir "Not specified", "N/A" o equivalentes.
 - Sin pronombres personales ("I", "my").
+- PROHIBIDO incluir una sección "References" o la frase "References available upon request": en EE.UU. está obsoleta desde hace más de una década y ocupa espacio valioso.
+- PROHIBIDO el encabezado "Curriculum Vitae" o "CV": en EE.UU. designa un documento académico de otra naturaleza. El documento no lleva título; empieza por el nombre.
+- IDIOMAS: el resume DEBE declarar el nivel de inglés (ej.: "English — Professional working proficiency", "Spanish — Native"). Un resume para EE.UU. sin nivel de inglés declarado es una bandera roja inmediata. Usa la escala estándar: Native / Fluent / Professional working proficiency / Intermediate / Basic. Si el CV original no declara nivel de inglés, NO lo inventes: lista solo los idiomas que sí constan.
+- FECHAS en formato estadounidense y consistente en todo el documento: "Jan 2024 – Present", "Mar 2019 – Dec 2022". Nunca mezcles formatos.
+- EXTENSIÓN: 1 página si tiene menos de 10 años de experiencia; hasta 2 páginas si tiene más. Prioriza lo reciente y relevante.
+- BULLETS ORIENTADOS A RESULTADO: la convención estadounidense premia el resultado sobre la tarea. Estructura preferida: verbo de acción + qué hizo + qué resultó de ello. Ej.: "Led a team of 10, exceeding sales targets by 20%" en vez de "Responsible for the sales team". PERO la regla de veracidad manda: cuantifica SOLO con cifras que existan en el CV original. Si no hay cifras, expresa el alcance de forma cualitativa y concreta (equipos coordinados, tipo de obra, alcance del proyecto) — jamás inventes un número ni un porcentaje "típico del sector".
+- EDUCACIÓN, formato estadounidense: "Degree | Institution, City | Year". Incluye honores solo si constan (Magna Cum Laude, Honors). Si el candidato tiene título universitario, no listes la secundaria salvo que sea su credencial más alta.
+- SKILLS equilibradas: combina hard skills (herramientas, software, técnicas concretas del oficio) con las soft skills que el CV original respalde. Las hard skills van PRIMERO — son las que pesca el ATS. No abras la lista con "Teamwork" ni "Communication".
+- SIN EXPERIENCIA LABORAL: si el candidato es recién graduado o no tiene empleos formales, construye el resume sobre educación, proyectos académicos, prácticas, voluntariado, cursos y habilidades transferibles, con esas secciones arriba. Una página. Jamás inventes empleos para llenar el documento.
+- SECCIONES ADICIONALES cuando aporten: Languages (con nivel), Certifications, Volunteer Experience, Projects. "Hobbies/Interests" solo si el CV original las trae y el candidato tiene poca experiencia.
+
+NOTA SOBRE EE.UU. vs REINO UNIDO (este documento es para EE.UU.):
+Las convenciones NO son iguales y mezclarlas delata el documento. Este resume sigue la convención estadounidense: sin foto, sin datos personales protegidos, sin sección References, "Professional Summary" y "Professional Experience", bullets breves orientados a resultado, 1 página, tono directo. (En Reino Unido se usaría "Personal Profile", "Employment History", "References available upon request" es aceptable, hasta 2 páginas y un registro más formal y descriptivo.) NO mezcles ambos registros: un recruiter estadounidense encuentra el CV británico demasiado modesto y difícil de evaluar; un recruiter británico encuentra el resume estadounidense lleno de superlativos y le resulta pretencioso.
 - Inglés americano: organization, program, analyze, center.
 - Si una institución o credencial extranjera no sería reconocible para un lector estadounidense, añade una aclaración muy breve entre paréntesis, sin exagerar su valor.
 - No inventes nada nuevo: solo reorganiza y adapta lo que ya existe.
@@ -1641,12 +1654,26 @@ async function generarCarta(idiomaForzado) {
 
 STRUCTURE (follow exactly):
 - Do NOT write a date or contact header — that is added separately. Start directly at the greeting.
-- Greeting: "Dear Hiring Team," (or the company name if the resume names a target employer)
-- 3-4 paragraphs: hook + value proposition + culture fit + call to action
-- Closing: "Sincerely," then the candidate's name and professional title on separate lines
+- Greeting: "Dear Hiring Manager," (or the company name if the resume names a target employer). NEVER "To Whom It May Concern" — it is dated and impersonal.
+- 3-4 paragraphs, one page maximum. No paragraph longer than 5 lines — a wall of text does not get read.
+  · Paragraph 1 — the hook: open with the strongest concrete fact about the candidate (a role, a scope of work, a credential). NEVER open with "My name is", "I am writing to apply", "I would like to express my interest" — those waste the most valuable line of the letter.
+  · Paragraph 2 — the value: ONE specific example of what the candidate did and what came of it. Not a list. Do not paraphrase the whole resume: the reader already has it. Add depth the resume cannot show.
+  · Paragraph 3 — the fit: why this kind of work and this kind of employer, grounded in the candidate's actual background.
+  · Paragraph 4 — the close: a direct, confident call to action.
+- Closing: "Sincerely," then the candidate's name and professional title on separate lines.
+
+LANGUAGE (US business register):
+- Direct, action-oriented, concise. Short sentences. Every word earns its place.
+- Strong verbs: led, built, managed, delivered, reduced, launched, coordinated.
+- No superlatives or hype ("world-class", "best-in-class", "highly motivated self-starter") — US recruiters read them as filler, and they make a candidate sound generic.
+- No flowery or ceremonial phrasing translated from Spanish ("I remain at your entire disposal", "I deeply value teamwork"). Write as a native US professional would.
+- American spelling: organization, analyze, program, center.
+- Avoid the cliché cluster: "team player", "hard worker", "detail-oriented", "results-driven", "passionate about" — say the concrete thing instead.
 
 STRICT RULES:
-- Never invent numbers, percentages or metrics. Quantify ONLY with figures that appear in the resume. If there are none, express impact qualitatively.
+- Never invent numbers, percentages or metrics. Quantify ONLY with figures that appear in the resume. If there are none, express impact qualitatively — a concrete qualitative fact beats an invented number.
+- Never invent an employer name, a job posting, or a reason for applying that the resume does not support.
+- No personal data that US anti-discrimination practice excludes: age, marital status, nationality, photo, national ID.
 - No placeholders, no brackets, nothing left to fill in. Ready to send as-is.
 
 RESUME:

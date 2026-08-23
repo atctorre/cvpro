@@ -1559,8 +1559,9 @@ REGLAS (estándar de reclutador ejecutivo élite):
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
 5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
 5b. SI EL CANDIDATO TIENE POCA O NINGUNA EXPERIENCIA LABORAL: no dejes secciones vacías ni inventes empleos. Construye el CV alrededor de formación académica, proyectos de estudio, prácticas, voluntariado, cursos, competencias técnicas adquiridas y capacidad demostrada. Encabeza con el perfil y la educación en lugar de la experiencia. Un CV honesto de recién graduado bien redactado supera a uno con experiencia fabricada. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
+5c. PROHIBIDO AMPLIAR EL ALCANCE: no añadas sustantivos técnicos, procesos ni cualificadores que el candidato no haya declarado (ej.: "levantamientos" no se convierte en "levantamientos topográficos"; "compra de materiales" no se convierte en "gestión de inventarios" ni "trazabilidad financiera"). Cada término técnico debe salir de las respuestas del candidato — lo defenderá en la entrevista.
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
-7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis
+7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis. Si un dato no existe (período, ciudad...), OMÍTELO — jamás escribas "no especificado", "not specified" ni "N/A".
 
 FORMATO (respeta exactamente — headers segun idioma):
 ${(datos.nombre||'').toUpperCase()}
@@ -2236,6 +2237,10 @@ REGLAS ESTRICTAS:
 - EXPERIENCIA: CADA puesto con 4-6 bullets de 22-35 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Empieza SIEMPRE cada bullet con el carácter "•", nunca con guiones ni asteriscos. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe alcance, complejidad y contexto verificables — está PROHIBIDO estimar o inferir números del promedio del sector. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
 - PRESERVA TODAS las secciones del original: certificaciones, membresías, investigación, publicaciones, educación continua, referencias — nada se pierde, todo se profesionaliza.
 - NUNCA inventes cargos, empresas, títulos, certificaciones ni cifras.
+- PROHIBIDO AMPLIAR EL ALCANCE (tan grave como inventar cifras): enriquecer es redactar MEJOR lo que el candidato hizo, no añadir sustantivos técnicos nuevos. No conviertas "levantamientos" en "levantamientos topográficos", ni "compra de materiales" en "control de inventarios" o "trazabilidad financiera", ni añadas procesos que el original no menciona (licitación, auditorías, normativas, metodologías). Cada sustantivo técnico del CV final debe existir en el original — en la entrevista le preguntarán por cada uno y debe poder sostenerlo.
+- DATOS AUSENTES SE OMITEN, JAMÁS SE ANUNCIAN: si el CV original no indica el período de un puesto, el encabezado es "Cargo | Empresa" y punto. PROHIBIDO escribir "Período no especificado", "No especificado", "Not specified", "N/A", "Fechas no disponibles" ni ningún texto equivalente. Lo mismo aplica a cualquier otro campo ausente.
+- CIUDAD: en la línea de contacto usa SOLO la ciudad de residencia que el original declare (dirección o datos personales). La ciudad de la universidad o de una empresa NO es la residencia del candidato. Si no hay ciudad declarada, escribe solo el país.
+${enIngles?'- PHONE: prepend the international dialing code of the candidate\'s country (+503 El Salvador, +52 Mexico, +57 Colombia, +502 Guatemala, +504 Honduras, +505 Nicaragua, +506 Costa Rica, +507 Panama, +51 Peru, +593 Ecuador, +56 Chile, +54 Argentina, +58 Venezuela, +591 Bolivia, +598 Uruguay, +595 Paraguay, +1 Dominican Republic). Do not alter the number itself. If the country cannot be determined, leave the number as is.':''}
 - ATS: integra keywords naturales del sector detectado.
 FORMATO — copia esta estructura EXACTA (headers, líneas ─── y bullets •):
 NOMBRE EN MAYÚSCULAS
@@ -2249,6 +2254,7 @@ ${enIngles?'PROFESSIONAL SUMMARY':'RESUMEN PROFESIONAL'}
 ${enIngles?'PROFESSIONAL EXPERIENCE':'EXPERIENCIA PROFESIONAL'}
 ───────────────────────
 Cargo | Empresa | Período
+(si el original NO da el período: "Cargo | Empresa" — sin tercer segmento)
 • bullet 1
 • bullet 2
 • bullet 3
@@ -2443,6 +2449,9 @@ ELIMINA O SUSTITUYE:
 - Cifras, porcentajes, montos, cantidades de personas u horas que NO aparezcan en la información original.
 - Empresas, cargos, títulos, certificaciones, idiomas, herramientas o clientes no mencionados por el candidato.
 - Premios, reconocimientos o resultados no declarados.
+- INFLACIÓN DE ALCANCE: cualificadores técnicos, procesos o responsabilidades que amplíen lo que la fuente dice. Ejemplos: la fuente dice "levantamientos" y el CV dice "levantamientos topográficos"; la fuente dice "compra de materiales" y el CV dice "control de inventarios" o "trazabilidad financiera"; la fuente no menciona "licitación" y el CV sí. Reduce cada afirmación al alcance EXACTO de la fuente, conservando la buena redacción.
+- PLACEHOLDERS: elimina por completo todo segmento tipo "Período no especificado", "Not specified", "N/A" o similar. Si la fuente no da fechas, el encabezado del puesto queda "Cargo | Empresa" — la ausencia de un dato se omite, nunca se anuncia.
+- CIUDAD DE RESIDENCIA: si el CV declara una ciudad que la fuente no da como residencia del candidato (p. ej. tomada de su universidad o empresa), elimínala y deja solo el país.
 Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes.
 VERIFICA ADEMÁS LAS FECHAS:
 - Ninguna fecha de inicio puede ser posterior a la de fin.
@@ -3255,6 +3264,11 @@ function construirCVData() {
       .replace(/__(.+?)__/g, '$1')
       .replace(/^#{1,6}\s*/gm, '')
       .replace(/[*_`]{1,3}/g, '')
+      // Red de seguridad anti-placeholder: la IA no debe escribirlos (el
+      // prompt lo prohíbe), pero si se cuela uno, aquí muere. "Empresa |
+      // Período no especificado" → "Empresa". Nunca se imprime la ausencia.
+      .replace(/\s*[|·—–-]\s*(per[ií]odo?\s+no\s+especificado|no\s+especificado|period\s+not\s+specified|not\s+specified|fechas?\s+no\s+disponibles?|n\/a)\.?\s*$/gim, '')
+      .replace(/^\s*(per[ií]odo?\s+no\s+especificado|period\s+not\s+specified|not\s+specified)\.?\s*$/gim, '')
       .trim();
   }
 

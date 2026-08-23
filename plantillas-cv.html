@@ -818,6 +818,23 @@ const D = JSON.parse(sessionStorage.getItem('cvData') || 'null') || {
 
 if (D.nombre) D.nombre = capitalizar(D.nombre);
 
+// ── Red de seguridad: jamás pintar placeholders de período ──
+// La IA escribía "Período no especificado" cuando el CV original no traía
+// fechas, y ese texto llegaba impreso al PDF final (visto en auditoría con
+// CV real). El prompt ya lo prohíbe; esto garantiza que si se cuela, muere
+// antes del render. La ausencia de un dato se omite, nunca se anuncia.
+function limpiarPlaceholdersCV(d) {
+  if (!d) return d;
+  const esPh = v => /^(per[ií]odo?\s+no\s+especificado|no\s+especificado|period\s+not\s+specified|not\s+specified|fechas?\s+no\s+disponibles?|n\/a)\.?$/i.test(String(v || '').trim());
+  (d.experiencia || []).forEach(j => { if (esPh(j.periodo)) j.periodo = ''; });
+  (d.educacion || []).forEach(e => {
+    if (esPh(e['año'])) e['año'] = '';
+    if (esPh(e.anio)) e.anio = '';
+  });
+  return d;
+}
+limpiarPlaceholdersCV(D);
+
 // ── CARTA DE PRESENTACIÓN CON IA ──
 const SUPABASE_URL_C = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
 const SUPABASE_URL = SUPABASE_URL_C;
@@ -1282,7 +1299,7 @@ function ph(cls, isRect) {
 
 function bls(cls, arr) { return arr.map(b=>`<div class="bl">${esc(b)}</div>`).join(''); }
 function skills(cls, arr) { return `<div class="sk-list">${arr.map(s=>`<div class="sk-item">• ${esc(s.nombre)}</div>`).join('')}</div>`; }
-function jobs(cls, arr) { return arr.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)} · ${esc(j.periodo)}</div>${bls(cls,j.bullets)}</div>`).join(''); }
+function jobs(cls, arr) { return arr.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)}${j.periodo?' · '+esc(j.periodo):''}</div>${bls(cls,j.bullets)}</div>`).join(''); }
 function edu(arr) { return arr.map(e=>`<p style="font-size:0.74rem;margin-bottom:6px"><strong>${e.titulo}</strong><br><span style="color:#888">${e.institucion} · ${e.año}</span></p>`).join(''); }
 function ct(cls) { return `<span class="ci">✉ ${esc(D.email)}</span>${D.telefono?`<span class="ci">📱 ${esc(D.telefono)}</span>`:''}${D.pais?`<span class="ci">📍 ${esc(D.pais)}</span>`:''}${D.linkedin?`<span class="ci">🔗 ${esc(D.linkedin)}</span>`:''}` }
 
@@ -1299,7 +1316,7 @@ function buildCV(id) {
 
     h2:`<div class="cv-h2"><div class="hdr">${ph('cv-h2',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="gl"></div><div class="ct">${ct('cv-h2')}</div></div></div><div class="bd"><div class="mn"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jh"><div class="jt">${esc(j.titulo)}</div><div class="jd">${esc(j.periodo)}</div></div><div class="jm">${esc(j.empresa)}</div>${bls('cv-h2',j.bullets)}</div>`).join('')}<div class="st" style="margin-top:14px">${T.perfil}</div><p style="font-size:0.74rem;color:#555;line-height:1.7">${resumen}</p>${logrosHtml}</div><div class="sb"><div class="st">${T.habilidades}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">${d.habilidades.map(s=>`<div class="tg">${esc(s.nombre)}</div>`).join('')}</div><div class="st">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${(d.idiomas||[]).map(l=>`<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px"><span>${esc(l.nombre)}</span><span style="color:#FFD000;font-weight:700">${esc(l.nivel)}</span></div>`).join('')}</div></div></div>`,
 
-    h3:`<div class="cv-h3"><div class="hdr"><div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct"><span class="ci">✉ ${d.email}</span>${d.telefono?`<span class="ci">📱 ${d.telefono}</span>`:''}</div></div>${ph('cv-h3',false)}</div><div class="bd"><div class="col"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)} · ${esc(j.periodo)}</div>${bls('cv-h3',j.bullets)}</div>`).join('')}</div><div class="col"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${d.habilidades.map(s=>`<div class="dr"><span class="dn">${esc(s.nombre)}</span><div class="ds">${[1,2,3,4,5].map(i=>`<div class="dot ${s.nivel>=i*20?'f':''}"></div>`).join('')}</div></div>`).join('')}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
+    h3:`<div class="cv-h3"><div class="hdr"><div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct"><span class="ci">✉ ${d.email}</span>${d.telefono?`<span class="ci">📱 ${d.telefono}</span>`:''}</div></div>${ph('cv-h3',false)}</div><div class="bd"><div class="col"><div class="st">${T.experiencia}</div>${d.experiencia.map(j=>`<div class="jb"><div class="jt">${esc(j.titulo)}</div><div class="jm">${esc(j.empresa)}${j.periodo?' · '+esc(j.periodo):''}</div>${bls('cv-h3',j.bullets)}</div>`).join('')}</div><div class="col"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${d.habilidades.map(s=>`<div class="dr"><span class="dn">${esc(s.nombre)}</span><div class="ds">${[1,2,3,4,5].map(i=>`<div class="dot ${s.nivel>=i*20?'f':''}"></div>`).join('')}</div></div>`).join('')}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}</div></div></div>`,
 
     h4:`<div class="cv-h4"><div class="hdr">${ph('cv-h4',false)}<div><div class="nm">${esc(d.nombre)}</div><div class="rl">${esc(d.puesto)}</div><div class="ct">${ct('cv-h4')}</div></div></div><div class="bd"><div class="sb"><div class="st">${T.perfil}</div><p style="font-size:0.72rem;color:#555;line-height:1.6;margin-bottom:12px">${resumen}</p><div class="st">${T.habilidades}</div>${skills('cv-h4',d.habilidades)}<div class="st" style="margin-top:12px">${T.educacion}</div>${edu(d.educacion)}<div class="st" style="margin-top:12px">${T.idiomas}</div>${langHtml}</div><div class="mn"><div class="st">${T.experiencia}</div>${jobs('cv-h4',d.experiencia)}${logrosHtml}</div></div></div>`,
 
@@ -1393,10 +1410,12 @@ async function traducirCV() {
 CONVERSIÓN A RESUME ESTADOUNIDENSE (no es solo una traducción):
 - El documento destino es un RESUME de EE.UU., no un CV latinoamericano en inglés.
 - ELIMINA por completo, si aparecen: número de identidad (DUI, NUE, CURP, cédula), edad, fecha de nacimiento, estado civil, nacionalidad, género y dirección postal completa. En EE.UU. incluirlos hace que RR.HH. descarte el archivo por riesgo legal de discriminación.
-- En el campo "pais" deja solo ciudad y país (ej: "San Salvador, El Salvador"). Nunca la dirección exacta.
+- En el campo "pais" deja SOLO la ciudad de residencia que el CV ya declare + el país. Si el CV solo trae el país, deja SOLO el país — PROHIBIDO inferir la ciudad desde la universidad, la empresa o la capital. Una ciudad que el candidato no dio es un dato inventado.
+- TELÉFONO (única excepción a "no traduzcas contactos"): antepón el prefijo internacional del país de residencia si no lo tiene ya (+503 El Salvador, +52 México, +57 Colombia, +502 Guatemala, +504 Honduras, +505 Nicaragua, +506 Costa Rica, +507 Panamá, +51 Perú, +593 Ecuador, +56 Chile, +54 Argentina, +58 Venezuela, +591 Bolivia, +598 Uruguay, +595 Paraguay, +1 Rep. Dominicana). El número en sí NO cambia. Un recruiter en EE.UU. no puede marcar "7267-0044".
 - El resumen debe ser un "Professional Summary" de 3-4 líneas, directo y orientado a resultados. Sin florituras.
 - Los bullets empiezan con verbo de acción del registro estadounidense: Led, Managed, Built, Reduced, Launched, Coordinated, Supervised, Developed, Implemented.
-- Puesto actual en presente; puestos anteriores en pasado.
+- Puesto actual en presente; puestos anteriores en pasado. SI EL PUESTO NO TIENE FECHAS, usa PASADO: sin fechas no se puede afirmar que sigue vigente, y afirmar en presente lo que no consta es mentir por el candidato.
+- Si un campo "periodo" está vacío o contiene texto tipo "Período no especificado"/"no especificado", devuélvelo como cadena vacía "". PROHIBIDO escribir "Not specified", "N/A" o equivalentes.
 - Sin pronombres personales ("I", "my").
 - Inglés americano: organization, program, analyze, center.
 - Si una institución o credencial extranjera no sería reconocible para un lector estadounidense, añade una aclaración muy breve entre paréntesis, sin exagerar su valor.
@@ -1413,6 +1432,7 @@ REGLAS ESTRICTAS:
 - NO traduzcas: nombres de personas, nombres de empresas, ciudades, países, URLs, emails ni teléfonos.
 - SÍ traduce: puesto, resumen, títulos de cargo, bullets de logros, títulos académicos, nombres de habilidades e idiomas.
 - Adapta los títulos de cargo al uso real del mercado destino (ej: "Jefe de Ventas" → "Sales Manager", no traducción literal).
+- PROHIBIDO CALCAR un cargo palabra por palabra cuando el resultado no exista en el mercado destino. "Colaborador Técnico" NUNCA es "Technical Collaborator" (ese título no existe en EE.UU.): usa el rango funcional real según las funciones descritas — "Project Engineer", "Engineering Technician", "Technical Specialist". "Residente de Proyecto" → "Site Supervisor" o "Resident Engineer". "Auxiliar" → "Assistant" o "Associate" según nivel, nunca "Auxiliary". Si un título compuesto mezcla un calco con un término válido ("Technical Collaborator — Project Site Supervisor"), elimina el calco y conserva solo el término real.
 - CUIDADO CON EL RANGO: adaptar no es degradar ni inflar. El cargo traducido debe reflejar el MISMO nivel jerárquico que el original.
   · "Profesor/a Titular" (cargo permanente de plantilla en LATAM) → "Professor" o "Tenured Professor". NUNCA "Adjunct Professor" ni "Associate Professor": en EE.UU. "adjunct" es profesorado por horas sin plaza y "associate" es un rango intermedio — ambos degradan el puesto.
   · "Jefe de Residentes" → "Chief Resident" (correcto, es el término estándar).
@@ -1443,6 +1463,7 @@ ${JSON.stringify(D)}`;
     if (!trad.nombre || !Array.isArray(trad.experiencia)) throw new Error('estructura incompleta');
 
     Object.assign(D, trad);
+    limpiarPlaceholdersCV(D);   // la conversión puede traer sus propios placeholders
     _idiomaActual = hacia;
 
     // La conversión a resume estadounidense debe EJECUTARSE, no solo prometerse:
@@ -1563,7 +1584,7 @@ async function generarCarta(idiomaForzado) {
   if (cvTexto.length < 100) {
     // Reconstruir desde cvData si la sesión no lo tiene
     cvTexto = `${D.nombre} — ${D.puesto} (${D.pais||''})\n${D.resumen||''}\n` +
-      (D.experiencia||[]).map(j=>`${esc(j.titulo)} | ${esc(j.empresa)} | ${esc(j.periodo)}\n${(j.bullets||[]).join('\n')}`).join('\n') +
+      (D.experiencia||[]).map(j=>`${esc(j.titulo)} | ${esc(j.empresa)}${j.periodo?' | '+esc(j.periodo):''}\n${(j.bullets||[]).join('\n')}`).join('\n') +
       `\nEducación: ${(D.educacion||[]).map(e=>e.titulo+' - '+e.institucion).join('; ')}` +
       `\nHabilidades: ${(D.habilidades||[]).map(h=>h.nombre||h).join(', ')}`;
   }

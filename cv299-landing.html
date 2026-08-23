@@ -344,9 +344,9 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 
 <!-- MENÚ MÓVIL -->
 <div class="mobile-menu" id="mobileMenu">
-  <a href="#how" onclick="toggleMenu()">Cómo funciona</a>
+  <a href="#how" onclick="toggleMenu()" data-es="Cómo funciona" data-en="How it works">Cómo funciona</a>
   <a href="#pricing" onclick="toggleMenu()">Precios</a>
-  <a href="analizar-cv.html">Analiza tu CV gratis</a>
+  <a href="analizar-cv.html" data-es="Analiza tu CV gratis" data-en="Free Resume Check">Analiza tu CV gratis</a>
   <a href="ejemplos/">Ejemplos</a>
   <a href="#testimonios" onclick="toggleMenu()">Testimonios</a>
   <a href="chat-cv.html" class="mob-cta">⚡ Crear mi CV</a>
@@ -485,7 +485,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 
 <!-- PRUEBA SOCIAL -->
 <div class="social-proof">
-  <p class="sp-label reveal">Profesionales que ya consiguieron trabajo</p>
+  <p class="sp-label reveal"><span data-es="Profesionales que ya consiguieron trabajo" data-en="Professionals who already landed the job">Profesionales que ya consiguieron trabajo</span></p>
   <div class="sp-logos reveal">
     <span class="sp-logo">Aviación ✈</span>
     <span class="sp-logo">·</span>
@@ -508,42 +508,42 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <h2 class="sec-title reveal" id="secTitleCompare">CVPro vs <em>las alternativas</em></h2>
     <div class="compare-table reveal">
       <div class="compare-header">
-        <div>Característica</div>
+        <div data-es="Característica" data-en="Feature">Característica</div>
         <div>CVPro</div>
-        <div>Otros</div>
+        <div data-es="Otros" data-en="Others">Otros</div>
       </div>
       <div class="compare-row">
-        <div>Precio</div>
+        <div data-es="Precio" data-en="Price">Precio</div>
         <div>$4.99</div>
         <div>$50–$200</div>
       </div>
       <div class="compare-row">
-        <div>IA guiada por chat</div>
+        <div data-es="IA guiada por chat" data-en="Chat-guided AI">IA guiada por chat</div>
         <div>✓</div>
         <div>✗</div>
       </div>
       <div class="compare-row">
-        <div>Corrección de ortografía</div>
+        <div data-es="Corrección de ortografía" data-en="Spelling correction">Corrección de ortografía</div>
         <div>✓</div>
         <div>✗</div>
       </div>
       <div class="compare-row">
-        <div>Revisión antes de generar</div>
+        <div data-es="Revisión antes de generar" data-en="Review before generating">Revisión antes de generar</div>
         <div>✓</div>
         <div>✗</div>
       </div>
       <div class="compare-row">
-        <div>20 plantillas con foto</div>
+        <div data-es="20 plantillas con foto" data-en="20 templates with photo">20 plantillas con foto</div>
         <div>✓</div>
-        <div>Algunas</div>
+        <div data-es="Algunas" data-en="Some">Algunas</div>
       </div>
       <div class="compare-row">
-        <div>Descarga PDF al instante</div>
+        <div data-es="Descarga PDF al instante" data-en="Instant PDF download">Descarga PDF al instante</div>
         <div>✓</div>
         <div>✓</div>
       </div>
       <div class="compare-row">
-        <div>Sin suscripción</div>
+        <div data-es="Sin suscripción" data-en="No subscription">Sin suscripción</div>
         <div>✓</div>
         <div>✗</div>
       </div>
@@ -702,13 +702,13 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <p class="sec-label reveal" id="secLabelFaq">Preguntas frecuentes</p>
     <h2 class="sec-title reveal">FAQ</h2>
     <div class="faq-inner">
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Y si no me gusta el resultado? <span class="faq-arrow">▼</span></div><div class="faq-a">Tienes 7 días de garantía. Escríbenos a <a href="mailto:hola@getcvpro.com" style="color:#FFD000">hola@getcvpro.com</a> con tu código de recuperación y te devolvemos el dinero, sin preguntas ni formularios.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Realmente cuesta solo $4.99? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí, el plan básico cuesta exactamente $4.99. Sin costos ocultos, sin suscripciones. Pagas una vez y recibes tu CV profesional completo.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Cómo funciona el chat de 14 preguntas? <span class="faq-arrow">▼</span></div><div class="faq-a">Nuestro asistente IA te hace 14 preguntas guiadas sobre tu experiencia, estudios, habilidades y metas. Es como hablar con un experto en CVs — solo escribe y la IA se encarga de todo.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿La IA realmente mejora mi redacción? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí. La IA corrige ortografía, mejora la redacción, usa verbos de acción profesionales y optimiza el texto para pasar filtros ATS automáticos. Tu información, pero presentada de la mejor manera posible.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Puedo revisar el CV antes de descargar? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí. Después de que la IA genera tu CV, tienes una pantalla de revisión donde puedes editar cada campo. Si haces cambios, la IA aplica las correcciones finales antes de generar tu plantilla.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Funciona en todos los países de Latam? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí, trabajamos con clientes de México, Colombia, Chile, Argentina, Perú, El Salvador, Costa Rica y más de 15 países latinoamericanos.</div></div>
-      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)">¿Puedo pagar con tarjeta? <span class="faq-arrow">▼</span></div><div class="faq-a">Sí. Aceptamos Visa, Mastercard, American Express y PayPal. 100% seguro, sin importar el país.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)"><span data-es="¿Y si no me gusta el resultado?" data-en="What if I don't like the result?">¿Y si no me gusta el resultado?</span> <span class="faq-arrow">▼</span></div><div class="faq-a" data-es-html="Tienes 7 días de garantía. Escríbenos a <a href=&quot;mailto:hola@getcvpro.com&quot; style=&quot;color:#FFD000&quot;>hola@getcvpro.com</a> con tu código de recuperación y te devolvemos el dinero, sin preguntas ni formularios." data-en-html="You have a 7-day guarantee. Email <a href=&quot;mailto:hola@getcvpro.com&quot; style=&quot;color:#FFD000&quot;>hola@getcvpro.com</a> with your recovery code and we refund you — no questions, no forms.">Tienes 7 días de garantía. Escríbenos a <a href="mailto:hola@getcvpro.com" style="color:#FFD000">hola@getcvpro.com</a> con tu código de recuperación y te devolvemos el dinero, sin preguntas ni formularios.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)"><span data-es="¿Realmente cuesta solo $4.99?" data-en="Does it really cost just $4.99?">¿Realmente cuesta solo $4.99?</span> <span class="faq-arrow">▼</span></div><div class="faq-a" data-es="Sí, el plan básico cuesta exactamente $4.99. Sin costos ocultos, sin suscripciones. Pagas una vez y recibes tu CV profesional completo." data-en="Yes — the Basic plan costs exactly $4.99. No hidden fees, no subscriptions. You pay once and get your complete professional resume.">Sí, el plan básico cuesta exactamente $4.99. Sin costos ocultos, sin suscripciones. Pagas una vez y recibes tu CV profesional completo.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)"><span data-es="¿Cómo funciona el chat de 14 preguntas?" data-en="How does the 14-question chat work?">¿Cómo funciona el chat de 14 preguntas?</span> <span class="faq-arrow">▼</span></div><div class="faq-a" data-es="Nuestro asistente IA te hace 14 preguntas guiadas sobre tu experiencia, estudios, habilidades y metas. Es como hablar con un experto en CVs — solo escribe y la IA se encarga de todo." data-en="Our AI assistant asks you 14 guided questions about your experience, education, skills and goals. It's like talking to a resume expert — just type and the AI handles the rest.">Nuestro asistente IA te hace 14 preguntas guiadas sobre tu experiencia, estudios, habilidades y metas. Es como hablar con un experto en CVs — solo escribe y la IA se encarga de todo.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)"><span data-es="¿La IA realmente mejora mi redacción?" data-en="Does the AI really improve my writing?">¿La IA realmente mejora mi redacción?</span> <span class="faq-arrow">▼</span></div><div class="faq-a" data-es="Sí. La IA corrige ortografía, mejora la redacción, usa verbos de acción profesionales y optimiza el texto para pasar filtros ATS automáticos. Tu información, pero presentada de la mejor manera posible." data-en="Yes. The AI fixes spelling, sharpens the writing, uses professional action verbs and optimises the text for automated ATS filters. Your information, presented the best way possible.">Sí. La IA corrige ortografía, mejora la redacción, usa verbos de acción profesionales y optimiza el texto para pasar filtros ATS automáticos. Tu información, pero presentada de la mejor manera posible.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)"><span data-es="¿Puedo revisar el CV antes de descargar?" data-en="Can I review the resume before downloading?">¿Puedo revisar el CV antes de descargar?</span> <span class="faq-arrow">▼</span></div><div class="faq-a" data-es="Sí. Después de que la IA genera tu CV, tienes una pantalla de revisión donde puedes editar cada campo. Si haces cambios, la IA aplica las correcciones finales antes de generar tu plantilla." data-en="Yes. After the AI generates your resume, you get a review screen where you can edit every field. If you make changes, the AI applies the final polish before building your template.">Sí. Después de que la IA genera tu CV, tienes una pantalla de revisión donde puedes editar cada campo. Si haces cambios, la IA aplica las correcciones finales antes de generar tu plantilla.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)"><span data-es="¿Funciona en todos los países de Latam?" data-en="Does it work across Latin America?">¿Funciona en todos los países de Latam?</span> <span class="faq-arrow">▼</span></div><div class="faq-a" data-es="Sí, trabajamos con clientes de México, Colombia, Chile, Argentina, Perú, El Salvador, Costa Rica y más de 15 países latinoamericanos." data-en="Yes — we work with users from Mexico, Colombia, Chile, Argentina, Peru, El Salvador, Costa Rica and more than 15 Latin American countries.">Sí, trabajamos con clientes de México, Colombia, Chile, Argentina, Perú, El Salvador, Costa Rica y más de 15 países latinoamericanos.</div></div>
+      <div class="faq-item reveal"><div class="faq-q" onclick="toggleFaq(this)"><span data-es="¿Puedo pagar con tarjeta?" data-en="Can I pay by card?">¿Puedo pagar con tarjeta?</span> <span class="faq-arrow">▼</span></div><div class="faq-a" data-es="Sí. Aceptamos Visa, Mastercard, American Express y PayPal. 100% seguro, sin importar el país." data-en="Yes. We accept Visa, Mastercard, American Express and PayPal. Fully secure, wherever you are.">Sí. Aceptamos Visa, Mastercard, American Express y PayPal. 100% seguro, sin importar el país.</div></div>
     </div>
   </div>
 </section>
@@ -972,6 +972,11 @@ function aplicarIdioma() {
     const v = isEN ? el.dataset.enHtml : el.dataset.esHtml;
     if (v) el.innerHTML = v;
   });
+  // Placeholders de inputs (data-es-ph / data-en-ph)
+  document.querySelectorAll('[data-es-ph]').forEach(el => {
+    const v = isEN ? el.dataset.enPh : el.dataset.esPh;
+    if (v) el.placeholder = v;
+  });
 
 
   // Hero
@@ -1153,15 +1158,15 @@ aplicarIdioma();
   <div class="soporte-msgs" id="soporteMsgs"></div>
 
   <div class="soporte-quick" id="soporteQuick">
-    <button class="sqopt" onclick="preguntaRapida('¿Cómo funciona el chat de preguntas?')">¿Cómo funciona?</button>
-    <button class="sqopt" onclick="preguntaRapida('¿Cuánto cuesta exactamente?')">¿Cuánto cuesta?</button>
-    <button class="sqopt" onclick="preguntaRapida('¿Puedo editar mi CV después?')">¿Puedo editar?</button>
-    <button class="sqopt" onclick="preguntaRapida('¿Cuántas plantillas hay?')">Plantillas</button>
-    <button class="sqopt" onclick="preguntaRapida('¿Cómo pago?')">¿Cómo pago?</button>
+    <button class="sqopt" onclick="preguntaRapida(LANG==='en'?'How does the question chat work?':'¿Cómo funciona el chat de preguntas?')" data-es="¿Cómo funciona?" data-en="How does it work?">¿Cómo funciona?</button>
+    <button class="sqopt" onclick="preguntaRapida(LANG==='en'?'How much does it cost exactly?':'¿Cuánto cuesta exactamente?')" data-es="¿Cuánto cuesta?" data-en="How much is it?">¿Cuánto cuesta?</button>
+    <button class="sqopt" onclick="preguntaRapida(LANG==='en'?'Can I edit my resume afterwards?':'¿Puedo editar mi CV después?')" data-es="¿Puedo editar?" data-en="Can I edit it?">¿Puedo editar?</button>
+    <button class="sqopt" onclick="preguntaRapida(LANG==='en'?'How many templates are there?':'¿Cuántas plantillas hay?')" data-es="Plantillas" data-en="Templates">Plantillas</button>
+    <button class="sqopt" onclick="preguntaRapida(LANG==='en'?'How do I pay?':'¿Cómo pago?')" data-es="¿Cómo pago?" data-en="How do I pay?">¿Cómo pago?</button>
   </div>
 
   <div class="soporte-input-wrap">
-    <input class="soporte-input" id="soporteInput" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')enviarSoporte()">
+    <input class="soporte-input" id="soporteInput" placeholder="Escribe tu pregunta..." data-es-ph="Escribe tu pregunta..." data-en-ph="Type your question..." onkeydown="if(event.key==='Enter')enviarSoporte()">
     <button class="soporte-send" id="soporteSend" onclick="enviarSoporte()">
       <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
@@ -1265,7 +1270,7 @@ INFORMACIÓN CLAVE DE CVPRO:
 - Se guardan datos en Supabase de forma segura
 
 REGLAS:
-- Responde en español, de forma amable y directa
+- Responde SIEMPRE en ${LANG==='en'?'inglés (English)':'español'}, de forma amable y directa. Si el usuario escribe en otro idioma, responde igualmente en ${LANG==='en'?'inglés':'español'}.
 - Máximo 3 líneas por respuesta — sé conciso
 - Si preguntan por precio, menciona el plan básico de $4.99\n- Si preguntan por garantía o reembolsos, confirma los 7 días y el email hola@getcvpro.com\n- NUNCA prometas funciones que no estén en la lista de planes de arriba
 - Si tienen problemas técnicos, sugiere reiniciar el chat o contactar: hola@getcvpro.com

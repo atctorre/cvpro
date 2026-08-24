@@ -178,7 +178,22 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 .tiempo-wrap span{color:var(--yellow);font-weight:600}
 
 /* EDITAR RESPUESTA */
-.msg-edit-btn{background:none;border:none;color:#333;font-size:0.65rem;cursor:pointer;padding:3px 7px;border-radius:4px;transition:all 0.2s;margin-top:4px;font-family:'Inter',sans-serif}
+/* El botón de editar era color #333 sobre fondo #0a0a0a (contraste 1.6:1):
+   prácticamente invisible, y de ~20px de alto — la mitad del mínimo táctil.
+   Por eso casi nadie corregía sus respuestas y llegaban erratas al CV. */
+.msg-edit-btn{background:none;border:1px solid #2e2e2e;color:#9a9a9a;font-size:0.72rem;cursor:pointer;padding:7px 13px;border-radius:50px;transition:all 0.2s;margin-top:6px;font-family:'Inter',sans-serif;min-height:34px;display:inline-flex;align-items:center;gap:4px}
+.msg-edit-btn:hover{color:#FFD000;border-color:#FFD000;background:rgba(255,208,0,.08)}
+.msg-edit-btn:active{transform:scale(.96)}
+.btn-cancelar-edicion{background:none;border:none;color:#888;font-size:0.72rem;cursor:pointer;text-decoration:underline;padding:4px 6px;font-family:'Inter',sans-serif}
+.btn-cancelar-edicion:hover{color:#fff}
+@media(pointer:coarse){.btn-cancelar-edicion{padding:10px 8px}}
+/* El mensaje que se está editando queda marcado para no perder la referencia */
+.msg-bubble.editando-ahora{outline:2px solid #FFD000;outline-offset:3px;animation:pulsoEdit 1.4s ease-in-out infinite}
+/* Destello verde al guardar: confirmación visible de que el cambio se aplicó */
+.msg-bubble.recien-editado{animation:destelloOk 1.6s ease}
+@keyframes destelloOk{0%{box-shadow:0 0 0 3px rgba(46,204,113,.9)}100%{box-shadow:0 0 0 0 rgba(46,204,113,0)}}
+@keyframes pulsoEdit{0%,100%{outline-color:rgba(255,208,0,.9)}50%{outline-color:rgba(255,208,0,.35)}}
+@media(pointer:coarse){.msg-edit-btn{min-height:44px;padding:10px 16px;font-size:0.78rem}}
 .msg-edit-btn:hover{color:var(--yellow);background:rgba(255,208,0,0.08)}
 .edit-bubble{background:#1a1000;border:1px solid rgba(255,208,0,0.2)!important}
 
@@ -1108,17 +1123,33 @@ function editarRespuesta(pasoIdx) {
   input.focus();
   autoResize(input);
   const hint = document.getElementById('inputHint');
-  hint.textContent = LANG==='en' ? `✏️ Editing question ${pasoIdx + 1} — press Enter to save` : `✏️ Editando pregunta ${pasoIdx + 1} — presiona Enter para guardar`;
+  // Antes solo había texto: si entrabas a editar por error no había salida
+  // visible (cancelarEdicion existía pero nada la llamaba). Ahora hay botón.
+  hint.innerHTML = (LANG==='en'
+      ? `✏️ Editing question ${pasoIdx + 1} — press Enter to save`
+      : `✏️ Editando pregunta ${pasoIdx + 1} — presiona Enter para guardar`)
+    + ` <button onclick="cancelarEdicion()" class="btn-cancelar-edicion">${LANG==='en'?'✕ cancel':'✕ cancelar'}</button>`;
   hint.style.color = 'var(--yellow)';
+  // Resaltar el mensaje que se está editando, para no perder la referencia
+  document.querySelectorAll('.msg.user .msg-bubble').forEach(b => b.classList.remove('editando-ahora'));
+  const _burbujas = document.querySelectorAll('.msg.user .msg-bubble');
+  if (_burbujas[pasoIdx]) _burbujas[pasoIdx].classList.add('editando-ahora');
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
 }
 
 function cancelarEdicion() {
   modoEdicion = null;
-  document.getElementById('chatInput').value = '';
-  document.getElementById('inputHint').textContent = '';
-  document.getElementById('inputHint').style.color = '';
+  const inp = document.getElementById('chatInput');
+  if (inp) { inp.value = ''; autoResize(inp); }
+  const h = document.getElementById('inputHint');
+  if (h) { h.innerHTML = ''; h.style.color = ''; }
+  document.querySelectorAll('.msg-bubble.editando-ahora').forEach(b => b.classList.remove('editando-ahora'));
 }
+
+// Escape también cancela (atajo natural en escritorio)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && typeof modoEdicion !== 'undefined' && modoEdicion !== null) cancelarEdicion();
+});
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -1432,10 +1463,33 @@ async function enviar() {
   // MODO EDICIÓN
   if (modoEdicion !== null) {
     const p = PASOS[modoEdicion];
+    const _idx = modoEdicion;
     datos[p.key] = texto;
+
+    // La burbuja del chat mostraba el texto VIEJO tras editar: el usuario
+    // corregía y seguía viendo su error, sin señal de que el cambio surtió
+    // efecto. Ahora se actualiza en pantalla.
+    const _burbujas = document.querySelectorAll('.msg.user .msg-bubble');
+    if (_burbujas[_idx]) {
+      _burbujas[_idx].textContent = texto;
+      _burbujas[_idx].classList.add('recien-editado');
+      setTimeout(() => _burbujas[_idx] && _burbujas[_idx].classList.remove('recien-editado'), 1600);
+    }
+    // Y en el historial guardado, para que sobreviva a una recarga
+    try {
+      let _n = -1;
+      for (let k = 0; k < historial.length; k++) {
+        if (historial[k].tipo === 'user') { _n++; if (_n === _idx) { historial[k].texto = texto; break; } }
+      }
+    } catch(e) {}
+
     guardarEstado();
     cancelarEdicion();
-    renderMsgAI(`✅ Respuesta actualizada. Continúa desde donde estabas o sigue respondiendo 👍`);
+    if (typeof actualizarPreview === 'function') { try { actualizarPreview(); } catch(e) {} }
+    if (typeof ev === 'function') ev('chat_answer_edited', {paso: _idx + 1, lang: LANG});
+    renderMsgAI(LANG==='en'
+      ? `✅ Answer updated. Carry on from where you were 👍`
+      : `✅ Respuesta actualizada. Continúa desde donde estabas 👍`);
     return;
   }
 

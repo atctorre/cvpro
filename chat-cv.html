@@ -237,7 +237,9 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 .lang-selector.hide{animation:obFadeIn 0.3s ease reverse;pointer-events:none}
 .onb-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.93);display:flex;align-items:center;justify-content:center;padding:20px;animation:obFadeIn 0.4s ease}
 @keyframes obFadeIn{from{opacity:0}to{opacity:1}}
-.onb-card{background:#111;border:1px solid #1e1e1e;border-radius:24px;max-width:440px;width:100%;overflow:hidden}
+.onb-card{background:#111;border:1px solid #1e1e1e;border-radius:24px;max-width:440px;width:100%;overflow:hidden;touch-action:pan-y}
+.onb-swipe-hint{text-align:center;color:#555;font-size:0.68rem;margin-top:12px;letter-spacing:.3px}
+@media(min-width:769px){.onb-swipe-hint{display:none}}
 .onb-bar{height:3px;background:#1a1a1a}
 .onb-fill{height:100%;background:linear-gradient(90deg,var(--yellow),#ff9900);transition:width 0.5s ease}
 .onb-body{padding:32px 28px 24px}
@@ -3957,7 +3959,8 @@ function renderOnbPaso() {
     <div class="onb-actions">
       <button class="btn-onb" onclick="siguienteOnb()">${p.btn}</button>
       ${onbPaso < total-1 ? `<button class="btn-onb-skip" onclick="cerrarOnboarding()">${LANG==="en"?"Skip":"Saltar"}</button>` : ''}
-    </div>`;
+    </div>
+    ${total > 1 ? `<div class="onb-swipe-hint">${LANG==="en"?"Swipe to navigate":"Desliza para navegar"}</div>` : ''}`;
 
   const dots = document.getElementById('onbDots');
   dots.innerHTML = ONB_PASOS.map((_,i)=>`<div class="onb-dot ${i===onbPaso?'act':''}"></div>`).join('');
@@ -3971,6 +3974,36 @@ function siguienteOnb() {
     renderOnbPaso();
   }
 }
+
+// Retroceder un paso (deslizando a la derecha)
+function anteriorOnb() {
+  if (onbPaso > 0) { onbPaso--; renderOnbPaso(); }
+}
+
+// ── DESLIZAR LATERALMENTE EN LA ANTESALA (móvil) ──
+// En el teléfono lo natural es deslizar entre pasos, no buscar un botón.
+// Izquierda = siguiente · derecha = anterior. Umbral de 45px para no
+// confundir un scroll vertical con un swipe.
+(function() {
+  let _x0 = null, _y0 = null;
+  const card = () => document.querySelector('.onb-card');
+  document.addEventListener('touchstart', (e) => {
+    const ov = document.getElementById('onbOverlay');
+    if (!ov || ov.style.display !== 'flex') return;
+    _x0 = e.touches[0].clientX; _y0 = e.touches[0].clientY;
+  }, {passive: true});
+  document.addEventListener('touchend', (e) => {
+    if (_x0 === null) return;
+    const dx = e.changedTouches[0].clientX - _x0;
+    const dy = e.changedTouches[0].clientY - _y0;
+    _x0 = null;
+    // Solo si el gesto es claramente horizontal
+    if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const c = card();
+    if (c) { c.style.transition = 'transform .18s ease'; c.style.transform = `translateX(${dx > 0 ? 14 : -14}px)`; setTimeout(() => { c.style.transform = ''; }, 180); }
+    if (dx < 0) siguienteOnb(); else anteriorOnb();
+  }, {passive: true});
+})();
 
 function cerrarOnboarding() {
   const overlay = document.getElementById('onbOverlay');

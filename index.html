@@ -67,7 +67,12 @@ nav.scrolled{padding:12px 6%;background:rgba(8,8,8,0.97)}
 .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,208,0,0.08);border:1px solid rgba(255,208,0,0.2);color:var(--yellow);font-size:0.75rem;font-weight:600;padding:7px 16px;border-radius:50px;margin-bottom:36px;letter-spacing:0.5px;animation:fadeDown 0.8s ease both}
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
 
-.hero-price{font-family:'Syne',sans-serif;font-size:clamp(7rem,20vw,16rem);font-weight:900;line-height:0.85;color:var(--yellow);letter-spacing:-6px;animation:fadeUp 0.8s ease 0.1s both;position:relative;display:inline-block}
+/* El mínimo del clamp era 7rem (112px) con letter-spacing -6px: en un móvil
+   de ~390px "$4.99" no cabía y se cortaba. Ahora el mínimo escala con el
+   ancho real y el letter-spacing se relaja en pantallas chicas. */
+.hero-price{font-family:'Syne',sans-serif;font-size:clamp(3.6rem,17vw,16rem);font-weight:900;line-height:0.9;color:var(--yellow);letter-spacing:-3px;animation:fadeUp 0.8s ease 0.1s both;position:relative;display:inline-block;max-width:100%}
+@media(min-width:600px){.hero-price{letter-spacing:-6px;line-height:0.85}}
+@media(max-width:420px){.hero-price{font-size:clamp(3.2rem,16vw,5rem);letter-spacing:-2px}}
 .hero-price::after{content:'USD';position:absolute;bottom:10%;right:-5%;font-size:0.12em;letter-spacing:2px;color:rgba(255,208,0,0.4);font-weight:700}
 
 .hero-headline{font-family:'Syne',sans-serif;font-size:clamp(1.5rem,3.5vw,2.8rem);font-weight:800;line-height:1.2;max-width:700px;margin:20px auto 0;animation:fadeUp 0.8s ease 0.2s both;letter-spacing:-0.5px}
@@ -117,7 +122,16 @@ section{padding:100px 6%}
 .plan.featured{background:#0d0d00}
 .plan-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--yellow);color:var(--black);font-size:0.65rem;font-weight:800;padding:4px 14px;border-radius:0 0 8px 8px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
 .plan-name{font-size:0.7rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gl);margin-bottom:16px}
-.plan-price{font-family:'Syne',sans-serif;font-size:3.2rem;font-weight:900;color:var(--yellow);line-height:1;letter-spacing:-2px}
+/* Chips de profesiones: muestran la amplitud del catálogo de ejemplos */
+.ej-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin-top:26px;padding:0 10px}
+.ej-chips-lead{color:#777;font-size:0.78rem;width:100%;text-align:center;margin-bottom:4px}
+.ej-chip{background:#161616;border:1px solid #262626;color:#bbb;font-size:0.76rem;padding:6px 13px;border-radius:50px;text-decoration:none;transition:border-color .2s,color .2s}
+.ej-chip:hover{border-color:#FFD000;color:#fff}
+.plan-price{font-family:'Syne',sans-serif;font-size:clamp(1.85rem,6.5vw,3.2rem);font-weight:900;color:var(--yellow);line-height:1.05;letter-spacing:-1px;word-break:keep-all;white-space:nowrap}
+/* En pantallas chicas el precio ocupaba casi todo el ancho de la tarjeta y
+   empujaba el resto del plan fuera de vista. Se reduce y se impide que se
+   parta en dos líneas. */
+@media(max-width:480px){.plan-price{font-size:1.75rem;letter-spacing:-0.5px}}
 .plan-period{color:var(--gl2);font-size:0.75rem;margin-top:4px}
 .plan-features{list-style:none;margin:24px 0;text-align:left;display:flex;flex-direction:column;gap:10px}
 .plan-features li{display:flex;align-items:center;gap:10px;font-size:0.82rem;color:#aaa;font-weight:300}
@@ -583,7 +597,26 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
       </a>
     </div>
 
-    <div style="text-align:center;margin-top:30px">
+    <!-- Muestra de la variedad de profesiones cubiertas. Todos apuntan al
+         índice de ejemplos: no se enlazan archivos individuales para no
+         crear enlaces rotos si alguno cambia de nombre. -->
+    <div class="ej-chips">
+      <span class="ej-chips-lead" data-es="También encontrarás:" data-en="You'll also find:">También encontrarás:</span>
+      <a href="ejemplos/" class="ej-chip" data-es="Contador" data-en="Accountant">Contador</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Ingeniero Civil" data-en="Civil Engineer">Ingeniero Civil</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Docente" data-en="Teacher">Docente</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Médico" data-en="Physician">Médico</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Diseñador Gráfico" data-en="Graphic Designer">Diseñador Gráfico</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Recursos Humanos" data-en="Human Resources">Recursos Humanos</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Atención al Cliente" data-en="Customer Service">Atención al Cliente</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Logística" data-en="Logistics">Logística</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Marketing Digital" data-en="Digital Marketing">Marketing Digital</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Chef" data-en="Chef">Chef</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Electricista" data-en="Electrician">Electricista</a>
+      <a href="ejemplos/" class="ej-chip" data-es="Administrador" data-en="Administrator">Administrador</a>
+    </div>
+
+    <div style="text-align:center;margin-top:26px">
       <a href="ejemplos/" onclick="if((localStorage.getItem('cvpro_lang')||'es')==='en'){this.href='ejemplos/resume-examples.html'}" style="color:#FFD000;font-size:0.9rem;text-decoration:underline" data-es="Ver los 140 ejemplos por profesión →" data-en="See all 140 resume examples →">Ver los 140 ejemplos por profesión →</a>
     </div>
   </div>

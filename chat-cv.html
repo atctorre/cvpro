@@ -2557,8 +2557,52 @@ ${cvV1.substring(0,9000)}`})
       if (habsIA && habsIA.length) sessionStorage.setItem('cvpro_habs_extra', JSON.stringify(habsIA));
     } catch(eh) { console.warn('Extracción de habilidades omitida:', eh.message); }
 
-    const m = cvGenerado.match(/^([A-ZÁÉÍÓÚÑ ]{5,60})$/m);
-    datos.nombre = m ? m[1].trim() : (datos.nombre||'');
+    // ── NOMBRE DEL CANDIDATO ──
+    // BUG HISTÓRICO: se tomaba la primera línea en MAYÚSCULAS de 5-60
+    // caracteres. En un CV bien formado esa línea es un ENCABEZADO DE SECCIÓN
+    // ("RESUMEN PROFESIONAL", "PERFIL"), no el nombre — y el CV salía titulado
+    // "Resumen Profesional" en vez de con el nombre de la persona.
+    // Ahora: se buscan candidatos en las primeras líneas, se descartan los
+    // encabezados conocidos y cualquier línea con señales de no ser un nombre
+    // (correo, teléfono, URL, dos puntos, dígitos).
+    const _esEncabezado = (t) => ES_HEADER.test(t.trim());
+    // Títulos de documento y palabras que delatan una frase descriptiva,
+    // no un nombre propio (el CV suele empezar con una de estas).
+    const _TITULO_DOC = /^(curriculum\s+vitae|curr[íi]culum|resume|hoja\s+de\s+vida|cv)$/i;
+    const _PALABRA_NO_NOMBRE = /\b(con|de|del|en|para|años|experiencia|especialista|titulad[oa]|licenciad[oa]|ingenier[oa]|m[ée]dic[oa]|profesional|t[ée]cnic[oa]|y|el|la|los|las|un|una|más|que|su|sus)\b/i;
+    const _pareceNombre = (t) => {
+      const s = t.trim().replace(/^[#*\s]+|[#*\s]+$/g, '').replace(/[.,]+$/, '');
+      if (s.length < 5 || s.length > 60) return false;
+      if (_esEncabezado(s) || _TITULO_DOC.test(s)) return false;
+      if (/[@:;|/\\]|\d|https?|www\./i.test(s)) return false;   // correo, tel, URL, etiquetas
+      // Una frase descriptiva ("Médico Especialista en Medicina Interna
+      // titulada") no es un nombre: la delatan preposiciones y sustantivos
+      // de oficio. Se comprueba sobre el texto SIN las partículas propias de
+      // los apellidos hispanos ("Luis de la Torre Ramírez" es un nombre válido).
+      const _sinParticulas = s.replace(/\b(de|la|las|los|del|van|von|da|di|dos)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+      if (_PALABRA_NO_NOMBRE.test(_sinParticulas)) return false;
+      if (_sinParticulas.split(/\s+/).filter(Boolean).length < 2) return false;   // solo partículas: no es nombre
+      const palabras = s.split(/\s+/);
+      if (palabras.length < 2 || palabras.length > 6) return false;  // un nombre real tiene 2-6 palabras
+      return /^[A-Za-zÁÉÍÓÚÑÜáéíóúñü'’\-\. ]+$/.test(s);
+    };
+    let _nombreCV = '';
+    // Buscar en las primeras 12 líneas no vacías: el nombre encabeza el CV
+    const _lineas = cvGenerado.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 12);
+    // 1ª pasada: línea en mayúsculas que no sea encabezado (formato clásico)
+    for (const l of _lineas) {
+      if (/^[A-ZÁÉÍÓÚÑÜ\s'’\-\.]+$/.test(l) && _pareceNombre(l)) { _nombreCV = l; break; }
+    }
+    // 2ª pasada: cualquier línea con forma de nombre propio
+    if (!_nombreCV) {
+      for (const l of _lineas) {
+        if (_pareceNombre(l)) { _nombreCV = l; break; }
+      }
+    }
+    datos.nombre = _nombreCV
+      ? _nombreCV.replace(/^[#*\s]+|[#*\s]+$/g, '').trim()
+      : (datos.nombre || '');
+    if (!_nombreCV) console.warn('No se pudo extraer el nombre del CV subido — el usuario puede corregirlo en el editor');
     sessionStorage.setItem('cvTexto', cvGenerado);
     try {
       sessionStorage.setItem('cvData', JSON.stringify(construirCVData()));

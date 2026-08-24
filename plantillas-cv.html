@@ -1420,8 +1420,40 @@ function aplicarModoEdicion(on) {
 }
 
 // Cada edición se escribe de vuelta en D según la ruta del data-edit
-function escribirEdicion(ruta, valor) {
+function escribirEdicion(ruta, valor, valorPrevio) {
   const v = String(valor).replace(/\n+/g, ' ').trim();
+
+  // ── SEÑAL DE CALIDAD ──
+  // Una edición del cliente es un error de la IA confesado. Se registra el
+  // CAMPO y la MAGNITUD, nunca el texto: con eso basta para saber qué falla
+  // y respeta la política de privacidad (no se guarda contenido personal).
+  try {
+    const prev = String(valorPrevio == null ? '' : valorPrevio).trim();
+    if (prev && prev !== v && typeof ev === 'function') {
+      // Campo genérico: "experiencia.0.bullets.3" → "experiencia.bullets"
+      const campo = ruta.replace(/\.\d+/g, '');
+      // Distancia simple y barata: cuánto cambió el largo y el contenido
+      // Similitud por caracteres compartidos en orden (subsecuencia común
+      // aproximada). Una tilde o un cambio de género comparten casi todo;
+      // una reescritura comparte poco. Calibrado para NO marcar como
+      // "profunda" una corrección menor: inflar la métrica llevaría a
+      // perseguir problemas que no existen.
+      const _sim = (a, b) => {
+        a = a.toLowerCase(); b = b.toLowerCase();
+        if (!a.length || !b.length) return 0;
+        let i = 0, j = 0, comunes = 0;
+        while (i < a.length && j < b.length) {
+          if (a[i] === b[j]) { comunes++; i++; j++; }
+          else if (a.length - i > b.length - j) i++; else j++;
+        }
+        return (2 * comunes) / (a.length + b.length);
+      };
+      const similitud = _sim(prev, v);
+      const magnitud = similitud < 0.75 ? 'profunda' : 'leve';
+      ev('edit_field', {campo, magnitud, lang: (typeof LANG !== 'undefined' ? LANG : 'es')});
+    }
+  } catch(e) { /* la telemetría nunca debe romper la edición */ }
+
   const partes = ruta.split('.');
   try {
     if (partes.length === 1) {
@@ -1462,12 +1494,19 @@ function escribirEdicion(ruta, valor) {
 }
 
 // Guardar al salir de cada campo (delegado, un solo listener)
+// Al enfocar se recuerda el valor original para poder medir la magnitud
+document.addEventListener('focusin', (e) => {
+  const el = e.target;
+  if (!_modoEdicion || !el || !el.getAttribute) return;
+  if (el.getAttribute('data-edit') && el.closest('#cvFinal')) el._valorPrevio = el.textContent;
+});
+
 document.addEventListener('focusout', (e) => {
   const el = e.target;
   if (!_modoEdicion || !el || !el.getAttribute) return;
   const ruta = el.getAttribute('data-edit');
   if (!ruta || !el.closest('#cvFinal')) return;
-  escribirEdicion(ruta, el.textContent);
+  escribirEdicion(ruta, el.textContent, el._valorPrevio);
 });
 
 function volverSelector() {

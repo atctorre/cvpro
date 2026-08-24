@@ -6,7 +6,7 @@
 <title>Elige tu plantilla | CVPro</title>
 <meta name="description" content="Elige entre 20 plantillas profesionales para tu CV, aprobadas por reclutadores y optimizadas para sistemas ATS. Descarga en PDF al instante.">
 <link rel="canonical" href="https://getcvpro.com/plantillas-cv.html">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
@@ -93,6 +93,20 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
    El renderizador ya usa flex con space-between, así que aquí solo se fija
    el tamaño, el interlineado y el ajuste de palabras largas. */
 #cvFinal .li{font-size:0.74rem;line-height:1.45;margin-bottom:5px;overflow-wrap:anywhere}
+/* ── RED DE SEGURIDAD CONTRA DESBORDES ──
+   Un texto largo (una certificación con comillas, una URL, un cargo extenso)
+   no debe salirse del documento por mucho que falle un estilo concreto.
+   Esta regla vale para TODAS las plantillas y es la última defensa: si algo
+   no cabe, se parte y baja de línea en vez de cortarse por el margen. */
+#cvFinal, #cvFinal *{overflow-wrap:break-word;word-break:break-word;max-width:100%}
+#cvFinal .mn, #cvFinal .sb{min-width:0;overflow:hidden}
+#cvFinal .bl, #cvFinal .jt, #cvFinal .jm, #cvFinal .sk-item, #cvFinal .li, #cvFinal .ci{
+  white-space:normal;overflow-wrap:break-word
+}
+/* Tamaño base por si un elemento queda sin su regla de plantilla: nunca
+   heredará el tamaño del contenedor (que lo hacía verse enorme). */
+#cvFinal .bl{font-size:0.74rem;line-height:1.6}
+#cvFinal .st{font-size:0.6rem}
 #cvFinal .li span{font-size:inherit;font-family:inherit}
 /* ── PDF CORTADO EN MÓVIL ──
    El CV mide 794px fijos. En un teléfono (~390px de viewport) los navegadores
@@ -365,6 +379,290 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .cv-m5 .sf{height:100%;background:linear-gradient(90deg,#4a3f8b,#c4b8f0);border-radius:2px}
 .cv-m5 .lb{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
 .cv-m5 .lbg{background:#4a3f8b;color:#c4b8f0;font-size:0.62rem;padding:2px 6px;border-radius:3px;font-weight:700}
+
+/* ══════════════════════════════════════════════════════════════════
+   10 PLANTILLAS PREMIUM — diseños originales (h6-h10, m6-m10)
+   Antes eran CLONES de h1-h5/m1-m5: 20 plantillas pero solo 10 diseños.
+   Ahora son 10 estéticas genuinamente distintas, con tipografías
+   premium y jerarquías diferenciadas por sector profesional.
+   Todas conservan las clases del renderizador compartido
+   (.hdr .ph .nm .rl .ct .ci .bd .sb .mn .st .sk .sn .sb2 .sf .jb .jt
+   .jm .bl .li .edu-item) para que funcionen sin tocar el motor.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── h6 · EJECUTIVO EDITORIAL ─────────────────────────────────────
+   Serif de alto contraste, franja fina superior, mucho aire.
+   Para dirección, consultoría, legal, finanzas.                    */
+.cv-h6{font-family:'Inter',sans-serif;background:#fff;color:#14161a;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h6 .hdr{background:#fff;padding:44px 48px 26px;display:flex;gap:26px;align-items:flex-end;border-top:7px solid #1a2b4a;border-bottom:1px solid #e6e8ec}
+.cv-h6 .ph{width:96px;height:96px;border-radius:3px;overflow:hidden;border:none;flex-shrink:0;background:#eef1f5;display:flex;align-items:center;justify-content:center}
+.cv-h6 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h6 .nm{font-family:'DM Serif Display',serif;font-size:2.15rem;font-weight:400;color:#14161a;line-height:1.05;letter-spacing:-0.5px}
+.cv-h6 .rl{color:#66707e;font-size:0.74rem;font-weight:600;letter-spacing:3.5px;text-transform:uppercase;margin:7px 0 12px}
+.cv-h6 .ct{display:flex;flex-wrap:wrap;gap:14px}
+.cv-h6 .ci{font-size:0.71rem;color:#66707e}
+.cv-h6 .bd{display:grid;grid-template-columns:200px minmax(0,1fr)}
+.cv-h6 .sb{background:#fbfcfd;padding:28px 22px;border-right:1px solid #e6e8ec}
+.cv-h6 .mn{padding:28px 30px}
+.cv-h6 .st{font-family:'Inter',sans-serif;font-size:0.58rem;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:#1a2b4a;padding-bottom:6px;margin-bottom:14px;border-bottom:1px solid #dfe3e8}
+.cv-h6 .sk{margin-bottom:7px}
+.cv-h6 .sn{font-size:0.72rem;font-weight:500;color:#2c333d;margin-bottom:2px}
+.cv-h6 .sb2{height:2px;background:#e6e8ec}
+.cv-h6 .sf{height:100%;background:#1a2b4a}
+.cv-h6 .jb{margin-bottom:19px}
+.cv-h6 .jt{font-family:'DM Serif Display',serif;font-size:1rem;font-weight:400;color:#14161a}
+.cv-h6 .jm{font-size:0.71rem;color:#8a929e;margin:2px 0 8px;letter-spacing:.3px}
+.cv-h6 .bl{font-size:0.745rem;color:#3d444e;line-height:1.68;margin-bottom:4px;padding-left:15px;position:relative}
+.cv-h6 .bl::before{content:'';position:absolute;left:0;top:9px;width:6px;height:1px;background:#1a2b4a}
+.cv-h6 .li{font-size:0.72rem;color:#3d444e}
+.cv-h6 .sk-item{font-size:0.72rem;color:#3d444e;margin-bottom:5px}
+
+/* ── h7 · TÉCNICO MONOESPACIADO ───────────────────────────────────
+   Geométrica, retícula visible, acento eléctrico.
+   Para ingeniería, TI, datos, arquitectura.                        */
+.cv-h7{font-family:'Space Grotesk',sans-serif;background:#fff;color:#0f1115;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h7 .hdr{background:#0f1115;padding:34px 40px;display:flex;gap:22px;align-items:center;position:relative}
+.cv-h7 .hdr::after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,#00e5a0 0%,#00e5a0 22%,#1e2228 22%)}
+.cv-h7 .ph{width:92px;height:92px;border-radius:6px;overflow:hidden;border:2px solid #00e5a0;flex-shrink:0;background:#1e2228;display:flex;align-items:center;justify-content:center}
+.cv-h7 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h7 .nm{font-size:1.72rem;font-weight:700;color:#fff;line-height:1.08;letter-spacing:-0.8px}
+.cv-h7 .rl{color:#00e5a0;font-size:0.7rem;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;margin:6px 0 11px}
+.cv-h7 .ct{display:flex;flex-wrap:wrap;gap:10px}
+.cv-h7 .ci{font-size:0.7rem;color:#9aa3ad}
+.cv-h7 .bd{display:grid;grid-template-columns:206px minmax(0,1fr)}
+.cv-h7 .sb{background:#f5f7f8;padding:24px 20px}
+.cv-h7 .mn{padding:24px 28px}
+.cv-h7 .st{font-size:0.57rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#0f1115;margin-bottom:12px;padding-bottom:5px;border-bottom:2px solid #00e5a0}
+.cv-h7 .sk{margin-bottom:8px}
+.cv-h7 .sn{font-size:0.7rem;font-weight:500;color:#2b3038;margin-bottom:3px}
+.cv-h7 .sb2{height:5px;background:#e2e6e9;border-radius:0}
+.cv-h7 .sf{height:100%;background:#00c98d;border-radius:0}
+.cv-h7 .jb{margin-bottom:16px;padding-left:13px;border-left:2px solid #00e5a0}
+.cv-h7 .jt{font-size:0.87rem;font-weight:700;color:#0f1115;letter-spacing:-0.2px}
+.cv-h7 .jm{font-size:0.69rem;color:#78818c;margin:3px 0 7px;font-weight:500}
+.cv-h7 .bl{font-size:0.73rem;color:#3a4048;line-height:1.62;margin-bottom:3px;padding-left:13px;position:relative}
+.cv-h7 .bl::before{content:'▸';position:absolute;left:0;color:#00c98d;font-size:0.65rem}
+.cv-h7 .li{font-size:0.71rem;color:#3a4048}
+.cv-h7 .sk-item{font-size:0.71rem;color:#3a4048;margin-bottom:5px}
+
+/* ── h8 · CLÁSICO INSTITUCIONAL ───────────────────────────────────
+   Sobrio, sin foto destacada, tipografía de libro.
+   Para medicina, docencia, sector público, investigación.          */
+.cv-h8{font-family:'Inter',sans-serif;background:#fff;color:#1c1c1c;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h8 .hdr{background:#fff;padding:40px 46px 22px;display:flex;gap:24px;align-items:center;border-bottom:2.5px solid #6b1f2e}
+.cv-h8 .ph{width:88px;height:88px;border-radius:50%;overflow:hidden;border:1px solid #d8d2d3;flex-shrink:0;background:#f4f0f0;display:flex;align-items:center;justify-content:center}
+.cv-h8 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h8 .nm{font-family:'Cormorant Garamond',serif;font-size:2.35rem;font-weight:700;color:#1c1c1c;line-height:1.02}
+.cv-h8 .rl{color:#6b1f2e;font-size:0.75rem;font-weight:600;letter-spacing:2.2px;text-transform:uppercase;margin:4px 0 10px}
+.cv-h8 .ct{display:flex;flex-wrap:wrap;gap:13px}
+.cv-h8 .ci{font-size:0.71rem;color:#6a6265}
+.cv-h8 .bd{display:grid;grid-template-columns:205px minmax(0,1fr)}
+.cv-h8 .sb{background:#faf7f7;padding:26px 21px}
+.cv-h8 .mn{padding:26px 30px}
+.cv-h8 .st{font-family:'Cormorant Garamond',serif;font-size:0.92rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#6b1f2e;margin-bottom:12px;padding-bottom:4px;border-bottom:1px solid #e0d6d8}
+.cv-h8 .sk{margin-bottom:7px}
+.cv-h8 .sn{font-size:0.72rem;font-weight:500;color:#33302f;margin-bottom:2px}
+.cv-h8 .sb2{height:3px;background:#e8e0e2}
+.cv-h8 .sf{height:100%;background:#8d3244}
+.cv-h8 .jb{margin-bottom:17px}
+.cv-h8 .jt{font-size:0.89rem;font-weight:700;color:#6b1f2e}
+.cv-h8 .jm{font-size:0.71rem;color:#8a8083;margin:2px 0 7px;font-style:normal}
+.cv-h8 .bl{font-size:0.745rem;color:#3c3839;line-height:1.66;margin-bottom:4px;padding-left:14px;position:relative}
+.cv-h8 .bl::before{content:'—';position:absolute;left:0;color:#a8737f;font-size:0.7rem}
+.cv-h8 .li{font-size:0.72rem;color:#3c3839}
+.cv-h8 .sk-item{font-size:0.72rem;color:#3c3839;margin-bottom:5px}
+
+/* ── h9 · MINIMAL DE UNA COLUMNA ──────────────────────────────────
+   Sin barra lateral, todo el ancho, máxima legibilidad ATS.
+   Para perfiles con mucha experiencia que necesitan espacio.       */
+.cv-h9{font-family:'Inter',sans-serif;background:#fff;color:#111;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h9 .hdr{background:#fff;padding:46px 52px 20px;display:flex;gap:24px;align-items:center}
+.cv-h9 .ph{width:84px;height:84px;border-radius:50%;overflow:hidden;border:none;flex-shrink:0;background:#f2f2f2;display:flex;align-items:center;justify-content:center}
+.cv-h9 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h9 .nm{font-size:2.05rem;font-weight:800;color:#111;line-height:1.05;letter-spacing:-1.2px}
+.cv-h9 .rl{color:#111;font-size:0.8rem;font-weight:500;letter-spacing:0;text-transform:none;margin:4px 0 9px}
+.cv-h9 .ct{display:flex;flex-wrap:wrap;gap:16px}
+.cv-h9 .ci{font-size:0.72rem;color:#767676}
+.cv-h9 .bd{display:block;padding:0 52px 30px}
+.cv-h9 .sb{background:transparent;padding:16px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:0 34px;align-items:start}
+.cv-h9 .mn{padding:20px 0 0}
+.cv-h9 .st{font-size:0.57rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#111;margin-bottom:11px;padding-bottom:5px;border-bottom:1.5px solid #111}
+.cv-h9 .sk{margin-bottom:6px}
+.cv-h9 .sn{font-size:0.72rem;font-weight:500;color:#333;margin-bottom:2px}
+.cv-h9 .sb2{height:2px;background:#e8e8e8}
+.cv-h9 .sf{height:100%;background:#111}
+.cv-h9 .jb{margin-bottom:17px}
+.cv-h9 .jt{font-size:0.88rem;font-weight:700;color:#111}
+.cv-h9 .jm{font-size:0.71rem;color:#8a8a8a;margin:2px 0 7px}
+.cv-h9 .bl{font-size:0.745rem;color:#3a3a3a;line-height:1.66;margin-bottom:4px;padding-left:14px;position:relative}
+.cv-h9 .bl::before{content:'·';position:absolute;left:3px;color:#111;font-weight:700}
+.cv-h9 .li{font-size:0.72rem;color:#3a3a3a}
+.cv-h9 .sk-item{font-size:0.72rem;color:#3a3a3a;margin-bottom:5px}
+
+/* ── h10 · CORPORATIVO DE BLOQUE ──────────────────────────────────
+   Cabecera sólida a sangre, contraste alto, presencia.
+   Para ventas, comercial, dirección de operaciones.                */
+.cv-h10{font-family:'Inter',sans-serif;background:#fff;color:#15181d;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-h10 .hdr{background:#15181d;padding:38px 44px;display:flex;gap:24px;align-items:center}
+.cv-h10 .ph{width:104px;height:104px;border-radius:2px;overflow:hidden;border:none;flex-shrink:0;background:#2a2f37;display:flex;align-items:center;justify-content:center}
+.cv-h10 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-h10 .nm{font-size:1.95rem;font-weight:800;color:#fff;line-height:1.06;letter-spacing:-1px;text-transform:uppercase}
+.cv-h10 .rl{color:#e07a3f;font-size:0.73rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:8px 0 12px}
+.cv-h10 .ct{display:flex;flex-wrap:wrap;gap:12px}
+.cv-h10 .ci{font-size:0.71rem;color:#a8b0ba}
+.cv-h10 .bd{display:grid;grid-template-columns:214px minmax(0,1fr)}
+.cv-h10 .sb{background:#15181d;color:#d5dae0;padding:26px 22px}
+.cv-h10 .mn{padding:26px 30px}
+.cv-h10 .st{font-size:0.57rem;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:#15181d;margin-bottom:12px;padding-bottom:5px;border-bottom:2px solid #e07a3f}
+.cv-h10 .sb .st{color:#e07a3f;border-bottom-color:#3a4049}
+.cv-h10 .sk{margin-bottom:8px}
+.cv-h10 .sn{font-size:0.71rem;font-weight:500;color:#d5dae0;margin-bottom:3px}
+.cv-h10 .sb2{height:3px;background:#333941}
+.cv-h10 .sf{height:100%;background:#e07a3f}
+.cv-h10 .jb{margin-bottom:17px;padding-left:14px;border-left:3px solid #e07a3f}
+.cv-h10 .jt{font-size:0.88rem;font-weight:700;color:#15181d}
+.cv-h10 .jm{font-size:0.71rem;color:#7d858f;margin:3px 0 7px}
+.cv-h10 .bl{font-size:0.74rem;color:#3a4049;line-height:1.64;margin-bottom:4px;padding-left:13px;position:relative}
+.cv-h10 .bl::before{content:'▪';position:absolute;left:0;color:#e07a3f;font-size:0.6rem}
+.cv-h10 .li{font-size:0.71rem;color:#d5dae0}
+.cv-h10 .sk-item{font-size:0.71rem;color:#d5dae0;margin-bottom:5px}
+
+/* ── m6 · EDITORIAL SUAVE ─────────────────────────────────────────
+   Serif contemporánea, paleta terrosa, elegancia sin adorno.
+   Para comunicación, RRHH, diseño, gestión cultural.               */
+.cv-m6{font-family:'Inter',sans-serif;background:#fff;color:#1f1b1a;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-m6 .hdr{background:#fbf7f4;padding:42px 46px 28px;display:flex;gap:26px;align-items:center;border-bottom:1px solid #e9ded6}
+.cv-m6 .ph{width:98px;height:98px;border-radius:50%;overflow:hidden;border:3px solid #fff;box-shadow:0 0 0 1px #e0d2c8;flex-shrink:0;background:#f0e6df;display:flex;align-items:center;justify-content:center}
+.cv-m6 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m6 .nm{font-family:'Fraunces',serif;font-size:2.1rem;font-weight:600;color:#1f1b1a;line-height:1.06;letter-spacing:-0.4px}
+.cv-m6 .rl{color:#a56a4a;font-size:0.73rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;margin:6px 0 11px}
+.cv-m6 .ct{display:flex;flex-wrap:wrap;gap:13px}
+.cv-m6 .ci{font-size:0.71rem;color:#8a7a70}
+.cv-m6 .bd{display:grid;grid-template-columns:202px minmax(0,1fr)}
+.cv-m6 .sb{background:#fdfbf9;padding:26px 21px;border-right:1px solid #f0e6df}
+.cv-m6 .mn{padding:26px 30px}
+.cv-m6 .st{font-size:0.57rem;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:#a56a4a;margin-bottom:13px;padding-bottom:5px;border-bottom:1px solid #ecdfd6}
+.cv-m6 .sk{margin-bottom:7px}
+.cv-m6 .sn{font-size:0.72rem;font-weight:500;color:#3a322e;margin-bottom:2px}
+.cv-m6 .sb2{height:3px;background:#f0e6df;border-radius:2px}
+.cv-m6 .sf{height:100%;background:#c98d68;border-radius:2px}
+.cv-m6 .jb{margin-bottom:18px}
+.cv-m6 .jt{font-family:'Fraunces',serif;font-size:0.98rem;font-weight:600;color:#1f1b1a}
+.cv-m6 .jm{font-size:0.71rem;color:#9a8b82;margin:2px 0 8px}
+.cv-m6 .bl{font-size:0.745rem;color:#463e3a;line-height:1.68;margin-bottom:4px;padding-left:14px;position:relative}
+.cv-m6 .bl::before{content:'';position:absolute;left:0;top:9px;width:7px;height:1px;background:#c98d68}
+.cv-m6 .li{font-size:0.72rem;color:#463e3a}
+.cv-m6 .sk-item{font-size:0.72rem;color:#463e3a;margin-bottom:5px}
+
+/* ── m7 · MODERNA DE ACENTO ───────────────────────────────────────
+   Barra lateral de color, tipografía limpia, energía contenida.
+   Para marketing, ventas, atención al cliente, retail.             */
+.cv-m7{font-family:'Inter',sans-serif;background:#fff;color:#191a2e;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-m7 .hdr{background:#fff;padding:40px 44px 24px;display:flex;gap:24px;align-items:center;border-left:9px solid #6c4ef0}
+.cv-m7 .ph{width:96px;height:96px;border-radius:50%;overflow:hidden;border:3px solid #6c4ef0;flex-shrink:0;background:#efecfd;display:flex;align-items:center;justify-content:center}
+.cv-m7 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m7 .nm{font-size:1.9rem;font-weight:800;color:#191a2e;line-height:1.06;letter-spacing:-1px}
+.cv-m7 .rl{color:#6c4ef0;font-size:0.74rem;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;margin:6px 0 11px}
+.cv-m7 .ct{display:flex;flex-wrap:wrap;gap:12px}
+.cv-m7 .ci{font-size:0.71rem;color:#787a99}
+.cv-m7 .bd{display:grid;grid-template-columns:206px minmax(0,1fr)}
+.cv-m7 .sb{background:#f7f5fe;padding:26px 21px}
+.cv-m7 .mn{padding:26px 30px}
+.cv-m7 .st{font-size:0.57rem;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:#191a2e;margin-bottom:12px;padding-bottom:5px;border-bottom:2px solid #6c4ef0}
+.cv-m7 .sk{margin-bottom:8px}
+.cv-m7 .sn{font-size:0.71rem;font-weight:500;color:#3c3d55;margin-bottom:3px}
+.cv-m7 .sb2{height:5px;background:#e6e2fa;border-radius:3px}
+.cv-m7 .sf{height:100%;background:linear-gradient(90deg,#6c4ef0,#a78bfa);border-radius:3px}
+.cv-m7 .jb{margin-bottom:17px;padding-left:14px;border-left:3px solid #d9d2fb}
+.cv-m7 .jt{font-size:0.88rem;font-weight:700;color:#191a2e}
+.cv-m7 .jm{font-size:0.71rem;color:#8b8da8;margin:3px 0 7px}
+.cv-m7 .bl{font-size:0.74rem;color:#42445e;line-height:1.64;margin-bottom:4px;padding-left:13px;position:relative}
+.cv-m7 .bl::before{content:'●';position:absolute;left:0;color:#6c4ef0;font-size:0.45rem;top:6px}
+.cv-m7 .li{font-size:0.71rem;color:#42445e}
+.cv-m7 .sk-item{font-size:0.71rem;color:#42445e;margin-bottom:5px}
+
+/* ── m8 · SERENA DE DOS TONOS ─────────────────────────────────────
+   Verde profundo, composición tranquila, mucha respiración.
+   Para salud, educación, trabajo social, ONG.                      */
+.cv-m8{font-family:'Inter',sans-serif;background:#fff;color:#14201c;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-m8 .hdr{background:#1d3a32;padding:38px 44px;display:flex;gap:24px;align-items:center}
+.cv-m8 .ph{width:100px;height:100px;border-radius:50%;overflow:hidden;border:3px solid #7fc4ad;flex-shrink:0;background:#2a4f45;display:flex;align-items:center;justify-content:center}
+.cv-m8 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m8 .nm{font-family:'Fraunces',serif;font-size:2rem;font-weight:600;color:#fff;line-height:1.06}
+.cv-m8 .rl{color:#7fc4ad;font-size:0.73rem;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;margin:6px 0 11px}
+.cv-m8 .ct{display:flex;flex-wrap:wrap;gap:12px}
+.cv-m8 .ci{font-size:0.71rem;color:#b8cfc7}
+.cv-m8 .bd{display:grid;grid-template-columns:204px minmax(0,1fr)}
+.cv-m8 .sb{background:#f4f8f6;padding:26px 21px}
+.cv-m8 .mn{padding:26px 30px}
+.cv-m8 .st{font-size:0.57rem;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:#1d3a32;margin-bottom:12px;padding-bottom:5px;border-bottom:2px solid #7fc4ad}
+.cv-m8 .sk{margin-bottom:7px}
+.cv-m8 .sn{font-size:0.72rem;font-weight:500;color:#2f453e;margin-bottom:2px}
+.cv-m8 .sb2{height:4px;background:#dfeae5;border-radius:2px}
+.cv-m8 .sf{height:100%;background:#4a8f7a;border-radius:2px}
+.cv-m8 .jb{margin-bottom:17px}
+.cv-m8 .jt{font-size:0.88rem;font-weight:700;color:#1d3a32}
+.cv-m8 .jm{font-size:0.71rem;color:#84968f;margin:2px 0 7px}
+.cv-m8 .bl{font-size:0.745rem;color:#3b4b45;line-height:1.66;margin-bottom:4px;padding-left:14px;position:relative}
+.cv-m8 .bl::before{content:'◦';position:absolute;left:0;color:#4a8f7a;font-weight:700}
+.cv-m8 .li{font-size:0.72rem;color:#3b4b45}
+.cv-m8 .sk-item{font-size:0.72rem;color:#3b4b45;margin-bottom:5px}
+
+/* ── m9 · CONTEMPORÁNEA DE FILETE ─────────────────────────────────
+   Sin foto grande, filete vertical, aire y precisión.
+   Para consultoría, finanzas, legal, dirección.                    */
+.cv-m9{font-family:'Inter',sans-serif;background:#fff;color:#101114;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-m9 .hdr{background:#fff;padding:44px 48px 24px;display:flex;gap:24px;align-items:center;position:relative}
+.cv-m9 .hdr::before{content:'';position:absolute;left:0;top:44px;bottom:24px;width:4px;background:#b8935f}
+.cv-m9 .ph{width:88px;height:88px;border-radius:50%;overflow:hidden;border:1px solid #e8e4dc;flex-shrink:0;background:#f6f3ee;display:flex;align-items:center;justify-content:center}
+.cv-m9 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m9 .nm{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:600;color:#101114;line-height:1.02}
+.cv-m9 .rl{color:#b8935f;font-size:0.72rem;font-weight:600;letter-spacing:3.5px;text-transform:uppercase;margin:5px 0 11px}
+.cv-m9 .ct{display:flex;flex-wrap:wrap;gap:14px}
+.cv-m9 .ci{font-size:0.71rem;color:#7d7a74}
+.cv-m9 .bd{display:grid;grid-template-columns:198px minmax(0,1fr)}
+.cv-m9 .sb{background:#fcfbf9;padding:26px 21px;border-right:1px solid #eee9e1}
+.cv-m9 .mn{padding:26px 30px}
+.cv-m9 .st{font-size:0.56rem;font-weight:700;letter-spacing:3.2px;text-transform:uppercase;color:#101114;margin-bottom:13px;padding-bottom:5px;border-bottom:1px solid #b8935f}
+.cv-m9 .sk{margin-bottom:7px}
+.cv-m9 .sn{font-size:0.72rem;font-weight:500;color:#33322f;margin-bottom:2px}
+.cv-m9 .sb2{height:2px;background:#eee9e1}
+.cv-m9 .sf{height:100%;background:#b8935f}
+.cv-m9 .jb{margin-bottom:18px}
+.cv-m9 .jt{font-family:'Cormorant Garamond',serif;font-size:1.08rem;font-weight:700;color:#101114}
+.cv-m9 .jm{font-size:0.7rem;color:#918d86;margin:1px 0 8px;letter-spacing:.3px}
+.cv-m9 .bl{font-size:0.745rem;color:#3d3b37;line-height:1.68;margin-bottom:4px;padding-left:14px;position:relative}
+.cv-m9 .bl::before{content:'';position:absolute;left:0;top:9px;width:7px;height:1px;background:#b8935f}
+.cv-m9 .li{font-size:0.72rem;color:#3d3b37}
+.cv-m9 .sk-item{font-size:0.72rem;color:#3d3b37;margin-bottom:5px}
+
+/* ── m10 · CREATIVA DE CABECERA PARTIDA ───────────────────────────
+   Bloque de color asimétrico, tipografía display, carácter.
+   Para diseño, publicidad, moda, eventos.                          */
+.cv-m10{font-family:'Inter',sans-serif;background:#fff;color:#1a1420;width:794px;overflow-wrap:break-word;word-break:break-word}
+.cv-m10 .hdr{background:linear-gradient(105deg,#2d1b3d 0%,#2d1b3d 62%,#e8577f 62%,#e8577f 100%);padding:40px 44px;display:flex;gap:24px;align-items:center}
+.cv-m10 .ph{width:100px;height:100px;border-radius:14px;overflow:hidden;border:3px solid #fff;flex-shrink:0;background:#453055;display:flex;align-items:center;justify-content:center}
+.cv-m10 .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.cv-m10 .nm{font-family:'DM Serif Display',serif;font-size:2.05rem;font-weight:400;color:#fff;line-height:1.06}
+.cv-m10 .rl{color:#ffc9d8;font-size:0.73rem;font-weight:600;letter-spacing:2.8px;text-transform:uppercase;margin:6px 0 11px}
+.cv-m10 .ct{display:flex;flex-wrap:wrap;gap:12px}
+.cv-m10 .ci{font-size:0.71rem;color:#d6c8e2}
+.cv-m10 .bd{display:grid;grid-template-columns:206px minmax(0,1fr)}
+.cv-m10 .sb{background:#faf6fb;padding:26px 21px}
+.cv-m10 .mn{padding:26px 30px}
+.cv-m10 .st{font-size:0.57rem;font-weight:700;letter-spacing:2.8px;text-transform:uppercase;color:#2d1b3d;margin-bottom:12px;padding-bottom:5px;border-bottom:2px solid #e8577f}
+.cv-m10 .sk{margin-bottom:8px}
+.cv-m10 .sn{font-size:0.71rem;font-weight:500;color:#3f3348;margin-bottom:3px}
+.cv-m10 .sb2{height:5px;background:#f0e4f2;border-radius:3px}
+.cv-m10 .sf{height:100%;background:linear-gradient(90deg,#2d1b3d,#e8577f);border-radius:3px}
+.cv-m10 .jb{margin-bottom:17px;padding-left:14px;border-left:3px solid #e8577f}
+.cv-m10 .jt{font-family:'DM Serif Display',serif;font-size:1rem;font-weight:400;color:#2d1b3d}
+.cv-m10 .jm{font-size:0.71rem;color:#8d7f96;margin:2px 0 7px}
+.cv-m10 .bl{font-size:0.74rem;color:#453d4c;line-height:1.64;margin-bottom:4px;padding-left:13px;position:relative}
+.cv-m10 .bl::before{content:'✦';position:absolute;left:0;color:#e8577f;font-size:0.6rem}
+.cv-m10 .li{font-size:0.71rem;color:#453d4c}
+.cv-m10 .sk-item{font-size:0.71rem;color:#453d4c;margin-bottom:5px}
+
 .sk-list{margin-bottom:4px}.sk-item{font-size:0.72rem;color:#444;line-height:1.7;overflow-wrap:break-word}
 
 /* ── 10 PLANTILLAS NUEVAS (paletas élite) ── */
@@ -795,7 +1093,25 @@ const TPLS = {
   ]
 };
 // Clonado de layouts base para las 10 nuevas plantillas
-const CLONES = {h6:'h1', h7:'h3', h8:'h2', h9:'h5', h10:'h4', m6:'m2', m7:'m1', m8:'m3', m9:'m5', m10:'m4'};
+// h6-h10 y m6-m10 REUSAN LA ESTRUCTURA HTML de una plantilla base (para no
+// duplicar el renderizador), pero cada una tiene su PROPIO CSS premium:
+// tipografía, paleta, jerarquía y composición distintas. El bucle de abajo
+// cambia el prefijo de clase, así que .cv-h6 toma los estilos de .cv-h6,
+// no los de su base. Resultado: 20 plantillas con 20 aspectos reales.
+// La base se elige por afinidad de estructura (con o sin barra lateral,
+// posición de la foto), no por parecido visual.
+const CLONES = {
+  h6:'h1',   // ejecutivo editorial   — barra lateral clásica
+  h7:'h1',   // técnico geométrico    — barra lateral clásica
+  h8:'h2',   // clásico institucional — estructura sobria
+  h9:'h5',   // minimal una columna   — estructura de ancho completo
+  h10:'h1',  // corporativo de bloque — barra lateral clásica
+  m6:'m1',   // editorial suave
+  m7:'m2',   // moderna de acento
+  m8:'m4',   // serena de dos tonos
+  m9:'m1',   // contemporánea de filete
+  m10:'m4'   // creativa de cabecera partida
+};
 
 const LANG = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
 const T = LANG === 'en' ? {
@@ -1350,7 +1666,7 @@ function buildCV(id) {
   // El resumen se insertaba SIN escapar (hueco XSS con datos propios) y sin
   // posibilidad de edición. El span lo resuelve todo de una vez.
   const resumen = `<span data-edit="resumen">${esc(d.resumen || '')}</span>`;
-  const logrosHtml = d.logros?.length ? `<div style="margin-top:14px"><div class="cv-${id} st">${T.logros}</div>${d.logros.map((l,i)=>`<div class="cv-${id} bl" data-edit="logros.${i}">${esc(l)}</div>`).join('')}</div>` : '';
+  const logrosHtml = d.logros?.length ? `<div style="margin-top:14px"><div class="st">${T.logros}</div>${d.logros.map((l,i)=>`<div class="bl" data-edit="logros.${i}">${esc(l)}</div>`).join('')}</div>` : '';
   // Salía "EspañolNativo" pegado: los dos <span> quedaban sin separación
   // visual porque .li no siempre aplica space-between en todas las plantillas.
   const langHtml = (d.idiomas||[]).map((l,i)=>`<div class="li" style="display:flex;justify-content:space-between;gap:10px"><span data-edit="idiomas.${i}.nombre">${esc(l.nombre)}</span><span style="color:#888;text-align:right;max-width:60%;overflow-wrap:break-word">${l.nivel?`· <span data-edit="idiomas.${i}.nivel">${esc(l.nivel)}</span>`:''}</span></div>`).join('');

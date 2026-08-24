@@ -4061,6 +4061,15 @@ function cerrarOnboarding() {
 window.addEventListener('load', () => {
   // ── MODO OPTIMIZAR (viene del analizador) ──
   const _urlP = new URLSearchParams(window.location.search);
+
+  // ── RECUPERAR CV CON CÓDIGO (viene del botón de la portada) ──
+  // Un cliente que ya pagó vuelve por su CV: llega con ?recuperar=1 y se le
+  // pide el código en cuanto la página está lista, sin tener que buscar el 🔑.
+  if (_urlP.get('recuperar') === '1') {
+    const _lr = _urlP.get('lang');
+    if (_lr) LANG = _lr === 'en' ? 'en' : 'es';
+    setTimeout(() => { if (typeof mostrarRecuperarHeader === 'function') mostrarRecuperarHeader(); }, 700);
+  }
   if (_urlP.get('modo') === 'optimizar') {
     const _cvSubido = localStorage.getItem('cvpro_cv_subido');
     if (_cvSubido) sessionStorage.setItem('cvpro_fuente_original', _cvSubido);

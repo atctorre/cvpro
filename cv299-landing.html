@@ -122,6 +122,12 @@ section{padding:100px 6%}
 .plan.featured{background:#0d0d00}
 .plan-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--yellow);color:var(--black);font-size:0.65rem;font-weight:800;padding:4px 14px;border-radius:0 0 8px 8px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap}
 .plan-name{font-size:0.7rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--gl);margin-bottom:16px}
+/* Enlace de recuperación en el hero: visible pero sin competir con los CTA */
+.hero-recuperar{text-align:center;margin-top:16px}
+.hero-recuperar a{color:#8a8a8a;font-size:0.82rem;text-decoration:none;border-bottom:1px dashed #3a3a3a;padding-bottom:2px;transition:color .2s,border-color .2s}
+.hero-recuperar a:hover{color:#FFD000;border-color:#FFD000}
+@media(max-width:600px){.hero-recuperar{margin-top:14px}.hero-recuperar a{font-size:0.8rem}}
+
 /* Chips de profesiones: muestran la amplitud del catálogo de ejemplos */
 .ej-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin-top:26px;padding:0 10px}
 .ej-chips-lead{color:#777;font-size:0.78rem;width:100%;text-align:center;margin-bottom:4px}
@@ -406,6 +412,12 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <div class="hero-actions">
     <a href="chat-cv.html" class="btn-primary" id="heroCta">⚡ Crear mi CV ahora</a>
     <a href="#how" class="btn-secondary" id="heroCtaSecondary">Ver cómo funciona →</a>
+  </div>
+
+  <!-- Cliente que YA pagó y vuelve por su CV: antes no tenía por dónde entrar
+       desde la portada. Enlace discreto para no competir con los CTA. -->
+  <div class="hero-recuperar">
+    <a href="chat-cv.html?recuperar=1" id="heroRecuperar" onclick="this.href='chat-cv.html?recuperar=1&lang='+(localStorage.getItem('cvpro_lang')||'es')" data-es="🔑 ¿Ya tienes tu código? Recupera tu CV" data-en="🔑 Already have your code? Recover your resume">🔑 ¿Ya tienes tu código? Recupera tu CV</a>
   </div>
 
   <div class="hero-trust">

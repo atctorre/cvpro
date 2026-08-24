@@ -542,3 +542,30 @@
 /* ── Ajustes de la vitrina (no afectan al PDF del producto) ── */
 .cv-stage #cvDemo p{font-size:0.72rem;line-height:1.6}
 .cv-stage #cvDemo .ph svg{width:100%;height:100%;display:block}
+
+
+/* ══════════════════════════════════════════════════════════════
+   VITRINA · PLANTILLAS DE BARRA LATERAL DERECHA
+   En el producto, h2/h5/m2 llevan el HTML con la columna principal
+   ANTES que la lateral, por eso su grid es "1fr 240px".
+   En las páginas de ejemplo se usa UN solo HTML (con .sb primero)
+   y se cambia la clase, así que aquí hay que invertir el orden
+   visual con `order` para que la lateral vuelva a la derecha y
+   conserve su ancho estrecho. Sin esto, la barra lateral ocupaba
+   la columna ancha y la experiencia quedaba espachurrada.
+   ══════════════════════════════════════════════════════════════ */
+.cv-stage .cv-h2 .sb, .cv-stage .cv-h5 .sb, .cv-stage .cv-m2 .sb{order:2}
+.cv-stage .cv-h2 .mn, .cv-stage .cv-h5 .mn, .cv-stage .cv-m2 .mn{order:1}
+.cv-stage .cv-h2 .bd, .cv-stage .cv-h5 .bd, .cv-stage .cv-m2 .bd{
+  grid-template-columns:minmax(0,1fr) var(--sb-w,220px)
+}
+.cv-stage .cv-h2 .bd{--sb-w:240px}
+.cv-stage .cv-h5 .bd{--sb-w:200px}
+.cv-stage .cv-m2 .bd{--sb-w:220px}
+
+/* Idiomas: nombre a la izquierda y nivel a la derecha en TODAS las
+   plantillas. Sin esto, en las que no definen .li como flex el texto
+   salía pegado ("EspañolNativo"). */
+.cv-stage [class*="cv-"] .li{
+  display:flex;justify-content:space-between;gap:10px;align-items:baseline
+}

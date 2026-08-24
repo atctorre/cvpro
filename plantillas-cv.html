@@ -80,6 +80,15 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .btn-volver{background:transparent;color:#fff;font-weight:600;padding:12px 28px;border:2px solid #444;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Montserrat',sans-serif}
 .btn-volver:hover{border-color:#FFD000;color:#FFD000}
 #cvFinal{background:#fff}
+/* ── PDF CORTADO EN MÓVIL ──
+   El CV mide 794px fijos. En un teléfono (~390px de viewport) los navegadores
+   móviles INFLAN automáticamente el tamaño de letra ("font boosting") para
+   hacerla legible: el texto crece, desborda su columna y html2canvas lo captura
+   cortado por el margen derecho. En escritorio no pasa porque no hay inflado.
+   text-size-adjust:100% desactiva ese inflado y el CV mide lo mismo en todos
+   los dispositivos. overflow-wrap evita que una palabra o URL larga desborde. */
+#cvFinal, #cvFinal *{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+#cvFinal .bl, #cvFinal .jt, #cvFinal .jm, #cvFinal .sk-item, #cvFinal .li, #cvFinal p, #cvFinal span, #cvFinal div{overflow-wrap:break-word;word-break:normal}
 /* Justificado profesional para el CV en español (la convención estadounidense
    es alineación izquierda, por eso solo aplica al documento en español) */
 #cvFinal.justificado .bl{text-align:justify}
@@ -2077,7 +2086,11 @@ async function descargarPDF() {
   // que mide el CV, así el centrado no puede desplazar nada.
   const _sx = window.scrollX, _sy = window.scrollY;
   window.scrollTo(0, 0);
-  const _w = el.offsetWidth || 794;
+  // ANCHO FIJO, NO MEDIDO: en móvil offsetWidth puede devolver un ancho
+  // constreñido por los padres (max-width, padding, overflow-x:hidden) y la
+  // captura salía más angosta que el documento → margen derecho cortado.
+  // Las 20 plantillas miden 794px por diseño: se usa ese valor siempre.
+  const _w = 794;
   const _h = el.scrollHeight;
 
   html2pdf().set({
@@ -2091,6 +2104,10 @@ async function descargarPDF() {
       width:_w, height:_h,
       windowWidth:_w, windowHeight:Math.max(_h + 80, 1123),
       onclone: (doc) => {
+        // Desactivar el inflado de fuente del navegador móvil también en el
+        // clon: es la causa del texto cortado por el margen derecho en celular.
+        doc.documentElement.style.webkitTextSizeAdjust = '100%';
+        doc.documentElement.style.textSizeAdjust = '100%';
         doc.documentElement.style.overflow = 'visible';
         doc.documentElement.style.maxWidth = 'none';
         doc.body.style.overflow = 'visible';
@@ -2101,9 +2118,22 @@ async function descargarPDF() {
         if (res) { res.style.maxWidth = 'none'; res.style.padding = '0'; res.style.margin = '0'; }
         const acc = doc.querySelector('.cv-actions');
         if (acc) acc.style.display = 'none';
-        // El CV debe quedar pegado al origen del lienzo, sin centrado del padre
+        // El CV debe quedar pegado al origen del lienzo, sin centrado del padre.
+        // Se ancla en 0,0 con ancho exacto para que ningún estilo heredado
+        // (centrado, padding, max-width, overflow) pueda desplazarlo o cortarlo.
         const cv = doc.getElementById('cvFinal');
-        if (cv) { cv.style.margin = '0'; cv.style.padding = '0'; }
+        if (cv) {
+          cv.style.margin = '0'; cv.style.padding = '0';
+          cv.style.position = 'absolute'; cv.style.left = '0'; cv.style.top = '0';
+          cv.style.width = '794px'; cv.style.maxWidth = 'none'; cv.style.transform = 'none';
+        }
+        // La raíz de la plantilla, con su ancho de diseño y sin desbordes
+        const raiz = cv && cv.firstElementChild;
+        if (raiz) {
+          raiz.style.width = '794px'; raiz.style.maxWidth = 'none';
+          raiz.style.margin = '0'; raiz.style.transform = 'none';
+          raiz.style.overflow = 'visible';
+        }
         // El modo edición jamás debe imprimirse: sin marcas ni cursores en el PDF
         if (cv) {
           cv.classList.remove('editando');

@@ -17,7 +17,10 @@
 html,body{height:100%;overflow:hidden}
 body{font-family:'Inter',sans-serif;background:var(--black);color:var(--white);display:flex;flex-direction:column}
 
-nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5%;background:rgba(10,10,10,0.97);border-bottom:1px solid #1f1f1f;flex-shrink:0;z-index:100}
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5%;background:rgba(10,10,10,0.97);border-bottom:1px solid #1f1f1f;flex-shrink:0;z-index:100;position:relative}
+/* Barra de progreso del chat: avance visible de las 14 preguntas */
+.nav-progress-wrap{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.10);overflow:hidden}
+.nav-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#FFD000,#ffdf4d);transition:width .45s cubic-bezier(.22,1,.36,1)}
 .nav-logo{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;color:var(--yellow);text-decoration:none}
 .nav-logo span{color:var(--white)}
 .nav-info{display:flex;align-items:center;gap:14px}
@@ -26,7 +29,14 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 .nav-reset{font-size:0.72rem;color:#555;cursor:pointer;text-decoration:underline}
 .nav-reset:hover{color:var(--gl)}
 
-.progress-bar-chat{height:3px;background:#1a1a1a;flex-shrink:0}
+.progress-bar-chat{height:3px;background:#1a1a1a;flex-shrink:0;position:relative}
+/* En móvil la barra de 3px pasaba desapercibida: el usuario no percibía
+   avance. Se engrosa y se le añade una etiqueta con el porcentaje. */
+@media(max-width:768px){
+  .progress-bar-chat{height:6px}
+  .progress-pct{position:absolute;right:8px;top:8px;font-size:0.62rem;color:var(--yellow);font-weight:700;font-family:Inter,sans-serif;background:rgba(0,0,0,.75);padding:2px 7px;border-radius:50px;pointer-events:none;transition:opacity .3s}
+}
+@media(min-width:769px){.progress-pct{display:none}}
 .progress-fill-chat{height:100%;background:linear-gradient(90deg,var(--yellow),#ff9900);transition:width 0.6s ease;width:0%}
 
 /* ── LAYOUT DOS COLUMNAS ── */
@@ -368,7 +378,8 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 
 <nav>
   <a href="cv299-landing.html" class="nav-logo">CV<span>Pro</span></a>
-  <div class="nav-info">
+  <div class="nav-progress-wrap" id="navProgressWrap"><div class="nav-progress-fill" id="navProgressFill"></div></div>
+    <div class="nav-info">
     <div class="tiempo-wrap">⏱ ~<span id="tiempoRestante">10</span> min</div>
     <span class="nav-step" id="navStep">Pregunta <strong id="stepNum">1</strong> de <span id="totalSteps">14</span></span>
     <span class="nav-reset nav-ayuda" onclick="toggleSoporte()" role="button" tabindex="0" aria-label="Preguntas frecuentes y ayuda" id="navAyuda" style="margin-right:14px">💬</span><span class="nav-reset" onclick="mostrarRecuperarHeader()" role="button" tabindex="0" aria-label="Recuperar CV con código" id="navRecuperar" style="margin-right:14px">🔑</span><span class="nav-reset" onclick="reiniciar()" id="navReset" aria-label="Reiniciar el chat" title="Reiniciar">Reiniciar</span>
@@ -393,7 +404,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     </script>
   </div>
 </nav>
-<div class="progress-bar-chat"><div class="progress-fill-chat" id="progressFill"></div></div>
+<div class="progress-bar-chat"><div class="progress-fill-chat" id="progressFill"></div><span class="progress-pct" id="progressPct">0%</span></div>
 
 <div class="main-layout">
   <!-- COLUMNA CHAT -->
@@ -465,8 +476,8 @@ const PASOS = [
   {
     key: 'nombre',
     preg: () => LANG==='en'
-      ? `Hi! I'm your personal CVPro assistant 👋\n\nI'll ask you 14 quick questions to build your professional resume. The more detail you give me, the better it gets.\n\nLet's start — what's your full name?`
-      : `¡Hola! Soy tu asistente personal de CVPro 👋\n\nEn los próximos minutos voy a hacerte 14 preguntas rápidas para crear tu CV profesional. Cuanta más información me des, mejor quedará.\n\nEmpecemos — ¿Cuál es tu nombre completo?`,
+      ? `I'm your CVPro assistant 👋\n\nI'll ask you 14 quick questions to build a professional resume, tailored to you and ready to apply for jobs.\n\nLet's start — what's your full name?`
+      : `Soy tu asistente de CVPro 👋\n\nVoy a hacerte 14 preguntas rápidas para crear un CV profesional, personalizado y listo para postularte a empleos.\n\nEmpecemos — ¿Cuál es tu nombre completo?`,
     hint: () => LANG==='en' ? 'Type your first and last name' : 'Escribe tu nombre y apellidos',
     placeholder: () => LANG==='en' ? 'E.g.: John Michael Smith' : 'Ej: Jorge Alberto Pérez García'
   },
@@ -1453,6 +1464,8 @@ function actualizarUI() {
   const p = Math.min(paso, PASOS.length);
   const pct = Math.round((p / PASOS.length) * 100);
   document.getElementById('progressFill').style.width = pct + '%';
+  const _pp = document.getElementById('progressPct');
+  if (_pp) { _pp.textContent = pct + '%'; _pp.style.opacity = pct > 0 ? '1' : '0'; }
   document.getElementById('stepNum').textContent = Math.min(p + 1, PASOS.length);
   const ts = document.getElementById('totalSteps');
   if (ts) ts.textContent = PASOS.length;
@@ -1462,6 +1475,9 @@ function actualizarUI() {
   else if (nr && LANG === 'en') nr.textContent = 'Restart';
   const ns = document.getElementById('navStep');
   if (ns && LANG === 'en') ns.innerHTML = 'Question <strong id="stepNum">' + Math.min(p + 1, PASOS.length) + '</strong> of ' + PASOS.length;
+  // Barra de progreso: avance real sobre el total de preguntas
+  const _pf = document.getElementById('navProgressFill');
+  if (_pf) _pf.style.width = Math.round((Math.min(p, PASOS.length) / PASOS.length) * 100) + '%';
   // Encabezado del panel de vista previa (texto fijo del HTML)
   if (LANG === 'en') {
     const _pt = document.getElementById('previewTitle');
@@ -1842,6 +1858,7 @@ async function recuperarCVPorCodigo(codigo) {
 }
 
 async function guardarCVConCodigo(cv) {
+  let _rlsSinUpdate = false;   // la fila existe pero la RLS no permite actualizarla
   try {
     let codigo = sessionStorage.getItem('cvpro_codigo');
     if (!codigo) {
@@ -1872,7 +1889,37 @@ async function guardarCVConCodigo(cv) {
         body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:LANG, plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
       });
       _guardadoOk = _r2.ok;
-      if (!_guardadoOk) console.error('❌ El CV no se guardó:', _r2.status, await _r2.text());
+      if (!_guardadoOk) {
+        const _err2 = await _r2.text();
+        // Plan C — EL CASO REAL AL REGENERAR/ADAPTAR: el código ya existe
+        // (409 duplicate key). No es un fallo: el CV está guardado, solo hay
+        // que ACTUALIZAR esa fila con la versión nueva. El upsert previo
+        // falla con 401 cuando la RLS no permite UPDATE vía merge-duplicates,
+        // así que aquí se hace un PATCH explícito sobre el código.
+        if (_r2.status === 409 || /duplicate key/i.test(_err2)) {
+          console.log('El código ya existe — actualizando el CV guardado en vez de insertarlo');
+          const _r3 = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados?codigo=eq.${encodeURIComponent(codigo)}`, {
+            method: 'PATCH',
+            headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'},
+            body: JSON.stringify({cv_texto:cv, cv_data:cvData, lang:LANG})
+          });
+          _guardadoOk = _r3.ok;
+          if (!_guardadoOk) {
+            const _err3 = await _r3.text();
+            console.error('❌ No se pudo actualizar el CV guardado:', _r3.status, _err3);
+            // La fila EXISTE aunque no podamos actualizarla: el código sigue
+            // sirviendo para recuperar (traerá la versión anterior). Es mejor
+            // que declarar el código inválido y alarmar al usuario.
+            if (_r3.status === 401 || _r3.status === 403) {
+              console.warn('RLS impide UPDATE en cvs_guardados — el código recupera la versión anterior del CV');
+              _guardadoOk = true;
+              _rlsSinUpdate = true;
+            }
+          }
+        } else {
+          console.error('❌ El CV no se guardó:', _r2.status, _err2);
+        }
+      }
     }
     if (!_guardadoOk) {
       // El código quedó en sessionStorage pero NO recupera nada: marcarlo
@@ -2837,12 +2884,23 @@ function mostrarResultado(cv) {
   cvGenerado = cv;
   const cvData = construirCVData();
 
-  // Cambiar layout: ocultar chat, mostrar editor a pantalla completa
-  document.querySelector('.chat-col').style.display = 'none';
-  document.querySelector('.preview-col').style.display = 'none';
-  document.querySelector('.main-layout').style.display = 'block';
-  document.querySelector('.main-layout').style.overflow = 'auto';
-  document.querySelector('.main-layout').style.background = '#f0f2f5';
+  // Cambiar layout: ocultar chat, mostrar editor a pantalla completa.
+  // BUG HISTÓRICO: al adaptar a una vacante (o traducir) el usuario YA está
+  // en la pantalla de resultado — .chat-col y .preview-col fueron
+  // reemplazadas y querySelector devuelve null, así que null.style reventaba
+  // con "Cannot read properties of null (reading 'style')" DESPUÉS de que la
+  // IA ya había hecho su trabajo: el CV adaptado se perdía y el usuario veía
+  // "No se pudo adaptar". Ahora cada elemento se comprueba antes de tocarlo.
+  const _chatCol = document.querySelector('.chat-col');
+  if (_chatCol) _chatCol.style.display = 'none';
+  const _prevCol = document.querySelector('.preview-col');
+  if (_prevCol) _prevCol.style.display = 'none';
+  const _mainLayout = document.querySelector('.main-layout');
+  if (_mainLayout) {
+    _mainLayout.style.display = 'block';
+    _mainLayout.style.overflow = 'auto';
+    _mainLayout.style.background = '#f0f2f5';
+  }
 
   const nombre = cvData.nombre || datos.nombre || '';
   const puesto = cvData.puesto || datos.puesto || '';
@@ -2857,7 +2915,10 @@ function mostrarResultado(cv) {
   let idiomas = cvData.idiomas || [];
   const logros = cvData.logros || [];
 
-  document.querySelector('.main-layout').innerHTML = `
+  // Si el contenedor no existe, avisar en vez de reventar en silencio
+  const _ml = document.querySelector('.main-layout');
+  if (!_ml) { console.error('No se encontró .main-layout: el resultado no puede mostrarse'); alert(LANG==='en'?'Could not display the result. Please reload the page.':'No se pudo mostrar el resultado. Recarga la página.'); return; }
+  _ml.innerHTML = `
   <div style="max-width:900px;margin:0 auto;padding:24px 16px">
 
     <!-- HEADER EDITOR -->
@@ -3126,7 +3187,10 @@ function agregarEducacion() {}
 
 async function regenerarCV() {
   if (!confirm((LANG==='en' ? 'Regenerate with AI? Manual edits will be lost.' : '¿Regenerar el CV con IA? Se perderán los cambios manuales.'))) return;
-  document.querySelector('.main-layout').innerHTML = `
+  // Si el contenedor no existe, avisar en vez de reventar en silencio
+  const _ml = document.querySelector('.main-layout');
+  if (!_ml) { console.error('No se encontró .main-layout: el resultado no puede mostrarse'); alert(LANG==='en'?'Could not display the result. Please reload the page.':'No se pudo mostrar el resultado. Recarga la página.'); return; }
+  _ml.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:20px">
       <div style="width:48px;height:48px;border:4px solid #1a1a1a;border-top-color:#FFD000;border-radius:50%;animation:spin 1s linear infinite"></div>
       <div style="font-family:Inter,sans-serif;color:#888;font-size:0.9rem">${LANG==='en'?'Regenerating with AI...':'Regenerando con IA...'}</div>

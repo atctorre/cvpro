@@ -184,6 +184,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 .msg-edit-btn{background:none;border:1px solid #2e2e2e;color:#9a9a9a;font-size:0.72rem;cursor:pointer;padding:7px 13px;border-radius:50px;transition:all 0.2s;margin-top:6px;font-family:'Inter',sans-serif;min-height:34px;display:inline-flex;align-items:center;gap:4px}
 .msg-edit-btn:hover{color:#FFD000;border-color:#FFD000;background:rgba(255,208,0,.08)}
 .msg-edit-btn:active{transform:scale(.96)}
+.qopt-saltar{background:transparent;border:1px dashed #3a3a3a;color:#888}
+.qopt-ayuda{background:rgba(255,208,0,.08);border:1px solid rgba(255,208,0,.35);color:#FFD000}
+.qopt-ayuda:hover{background:rgba(255,208,0,.16);border-color:#FFD000}
+.qopt-saltar:hover{border-color:#666;color:#bbb;background:rgba(255,255,255,.03)}
 .btn-cancelar-edicion{background:none;border:none;color:#888;font-size:0.72rem;cursor:pointer;text-decoration:underline;padding:4px 6px;font-family:'Inter',sans-serif}
 .btn-cancelar-edicion:hover{color:#fff}
 @media(pointer:coarse){.btn-cancelar-edicion{padding:10px 8px}}
@@ -634,6 +638,7 @@ const PASOS = [
   },
   {
     key: 'exp2',
+    opcional: true,   // el usuario puede no tener esto: se puede saltar
     preg: () => LANG==='en'
       ? `Do you have a previous job you'd like to include? 💼\n\nIf not, type "no".`
       : `¿Tienes un trabajo anterior que quieras incluir? 💼\n\nSi no, escribe "no".`,
@@ -642,6 +647,7 @@ const PASOS = [
   },
   {
     key: 'logros2',
+    opcional: true,   // el usuario puede no tener esto: se puede saltar
     preg: (d) => {
       if (d.exp2?.toLowerCase().match(/^no$|solo|no tengo|ninguno|^none$/))
         return LANG==='en'
@@ -686,6 +692,7 @@ const PASOS = [
   },
   {
     key: 'info_extra',
+    opcional: true,   // el usuario puede no tener esto: se puede saltar
     preg: (d) => LANG==='en'
       ? `Last question, ${d.nombre.split(' ')[0]}! 🎉\n\nAnything else for your resume?\n• Availability (immediate, 2 weeks...)\n• Willing to relocate or travel\n• Driver's license / own vehicle\n• LinkedIn or portfolio\n• Awards, volunteering, references\n\nIf nothing else, type "done".`
       : `¡Última pregunta, ${d.nombre.split(' ')[0]}! 🎉\n\n¿Algo más que quieras incluir en tu CV?\n• Disponibilidad (inmediata, 2 semanas...)\n• Movilidad o disposición a viajar\n• Licencia de conducir / vehículo propio\n• LinkedIn o portafolio\n• Premios, voluntariado, referencias\n\nSi no tienes nada más, escribe "nada más".`,
@@ -1112,6 +1119,7 @@ function renderAyuda(key) {
 
 // ── EDITAR RESPUESTA ──
 let modoEdicion = null;
+let _insistio = false;   // ya se pidió más detalle en esta pregunta: no insistir dos veces
 
 function editarRespuesta(pasoIdx) {
   const p = PASOS[pasoIdx];
@@ -1135,6 +1143,87 @@ function editarRespuesta(pasoIdx) {
   const _burbujas = document.querySelectorAll('.msg.user .msg-bubble');
   if (_burbujas[pasoIdx]) _burbujas[pasoIdx].classList.add('editando-ahora');
   window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+
+// ── AYUDA "¿NO SABES QUÉ PONER?" ──
+// Convierte la página en blanco en una plantilla, usando el puesto que el
+// candidato ya declaró. Los ejemplos son genéricos a propósito: el usuario
+// los adapta con SUS datos — la IA nunca inventa por él.
+function ayudaQuePoner(key) {
+  const puesto = (datos.puesto || '').trim() || (LANG === 'en' ? 'your role' : 'tu puesto');
+  const en = LANG === 'en';
+  const G = {
+    resumen_personal: en
+      ? [`${puesto} with X years of experience in [sector]. I handle [main tasks] and I'm good at [strength].`,
+         `I've worked as ${puesto} since [year]. My day to day is [tasks] and what I like most is [area].`,
+         `I have experience in [area] and training in [studies]. I'm looking for a role where I can [goal].`]
+      : [`${puesto} con X años de experiencia en [sector]. Manejo [tareas principales] y se me da bien [fortaleza].`,
+         `He trabajado como ${puesto} desde [año]. Mi día a día es [tareas] y lo que más me gusta es [área].`,
+         `Tengo experiencia en [área] y formación en [estudios]. Busco un puesto donde pueda [objetivo].`],
+    exp1: en
+      ? [`[Company] — ${puesto} — [year] to present`,
+         `[Company], [city] — ${puesto} — [start year] to [end year]`]
+      : [`[Empresa] — ${puesto} — [año] a la fecha`,
+         `[Empresa], [ciudad] — ${puesto} — [año inicio] a [año fin]`],
+    logros1: en
+      ? [`I handle [what] for [how many people/clients] every [period].`,
+         `I improved [something] by doing [action].`,
+         `I coordinate [team/area] and I'm responsible for [outcome].`]
+      : [`Manejo [qué] para [cuántas personas/clientes] cada [periodo].`,
+         `Mejoré [algo] haciendo [acción].`,
+         `Coordino [equipo/área] y soy responsable de [resultado].`]
+  };
+  G.exp2 = G.exp1; G.logros2 = G.logros1;
+  const ejemplos = G[key] || G.resumen_personal;
+  renderMsgAI(
+    (en ? '💡 Some ways to start — pick one and replace what\'s in brackets with your real information:'
+        : '💡 Algunas formas de empezar — toma una y cambia lo que está entre corchetes por tus datos reales:')
+    + '\n\n' + ejemplos.map(e => '• ' + e).join('\n'),
+    ejemplos.map(e => (en ? 'Use this: ' : 'Usar: ') + e.substring(0, 28) + '…')
+  );
+  // Al tocar un ejemplo, se copia al campo para que lo edite
+  setTimeout(() => {
+    document.querySelectorAll('.quick-opts .qopt').forEach((b, i) => {
+      if (b.textContent.startsWith(en ? 'Use this:' : 'Usar:') && ejemplos[i]) {
+        b.onclick = () => {
+          const inp = document.getElementById('chatInput');
+          if (inp) { inp.value = ejemplos[i]; inp.focus(); autoResize(inp); }
+        };
+      }
+    });
+  }, 100);
+  if (typeof ev === 'function') ev('ayuda_que_poner', {paso: key, lang: LANG});
+}
+
+// ── SALTAR UNA PREGUNTA OPCIONAL ──
+// Avanza sin guardar nada en ese campo: el CV se construye con lo que sí hay.
+function saltarPregunta() {
+  if (typeof enviando !== 'undefined' && enviando) return;
+  const p = PASOS[paso];
+  if (!p || !p.opcional) return;
+  datos[p.key] = '';
+  renderMsgUser(LANG==='en' ? '⏭️ Skipped' : '⏭️ Sin datos', paso);
+  paso++;
+  actualizarUI();
+  guardarEstado();
+  if (typeof ev === 'function') ev('pregunta_saltada', {paso: p.key, lang: LANG});
+
+  // Lanzar la siguiente pregunta (misma lógica que enviar(), sin la IA)
+  setTimeout(async () => {
+    try {
+      if (paso < PASOS.length) {
+        await mostrarTyping(400);
+        const next = PASOS[paso];
+        const preg = typeof next.preg === 'function' ? next.preg(datos) : next.preg;
+        renderMsgAI(preg, resolver(next.opts) || [], true, paso, next.chips || null);
+        setHint(resolver(next.hint));
+        const inp = document.getElementById('chatInput');
+        if (inp) inp.placeholder = resolver(next.placeholder) || (LANG === 'en' ? 'Type here...' : 'Escribe aquí...');
+      } else {
+        await mostrarGenerando();
+      }
+    } catch (e) { console.error('Fallo al saltar la pregunta:', e); }
+  }, 350);
 }
 
 function cancelarEdicion() {
@@ -1342,6 +1431,19 @@ function renderMsg(tipo, texto, opts=[], animar=true, pasoIdx=null, chips=null) 
 
   if (tipo === 'ai') {
     let optsHtml = opts.length ? `<div class="quick-opts">${opts.map(o=>`<button class="qopt" onclick="selOpt(this.textContent)">${o}</button>`).join('')}</div>` : '';
+    // Preguntas que el usuario puede legítimamente no tener (2º empleo, datos
+    // extra). Sin salida, tenía que inventar algo o abandonar en mitad del
+    // flujo. Ahora puede pasar de largo sin ensuciar su CV.
+    if (pasoIdx === null && typeof paso !== 'undefined' && PASOS[paso] && PASOS[paso].opcional) {
+      optsHtml += `<div class="quick-opts" style="margin-top:6px"><button class="qopt qopt-saltar" onclick="saltarPregunta()">${LANG==='en'?'⏭️ I don\'t have this — skip':'⏭️ No tengo esto — saltar'}</button></div>`;
+    }
+    // Las preguntas de texto libre (experiencia, logros, resumen) son las que
+    // más cuestan: página en blanco. Este botón da un punto de partida con
+    // ejemplos del propio puesto del candidato.
+    const _DIFICILES = ['resumen_personal','exp1','logros1','exp2','logros2'];
+    if (pasoIdx === null && typeof paso !== 'undefined' && PASOS[paso] && _DIFICILES.includes(PASOS[paso].key)) {
+      optsHtml += `<div class="quick-opts" style="margin-top:6px"><button class="qopt qopt-ayuda" onclick="ayudaQuePoner('${PASOS[paso].key}')">${LANG==='en'?'💡 Not sure what to write?':'💡 ¿No sabes qué poner?'}</button></div>`;
+    }
     let chipsHtml = '';
     if (chips) {
       const chipsId = 'chips_' + Date.now();
@@ -1492,6 +1594,28 @@ async function enviar() {
       : `✅ Respuesta actualizada. Continúa desde donde estabas 👍`);
     return;
   }
+
+  // ── VALIDACIÓN AMABLE ANTES DE GASTAR LA LLAMADA A LA IA ──
+  // Una respuesta de dos palabras a "cuéntame tu experiencia" produce un CV
+  // pobre, y el usuario culpa al producto. Se pide más detalle UNA vez; si
+  // insiste, se respeta su decisión y se continúa.
+  const _pActual = PASOS[paso];
+  if (_pActual && !_pActual.opcional && paso < PASOS.length) {
+    const _MIN = {resumen_personal: 40, exp1: 30, logros1: 25, exp2: 30, logros2: 25, estudios: 15, habilidades_tecnicas: 15};
+    const _min = _MIN[_pActual.key];
+    if (_min && texto.trim().length < _min && !_insistio) {
+      _insistio = true;
+      renderMsgUser(texto, paso);
+      input.value = '';
+      autoResize(input);
+      setTimeout(() => renderMsgAI(LANG === 'en'
+        ? `That's a bit short 🙂 The more you tell me, the better your resume turns out. Could you add a couple more details? (Or send it again as is and we'll continue.)`
+        : `Eso quedó un poco corto 🙂 Mientras más me cuentes, mejor queda tu CV. ¿Puedes agregar un par de detalles más? (O envíalo de nuevo tal cual y seguimos.)`), 350);
+      if (typeof ev === 'function') ev('respuesta_corta', {paso: _pActual.key, largo: texto.trim().length});
+      return;
+    }
+  }
+  _insistio = false;   // se reinicia para la siguiente pregunta
 
   enviando = true;
   input.value = '';

@@ -3794,13 +3794,34 @@ function construirCVData() {
   if (idiomasM) idiomasTexto = idiomasM[1];
   else idiomasTexto = datos.idiomas_nivel || 'Español nativo';
 
-  let idiomas = idiomasTexto.split(/[,;]/).map(id => {
-    const clean = id.trim().replace(/^[\-•]\s*/, '');
-    const partes = clean.split(/\s+/);
-    const nombre = partes[0] || '';
-    const nivel = partes.slice(1).join(' ') || 'Nativo';
-    return { nombre, nivel };
-  }).filter(i => i.nombre && i.nombre.length > 1 && !i.nombre.match(/^[\-•]/));
+  // ── PARSEO DE IDIOMAS ──
+  // BUG HISTÓRICO: se separaba solo por comas. Si el usuario escribía
+  // "Español (nativo) e Inglés (certificado)" quedaba UN idioma llamado
+  // "Español" con nivel "(nativo) e Inglés (certificado)" — y en el CV
+  // salía el texto roto con paréntesis sueltos. Ahora se separa también
+  // por " e ", " y ", " / ", " | " y saltos de línea, y el nivel se limpia
+  // de paréntesis y separadores sobrantes.
+  let idiomas = idiomasTexto
+    .split(/[,;\n\/|]|\s+[ye]\s+|\s+and\s+/i)
+    .map(id => {
+      let clean = id.trim().replace(/^[\-•·]\s*/, '').replace(/[.;]+$/, '');
+      if (!clean) return null;
+      // "Español (nativo)" · "Inglés - avanzado" · "Inglés: B2" · "Inglés nativo"
+      let nombre = '', nivel = '';
+      const conParentesis = clean.match(/^([^(]+)\(([^)]*)\)?\s*$/);
+      const conSeparador  = clean.match(/^([^:—–\-]+)[:—–\-]\s*(.+)$/);
+      if (conParentesis) { nombre = conParentesis[1]; nivel = conParentesis[2]; }
+      else if (conSeparador) { nombre = conSeparador[1]; nivel = conSeparador[2]; }
+      else {
+        const partes = clean.split(/\s+/);
+        nombre = partes[0] || '';
+        nivel = partes.slice(1).join(' ');
+      }
+      nombre = nombre.trim().replace(/[()]/g, '');
+      nivel  = (nivel || 'Nativo').trim().replace(/[()]/g, '').replace(/^[·\-–—:\s]+|[·\-–—:\s]+$/g, '');
+      return { nombre, nivel: nivel || 'Nativo' };
+    })
+    .filter(i => i && i.nombre && i.nombre.length > 1 && !/^[\-•·]/.test(i.nombre));
 
   // ── LOGROS / CERTIFICACIONES ──
   const logros = [];

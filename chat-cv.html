@@ -2072,7 +2072,13 @@ async function abrirModalVacante() {
 }
 
 async function adaptarAVacante() {
-  const texto = document.getElementById('vacanteTexto').value.trim();
+  // Defensa en profundidad: el muro real está en abrirModalVacante (la puerta),
+  // pero esta función también verifica por su cuenta. Así, llamarla desde la
+  // consola del navegador tampoco entrega nada sin pago.
+  if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => abrirModalVacante()); return; }
+  const _campoVac = document.getElementById('vacanteTexto');
+  if (!_campoVac) { console.warn('Modal de vacante no abierto'); return; }
+  const texto = _campoVac.value.trim();
   if (/^https?:\/\/\S+$/i.test(texto) || (texto.includes('http') && texto.length < 120)) {
     alert(LANG==='en'
       ? 'Paste the job posting TEXT, not the link 🙏 Open the page, select the description (title, requirements, duties), copy and paste it here.'

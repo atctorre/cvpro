@@ -80,6 +80,10 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .btn-volver{background:transparent;color:#fff;font-weight:600;padding:12px 28px;border:2px solid #444;border-radius:50px;cursor:pointer;font-size:0.9rem;font-family:'Montserrat',sans-serif}
 .btn-volver:hover{border-color:#FFD000;color:#FFD000}
 #cvFinal{background:#fff}
+/* Un encabezado de sección nunca debe quedar solo al final de una página:
+   se mantiene junto a las primeras líneas de su contenido. */
+#cvFinal .st{break-after:avoid;page-break-after:avoid;break-inside:avoid}
+#cvFinal .jb,#cvFinal .edu-item,#cvFinal .ct-item{break-inside:avoid;page-break-inside:avoid}
 /* ── IDIOMAS: TAMAÑO Y FUENTE UNIFORMES ──
    Solo 2 de las 20 plantillas definían .li (idiomas). En las otras 18 el
    bloque heredaba el tamaño del contenedor y salía notablemente más grande
@@ -2202,7 +2206,10 @@ async function descargarPDF() {
     },
     // 'letter' (215.9 x 279.4 mm) para EE.UU., 'a4' (210 x 297 mm) para el resto
     jsPDF:{unit:'mm',format:(LANG === 'en' ? 'letter' : 'a4'),orientation:'portrait',compress:true},
-    pagebreak:{mode:['css','legacy'], avoid:['.jb','.sk','.li','.edu-item','.bl']}
+    // '.st' (encabezados de sección) faltaba en la lista: por eso
+    // "CERTIFICACIONES" quedaba solo al final de la página y su contenido
+    // salía partido a media línea — el cliente perdía información real.
+    pagebreak:{mode:['css','legacy'], avoid:['.jb','.sk','.li','.edu-item','.bl','.st','.ct-item','.lg']}
   }).from(el).save()
     .then(() => {
       window.scrollTo(_sx, _sy);

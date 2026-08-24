@@ -1699,6 +1699,11 @@ REGLAS (estándar de reclutador ejecutivo élite):
 5h. SIN MAYÚSCULAS SOSTENIDAS en el cuerpo del texto ni en el nombre (María López, no MARÍA LÓPEZ): dificultan la lectura. Los encabezados cortos de sección sí pueden ir en mayúsculas.
 5i. EL CV TIENE UN SOLO TRABAJO: conseguir la entrevista. Incluye lo relevante para el puesto objetivo y descarta lo que no aporta. Deja material para que el candidato tenga algo que contar en la entrevista.
 5j. SECCIONES ADICIONALES cuando aporten valor: Idiomas (con nivel), Certificaciones, Voluntariado, Proyectos. Inclúyelas solo si el candidato las declaró.
+5k. PUESTOS SIMULTÁNEOS EN LA MISMA EMPRESA: si varias responsabilidades ocurren a la vez en el mismo lugar y período, NO las listes como empleos separados — un reclutador lee tres cargos solapados como tres trabajos distintos y desconfía. Agrúpalos bajo el cargo principal y describe las demás funciones en sus bullets (ej.: un médico que además coordina turnos y da docencia es UN puesto con tres responsabilidades, no tres puestos). Solo se listan por separado si son empleadores distintos o períodos distintos.
+5l. FECHAS SIN SOLAPES INJUSTIFICADOS: revisa que los períodos tengan sentido. Dos puestos que se solapan solo se justifican si son empleadores diferentes; en el mismo empleador, unifícalos.
+5m. NO LISTES EL BACHILLERATO ni la educación secundaria si el candidato tiene título universitario o superior: ocupa espacio sin aportar y delata un CV sin criterio. Solo aparece si es su credencial más alta.
+5n. TELÉFONO CON PREFIJO INTERNACIONAL siempre, también en el CV en español: "+503 7601-2010", no "7601-2010". Un reclutador de otro país no puede marcar un número sin prefijo. Usa el prefijo del país que el candidato declaró (El Salvador +503, México +52, Colombia +57, Guatemala +502, Honduras +504, Costa Rica +506, Perú +51, Chile +56, Argentina +54, Ecuador +593, R. Dominicana +1809, Panamá +507, Bolivia +591, Paraguay +595, Uruguay +598, Venezuela +58, Nicaragua +505, España +34). Si ya trae prefijo, respétalo.
+5o. PERFIL PROFESIONAL BREVE: de 4 a 6 líneas (60-90 palabras). Un perfil de 180 palabras no se lee: el reclutador salta directo a la experiencia. Condensa lo esencial — quién es, su especialidad, su alcance y su diferencial — y deja el detalle para los bullets.
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
 7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis. Si un dato no existe (período, ciudad...), OMÍTELO — jamás escribas "no especificado", "not specified" ni "N/A".
 
@@ -2465,6 +2470,10 @@ ${enIngles?'- PHONE: prepend the international dialing code of the candidate\'s 
 - FECHAS con formato uniforme en todas las entradas. Si el original da mes y año, consérvalos.
 - SIN MAYÚSCULAS SOSTENIDAS en el nombre ni en el cuerpo (los CVs suelen traer el nombre en mayúsculas: conviértelo a formato normal). Los encabezados cortos de sección sí pueden ir en mayúsculas.
 - EL CV TIENE UN SOLO TRABAJO: conseguir la entrevista. Conserva lo relevante y descarta el relleno.
+- PUESTOS SIMULTÁNEOS EN LA MISMA EMPRESA: si el original lista varias responsabilidades a la vez en el mismo lugar y período, agrúpalas bajo el cargo principal con sus funciones en bullets. Tres cargos solapados en el mismo hospital se leen como tres empleos y generan desconfianza. Solo se separan si son empleadores o períodos distintos.
+- NO LISTES EL BACHILLERATO ni la secundaria si hay título universitario o superior.
+- TELÉFONO CON PREFIJO INTERNACIONAL también en español ("+503 7601-2010"). Si el original no lo trae, añádelo según el país declarado.
+- PERFIL de 4 a 6 líneas (60-90 palabras). Si el original trae un perfil largo, condénsalo: nadie lee 180 palabras al inicio de un CV.
 FORMATO — copia esta estructura EXACTA (headers, líneas ─── y bullets •):
 NOMBRE EN MAYÚSCULAS
 Puesto | Ciudad, País | email | teléfono
@@ -2854,6 +2863,29 @@ function validarContacto(d) {
   if (!d.telefono) {
     const te = fuente.match(/(?:\+\d{1,3}[\s-]?)?(?:\(\d{1,4}\)[\s-]?)?\d[\d\s-]{6,14}\d/);
     if (te && te[0].replace(/\D/g,'').length >= 8) d.telefono = te[0].trim();
+  }
+
+  // ── PREFIJO INTERNACIONAL EN EL TELÉFONO ──
+  // Un reclutador de otro país no puede marcar "7601-2010". La regla está en
+  // el prompt, pero no puede depender de que la IA la obedezca: aquí se
+  // aplica en código, que sí es determinista. Se deduce del país declarado.
+  if (d.telefono && !/^\+/.test(d.telefono.trim())) {
+    const PREF = {
+      'el salvador':'+503','salvador':'+503','méxico':'+52','mexico':'+52','colombia':'+57',
+      'guatemala':'+502','honduras':'+504','costa rica':'+506','nicaragua':'+505','panamá':'+507',
+      'panama':'+507','perú':'+51','peru':'+51','chile':'+56','argentina':'+54','ecuador':'+593',
+      'bolivia':'+591','paraguay':'+595','uruguay':'+598','venezuela':'+58','españa':'+34',
+      'espana':'+34','república dominicana':'+1','republica dominicana':'+1','estados unidos':'+1',
+      'usa':'+1','united states':'+1','puerto rico':'+1','cuba':'+53'
+    };
+    const paisTxt = String(d.pais || datos.pais || '').toLowerCase().trim();
+    let pref = '';
+    for (const k in PREF) { if (paisTxt.includes(k)) { pref = PREF[k]; break; } }
+    // Solo se antepone si el número no lo trae ya de forma implícita
+    const soloDigitos = d.telefono.replace(/\D/g, '');
+    if (pref && soloDigitos.length >= 7 && soloDigitos.length <= 11) {
+      d.telefono = pref + ' ' + d.telefono.trim();
+    }
   }
   if (!d.pais) {
     const pa = fuente.match(/\b(El Salvador|Guatemala|Honduras|Nicaragua|Costa Rica|Panamá|México|Colombia|Perú|Chile|Argentina|Ecuador|Bolivia|Uruguay|Paraguay|Venezuela|República Dominicana|España|United States|USA)\b/i);
@@ -3703,6 +3735,19 @@ function construirCVData() {
     });
   }
   educacion = sinDuplicados(educacion.filter(e => e.titulo && !esRuido(e.titulo)), 'titulo');
+
+  // ── BACHILLERATO FUERA SI HAY TÍTULO SUPERIOR ──
+  // Listar el bachillerato junto a una especialidad médica ocupa espacio sin
+  // aportar y delata un CV sin criterio. Se retira SOLO si existe una
+  // credencial más alta; si es lo máximo que tiene el candidato, se conserva.
+  const _ES_SECUNDARIA = /\b(bachillerato|bachiller|secundaria|preparatoria|high\s*school|educaci[óo]n\s+media|colegio)\b/i;
+  const _ES_SUPERIOR = /\b(licenciatura|licenciad|ingenier|doctorad|doctor|m[áa]ster|maestr[íi]a|mba|especialidad|especialista|posgrado|postgrado|t[ée]cnico\s+superior|universidad|universitari|grado|bachelor|master|phd|degree)\b/i;
+  const _hayTituloSuperior = educacion.some(e => _ES_SUPERIOR.test(e.titulo || ''));
+  if (_hayTituloSuperior) {
+    const _antes = educacion.length;
+    educacion = educacion.filter(e => !_ES_SECUNDARIA.test(e.titulo || '') || _ES_SUPERIOR.test(e.titulo || ''));
+    if (educacion.length < _antes) console.log('Bachillerato omitido: el candidato tiene título superior');
+  }
 
   // ── HABILIDADES — limpiar y extraer correctamente ──
   let habsTexto = '';

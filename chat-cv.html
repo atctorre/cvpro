@@ -91,9 +91,37 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 
 /* MOBILE: ocultar preview */
 @media(max-width:768px){
+  /* La vista previa se oculta del layout lateral, pero NO se pierde: el
+     botón flotante 'Ver mi CV' la abre a pantalla completa. Antes el usuario
+     móvil respondía las 14 preguntas sin ver nunca su CV tomando forma. */
   .preview-col{display:none}
   .chat-col{width:100%;border:none}
+  /* Abierta como panel deslizante desde abajo */
+  .preview-col.movil-abierto{
+    display:flex;position:fixed;inset:0;z-index:900;width:100%;
+    animation:subirPanel .25s cubic-bezier(.22,1,.36,1);
+    padding-bottom:env(safe-area-inset-bottom,0)
+  }
+  .preview-cerrar{
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    position:sticky;top:0;z-index:2;background:#f5f5f5;border:none;
+    border-bottom:1px solid #e2e2e2;width:100%;padding:13px;
+    font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:700;
+    color:#0d1b2a;cursor:pointer
+  }
+  .btn-ver-cv{
+    position:fixed;right:14px;z-index:850;
+    bottom:calc(84px + env(safe-area-inset-bottom,0));
+    background:#161616;border:1.5px solid #FFD000;color:#FFD000;
+    border-radius:50px;padding:9px 15px;font-family:'Inter',sans-serif;
+    font-size:0.78rem;font-weight:700;cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.45);display:flex;align-items:center;gap:6px
+  }
+  .btn-ver-cv:active{transform:scale(.96)}
 }
+@keyframes subirPanel{from{transform:translateY(100%)}to{transform:translateY(0)}}
+/* En escritorio la vista previa ya está siempre visible al lado */
+@media(min-width:769px){.btn-ver-cv,.preview-cerrar{display:none}}
 
 /* MENSAJES */
 .msg{display:flex;gap:10px;animation:slideUp 0.35s ease both}
@@ -171,7 +199,10 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
   .chat-wrap{padding:0 10px}
   .msg-bubble{max-width:90%;font-size:0.84rem;padding:11px 14px}
   .chat-input-box{padding:6px 6px 6px 14px}
-  .chat-input{font-size:0.85rem}
+  /* 16px EXACTOS: iOS Safari hace zoom automático en cualquier campo con
+     fuente menor a 16px. Con 0.85rem (13.6px) la pantalla saltaba en CADA
+     una de las 14 preguntas. Este es el único valor que lo evita. */
+  .chat-input{font-size:16px}
   .quick-opts{gap:6px}
   .qopt{font-size:0.74rem;padding:5px 10px}
   .ctx-help{max-width:95%}
@@ -288,6 +319,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 input, textarea, select, .chat-input, #soporteInput { font-size: 16px !important; }
 @media (min-width: 768px) {
   input, textarea, select, .chat-input, #soporteInput { font-size: 15px !important; }
+}
+/* En móvil TODOS los campos van a 16px mínimo: por debajo de ese valor
+   iOS hace zoom al enfocar y descoloca la pantalla. */
+@media (max-width: 767px) {
+  input, textarea, select, .chat-input, #soporteInput,
+  [contenteditable="true"] { font-size: 16px !important; }
 }
 
 /* Notch del iPhone: respetar zonas seguras */
@@ -430,7 +467,10 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   </div>
 
   <!-- COLUMNA PREVIEW -->
+  <button class="btn-ver-cv" id="btnVerCV" onclick="togglePreviewMovil()" aria-label="Ver mi CV">👁️ <span id="btnVerCVTxt">Ver mi CV</span></button>
+
   <div class="preview-col">
+    <button class="preview-cerrar" onclick="togglePreviewMovil()" id="btnCerrarPreview">✕ <span id="btnCerrarPreviewTxt">Volver al chat</span></button>
     <div class="preview-header">
       <span class="preview-title" id="previewTitle">Vista previa de tu CV</span>
       <span class="preview-badge" id="previewBadge">En vivo</span>
@@ -666,6 +706,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ── VISTA PREVIA EN TIEMPO REAL ──
 function actualizarPreview() {
+  try { actualizarBtnVerCV(); } catch(e) {}
   const el = document.getElementById('cvPreviewLive');
   if (!el) return;
 
@@ -2937,6 +2978,9 @@ function mostrarResultado(cv) {
   // con "Cannot read properties of null (reading 'style')" DESPUÉS de que la
   // IA ya había hecho su trabajo: el CV adaptado se perdía y el usuario veía
   // "No se pudo adaptar". Ahora cada elemento se comprueba antes de tocarlo.
+  // El botón de vista previa pertenece al chat: fuera en el resultado
+  const _bv = document.getElementById('btnVerCV');
+  if (_bv) _bv.style.display = 'none';
   const _chatCol = document.querySelector('.chat-col');
   if (_chatCol) _chatCol.style.display = 'none';
   const _prevCol = document.querySelector('.preview-col');
@@ -3903,6 +3947,36 @@ function avisarGuardadoSinCodigo() {
       ? `💾 Your resume is saved securely. When you complete your purchase you'll receive your **recovery code** on screen and by email — with it you can come back anytime to re-download or edit without starting over.`
       : `💾 Tu CV quedó guardado de forma segura. Al completar tu compra recibirás tu **código de recuperación** en pantalla y por email — con él puedes volver cuando quieras a descargar o editar sin empezar de cero.`);
   }, 1200);
+}
+
+// ── VISTA PREVIA EN MÓVIL ──
+// En el teléfono el panel lateral no cabe, pero esconderlo dejaba al usuario
+// respondiendo 14 preguntas sin ver su CV. Aquí se abre a pantalla completa.
+function togglePreviewMovil() {
+  const col = document.querySelector('.preview-col');
+  const btn = document.getElementById('btnVerCV');
+  if (!col) return;
+  const abierto = col.classList.toggle('movil-abierto');
+  if (btn) btn.style.display = abierto ? 'none' : 'flex';
+  if (abierto) {
+    try { actualizarPreview(); } catch(e) {}
+    if (typeof ev === 'function') ev('preview_movil_abierto');
+  }
+  document.body.style.overflow = abierto ? 'hidden' : '';
+}
+
+// El botón solo aparece cuando ya hay algo que mostrar (tras la 1ª respuesta)
+function actualizarBtnVerCV() {
+  const btn = document.getElementById('btnVerCV');
+  if (!btn) return;
+  const hayDatos = !!(typeof datos !== 'undefined' && datos && (datos.nombre || datos.puesto));
+  const enChat = !!document.querySelector('.chat-col');
+  const abierto = document.querySelector('.preview-col.movil-abierto');
+  btn.style.display = (hayDatos && enChat && !abierto) ? 'flex' : 'none';
+  const t = document.getElementById('btnVerCVTxt');
+  if (t) t.textContent = LANG === 'en' ? 'View my resume' : 'Ver mi CV';
+  const c2 = document.getElementById('btnCerrarPreviewTxt');
+  if (c2) c2.textContent = LANG === 'en' ? 'Back to chat' : 'Volver al chat';
 }
 
 // ¿El código actual quedó realmente guardado en la base?

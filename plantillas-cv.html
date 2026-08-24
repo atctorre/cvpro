@@ -93,10 +93,16 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
    es alineación izquierda, por eso solo aplica al documento en español) */
 #cvFinal.justificado .bl{text-align:justify}
 #cvFinal.justificado [data-edit="resumen"]{display:block;text-align:justify}
-/* Modo edición: marca sutil sobre cada texto tocable, visible solo en pantalla */
+/* Modo edición: marca sutil sobre cada texto tocable, visible solo en pantalla.
+   NO se cambian los colores del texto ni el fondo: pintar un fondo claro
+   dejaba invisible el texto blanco de las cabeceras oscuras. El texto ya era
+   legible sobre su fondo antes de editarlo — se conserva tal cual y solo se
+   marca el campo con el borde amarillo. */
 #cvFinal.editando [data-edit]{cursor:text;transition:outline-color .15s}
 #cvFinal.editando [data-edit]:hover{outline:1.5px dashed #FFD000;outline-offset:2px;border-radius:2px}
-#cvFinal.editando [data-edit]:focus{outline:2px solid #FFD000;outline-offset:2px;border-radius:2px;background:#fffbe6}
+#cvFinal.editando [data-edit]:focus{outline:2.5px solid #FFD000;outline-offset:3px;border-radius:2px;box-shadow:0 0 0 4px rgba(255,208,0,.18)}
+/* Cursor del color del propio texto: visible en cabecera clara u oscura */
+#cvFinal.editando [data-edit]:focus{caret-color:currentColor}
 
 /* ════════════════════
    PLANTILLAS CSS
@@ -668,7 +674,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 
 
 <nav>
-  <a href="formulario-cv.html" class="nav-logo">CV<span>Pro</span></a>
+  <a href="index.html" class="nav-logo">CV<span>Pro</span></a>
   <a class="nav-back" onclick="history.back()">← Volver</a>
 </nav>
 

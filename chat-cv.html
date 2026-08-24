@@ -495,10 +495,10 @@ const PASOS = [
   {
     key: 'email_tel',
     preg: () => LANG==='en'
-      ? `What email and phone number should appear on your resume? 📧`
-      : `¿Qué email y teléfono quieres que aparezcan en tu CV? 📧`,
+      ? `What email and phone number should appear on your resume? 📧\n\nIf you have a LinkedIn profile, paste the link too — recruiters expect it.`
+      : `¿Qué email y teléfono quieres que aparezcan en tu CV? 📧\n\nSi tienes perfil de LinkedIn, pega también el enlace — a los reclutadores les suma mucho.`,
     hint: () => LANG==='en' ? 'Both together, separated by comma' : 'Ambos juntos, separados por coma',
-    placeholder: () => LANG==='en' ? 'E.g.: john@gmail.com, +1 555 0100' : 'Ej: jorge.perez@gmail.com, +503 7555 0123'
+    placeholder: () => LANG==='en' ? 'E.g.: john@gmail.com, +1 555 0100, linkedin.com/in/john' : 'Ej: jorge.perez@gmail.com, +503 7555 0123, linkedin.com/in/jorge'
   },
   {
     key: 'tipo_empresa',
@@ -721,7 +721,7 @@ function actualizarPreview() {
       <div class="cv-prev-sb">
         ${habsArr.length?`
         <div class="cv-prev-st">${LANG==='en'?'Skills':'Habilidades'}</div>
-        ${habsArr.map(h=>`<div class="cv-prev-sk"><div class="cv-prev-sn">${esc(h.nombre)}</div><div class="cv-prev-sb2"><div class="cv-prev-sf" style="width:${h.nivel}%"></div></div></div>`).join('')}
+        ${habsArr.map(h=>`<div class="cv-prev-sk"><div class="cv-prev-sn">${esc(h.nombre)}</div>${LANG==='en'?'':`<div class="cv-prev-sb2"><div class="cv-prev-sf" style="width:${h.nivel}%"></div></div>`}</div>`).join('')}
         `:`<div style="color:#bbb;font-size:0.6rem;text-align:center;padding:10px 0">${LANG==='en'?'Skills will<br>appear here':'Las habilidades<br>aparecerán aquí'}</div>`}
 
         ${idiomasArr.length?`
@@ -989,8 +989,7 @@ const AYUDA = {
   nombre: null,
   puesto: { titulo:'💡 Ejemplos de puestos', ejemplos:['Piloto Comercial de Helicóptero','Desarrollador Full Stack Senior','Contador General','Enfermera Jefe de UCI','Gerente de Ventas Regional','Docente de Matemáticas','Diseñador Gráfico Freelance'] },
   pais: null,
-  email_tel: { titulo:'📋 Formato recomendado', ejemplos:['correo@gmail.com, +503 7777-7777','nombre@empresa.com / +57 300 000 0000'] },
-  linkedin: { titulo:'🔗 Ejemplo', ejemplos:['linkedin.com/in/jorge-perez','Si no tienes escribe: no tengo'] },
+  email_tel: { titulo:'📋 Formato recomendado', ejemplos:['correo@gmail.com, +503 7777-7777','nombre@empresa.com, +57 300 000 0000, linkedin.com/in/tu-nombre'] },
   resumen_personal: { titulo:'💡 Cuéntame con tus palabras — yo lo mejoro', ejemplos:[
     '<strong>Piloto:</strong> Tengo 8 años volando helicópteros en la Fuerza Aérea, participé en misiones en Mali y Haití, cuento con 500 horas de vuelo.',
     '<strong>Vendedor:</strong> Llevo 5 años en ventas, superé cuota el 90% del tiempo, manejo cartera de 80 clientes.',
@@ -1025,8 +1024,7 @@ const AYUDA = {
 // española como respaldo (mejor un ejemplo en español que ninguna ayuda).
 const AYUDA_EN = {
   puesto: { titulo:'💡 Job title examples', ejemplos:['Commercial Helicopter Pilot','Senior Full Stack Developer','General Accountant','ICU Head Nurse','Regional Sales Manager','Mathematics Teacher','Freelance Graphic Designer'] },
-  email_tel: { titulo:'📋 Recommended format', ejemplos:['name@gmail.com, +1 555 0100','name@company.com / +1 555 0199'] },
-  linkedin: { titulo:'🔗 Example', ejemplos:['linkedin.com/in/jorge-perez',"If you don't have one, type: none"] },
+  email_tel: { titulo:'📋 Recommended format', ejemplos:['name@gmail.com, +1 555 0100','name@company.com, +1 555 0199, linkedin.com/in/your-name'] },
   resumen_personal: { titulo:'💡 Tell me in your own words — I\'ll polish it', ejemplos:[
     'I have 8 years flying helicopters, I like training new pilots and I have never had an incident',
     'I worked 5 years in accounting, I handle Excel well and I closed the books every month'] },
@@ -1527,7 +1525,12 @@ async function generarConIA() {
   // Parsear contacto
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
-  const telM = ct.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
+  // LinkedIn se extrae PRIMERO y se retira del texto: una URL con dígitos
+  // podría engañar a la regex del teléfono.
+  const liM = ct.match(/(?:https?:\/\/)?(?:www\.)?((?:linkedin\.com|lnkd\.in)\/[^\s,;|]+)/i);
+  const linkedin = liM ? liM[1].replace(/[),.;]+$/, '') : '';
+  const ctSinLi = liM ? ct.replace(liM[0], ' ') : ct;
+  const telM = ctSinLi.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
   const email = emailM ? emailM[0] : '';
   const telefono = telM ? telM[0].trim() : '';
 
@@ -1608,7 +1611,7 @@ US RESUME STANDARDS (this is a US resume, not a translated Latin American CV):
 Eres el ghostwriter élite de CVs. Transforma los datos de este candidato en un CV ejecutivo impecable que consiga entrevistas. NUNCA copies textualmente — SIEMPRE transforma y mejora.
 
 CANDIDATO: ${datos.nombre} | ${datos.puesto} | ${datos.pais}
-CONTACTO: ${email}${telefono?' | '+telefono:''} | Empresa objetivo: ${datos.tipo_empresa||'sector profesional'}
+CONTACTO: ${email}${telefono?' | '+telefono:''}${linkedin?' | '+linkedin:''} | Empresa objetivo: ${datos.tipo_empresa||'sector profesional'}
 
 PERFIL (transformar): "${limpiar(resumenFinal)}"
 EXPERIENCIA: ${limpiar(datos.exp1)}
@@ -2911,9 +2914,9 @@ function mostrarResultado(cv) {
               ${habilidades.map((h,i) => `
               <div style="margin-bottom:8px">
                 <div contenteditable="true" oninput="autoguardarEditor()" style="font-size:0.72rem;font-weight:600;color:#333;outline:none;cursor:text" onblur="actualizarHabilidad(${i},'nombre',this.textContent)">${esc(h.nombre)}</div>
-                <div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:3px">
+                ${LANG==='en' ? '' : `<div style="height:4px;background:#e0e0e0;border-radius:2px;margin-top:3px">
                   <div style="height:100%;width:${h.nivel}%;background:linear-gradient(90deg,#0d1b2a,#FFD000);border-radius:2px"></div>
-                </div>
+                </div>`}
               </div>`).join('')}
             </div>
             <button onclick="agregarHabilidad()" style="font-size:0.65rem;color:#999;background:none;border:1px dashed #ddd;border-radius:4px;padding:4px 8px;cursor:pointer;margin-top:4px;width:100%">${LANG==='en'?'+ Add skill':'+ Agregar habilidad'}</button>
@@ -3340,7 +3343,12 @@ function ordenarExperiencia(exp) {
 function construirCVData() {
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
-  const telM = ct.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
+  // LinkedIn se extrae PRIMERO y se retira del texto: una URL con dígitos
+  // podría engañar a la regex del teléfono.
+  const liM = ct.match(/(?:https?:\/\/)?(?:www\.)?((?:linkedin\.com|lnkd\.in)\/[^\s,;|]+)/i);
+  const linkedin = liM ? liM[1].replace(/[),.;]+$/, '') : '';
+  const ctSinLi = liM ? ct.replace(liM[0], ' ') : ct;
+  const telM = ctSinLi.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
   const email = emailM ? emailM[0] : '';
   const telefono = telM ? telM[0].trim() : '';
 
@@ -3730,7 +3738,7 @@ function construirCVData() {
     email,
     telefono,
     pais: datos.pais || '',
-    linkedin: datos.linkedin?.toLowerCase().includes('no') ? '' : (datos.linkedin || ''),
+    linkedin: linkedin || (datos.linkedin && !/\bno\b/i.test(datos.linkedin) ? datos.linkedin : ''),
     puesto: datos.puesto || '',
     resumen,
     experiencia: ordenarExperiencia(experiencia),

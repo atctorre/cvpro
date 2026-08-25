@@ -1,0 +1,43 @@
+/* ══════════════════════════════════════════════════════════════
+   CVPro · ejemplos.css
+   Estilos de la página de ejemplo (cabecera, selector, CTA).
+   Compartido por las 140 páginas de /ejemplos/.
+   ══════════════════════════════════════════════════════════════ */
+:root{--yellow:#FFD000;--black:#0a0a0a;--white:#fff;--gray:#111;--gl2:#8a8a8a;--border:#1f1f1f}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--white);line-height:1.6}
+.wrap{max-width:1040px;margin:0 auto;padding:0 5%}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 5%;background:rgba(10,10,10,.97);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;color:var(--yellow);text-decoration:none}
+.logo span{color:var(--white)}
+.nav-cta{background:var(--yellow);color:#000;padding:9px 18px;border-radius:50px;font-weight:700;font-size:0.82rem;text-decoration:none}
+header{padding:40px 0 20px;text-align:center}
+h1{font-family:'Syne',sans-serif;font-size:clamp(1.5rem,4.2vw,2.3rem);font-weight:800;line-height:1.16;margin-bottom:9px}
+.sub{color:var(--gl2);font-size:0.88rem}
+.tpl-bar{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:22px 0 6px}
+.tpl-btn{background:#141414;border:1px solid #262626;color:#9a9a9a;font-size:0.74rem;padding:7px 13px;border-radius:50px;cursor:pointer;font-family:inherit;transition:all .18s;min-height:34px}
+.tpl-btn:hover{border-color:#555;color:#ddd}
+.tpl-btn.activo{background:var(--yellow);border-color:var(--yellow);color:#000;font-weight:700}
+@media(pointer:coarse){.tpl-btn{min-height:40px;padding:9px 14px}}
+.tpl-hint{text-align:center;color:#666;font-size:0.76rem;margin-bottom:14px}
+.cv-stage{background:#1a1a1a;padding:24px 14px;border-radius:20px;margin:8px 0 26px;overflow-x:auto;display:flex;justify-content:center}
+.cv-scale{transform-origin:top center}
+@media(max-width:980px){.cv-scale{transform:scale(.66)}}
+@media(max-width:700px){.cv-scale{transform:scale(.46)}.cv-stage{padding:12px 6px}}
+@media(max-width:430px){.cv-scale{transform:scale(.36)}}
+.claves{background:var(--gray);border:1px solid var(--border);border-radius:16px;padding:24px;margin:26px 0}
+.claves h2{font-family:'Syne',sans-serif;font-size:1.05rem;color:var(--yellow);margin-bottom:14px}
+.claves li{margin-bottom:10px;font-size:0.87rem;color:#ccc;list-style:none;padding-left:22px;position:relative}
+.claves li::before{content:'✓';position:absolute;left:0;color:var(--yellow);font-weight:800}
+.claves b{color:#fff}
+.cta-box{text-align:center;padding:34px 20px;background:linear-gradient(135deg,#151515,#0d0d0d);border:1px solid var(--border);border-radius:20px;margin:30px 0}
+.cta-box h2{font-family:'Syne',sans-serif;font-size:clamp(1.15rem,3vw,1.6rem);margin-bottom:8px}
+.cta-box p{color:var(--gl2);font-size:0.87rem;margin-bottom:18px}
+.btn{display:inline-block;background:var(--yellow);color:#000;padding:14px 30px;border-radius:50px;font-weight:800;text-decoration:none;font-size:0.94rem}
+.otros{margin:30px 0}
+.otros h2{font-family:'Syne',sans-serif;font-size:1.05rem;margin-bottom:13px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#161616;border:1px solid #262626;color:#bbb;font-size:0.77rem;padding:7px 14px;border-radius:50px;text-decoration:none}
+.chip:hover{border-color:var(--yellow);color:#fff}
+footer{border-top:1px solid var(--border);padding:26px 5%;text-align:center;color:var(--gl2);font-size:0.74rem;margin-top:30px}
+footer a{color:var(--gl2)}

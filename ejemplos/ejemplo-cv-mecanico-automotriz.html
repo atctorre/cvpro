@@ -14,6 +14,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700;900&family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="ejemplos.css">
 <link rel="stylesheet" href="plantillas.css">
+<style>.lang-sw{text-align:center;margin:4px 0 14px}
+.lang-sw a{color:#8a8a8a;font-size:0.82rem;text-decoration:none;border-bottom:1px dashed #3a3a3a;padding-bottom:2px}
+.lang-sw a:hover{color:#FFD000;border-color:#FFD000}</style>
 </head>
 <body>
 <nav>
@@ -25,6 +28,7 @@
     <h1>Ejemplo de CV para Mecánico Automotriz</h1>
     <p class="sub">Documento real generado con CVPro · Actualizado 2026 · Optimizado para filtros ATS</p>
   </header>
+  <p class="lang-sw"><a href="resume-example-automotive-technician.html" id="langSwitch">See this example in English →</a></p>
   <div class="tpl-bar"><button class="tpl-btn activo" data-t="h1" onclick="verPlantilla('h1',this)">Ejecutivo Azul</button><button class="tpl-btn" data-t="h2" onclick="verPlantilla('h2',this)">Negro Dorado</button><button class="tpl-btn" data-t="h3" onclick="verPlantilla('h3',this)">Minimalista</button><button class="tpl-btn" data-t="h4" onclick="verPlantilla('h4',this)">Moderno</button><button class="tpl-btn" data-t="h5" onclick="verPlantilla('h5',this)">Corporativo</button><button class="tpl-btn" data-t="h6" onclick="verPlantilla('h6',this)">Editorial</button><button class="tpl-btn" data-t="h7" onclick="verPlantilla('h7',this)">Técnico</button><button class="tpl-btn" data-t="h8" onclick="verPlantilla('h8',this)">Institucional</button><button class="tpl-btn" data-t="h9" onclick="verPlantilla('h9',this)">Una Columna</button><button class="tpl-btn" data-t="h10" onclick="verPlantilla('h10',this)">Bloque</button><button class="tpl-btn" data-t="m1" onclick="verPlantilla('m1',this)">Elegante</button><button class="tpl-btn" data-t="m2" onclick="verPlantilla('m2',this)">Suave</button><button class="tpl-btn" data-t="m3" onclick="verPlantilla('m3',this)">Fresco</button><button class="tpl-btn" data-t="m4" onclick="verPlantilla('m4',this)">Sofisticado</button><button class="tpl-btn" data-t="m5" onclick="verPlantilla('m5',this)">Clásico</button><button class="tpl-btn" data-t="m6" onclick="verPlantilla('m6',this)">Editorial Cálido</button><button class="tpl-btn" data-t="m7" onclick="verPlantilla('m7',this)">Acento Violeta</button><button class="tpl-btn" data-t="m8" onclick="verPlantilla('m8',this)">Sereno</button><button class="tpl-btn" data-t="m9" onclick="verPlantilla('m9',this)">Filete Dorado</button><button class="tpl-btn" data-t="m10" onclick="verPlantilla('m10',this)">Creativo</button></div>
   <p class="tpl-hint">👆 Toca cualquier plantilla para ver el mismo CV con otro diseño</p>
   <div class="cv-stage"><div class="cv-scale"><div class="cv-h1" id="cvDemo">
@@ -46,5 +50,21 @@
   <span style="font-size:0.7rem;opacity:.7">Ejemplo ilustrativo. Los datos y la persona representada son ficticios.</span>
 </footer>
 <script src="ejemplos.js"></script>
+<script>
+// Si el visitante ya eligió idioma en el sitio y esta página está en el otro,
+// se le lleva a la gemela UNA sola vez (sin bucles, y respetando que quizá
+// llegó aquí a propósito desde un buscador).
+(function(){
+  try {
+    var pref = localStorage.getItem('cvpro_lang');
+    var esta = 'es';
+    var gemela = 'resume-example-automotive-technician.html';
+    if (pref && gemela && pref !== esta && !sessionStorage.getItem('cvpro_no_redir')) {
+      sessionStorage.setItem('cvpro_no_redir','1');
+      location.replace(gemela);
+    }
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>

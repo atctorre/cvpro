@@ -513,17 +513,17 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <div class="social-proof">
   <p class="sp-label reveal"><span data-es="Profesionales que ya consiguieron trabajo" data-en="Professionals who already landed the job">Profesionales que ya consiguieron trabajo</span></p>
   <div class="sp-logos reveal">
-    <span class="sp-logo">Aviación ✈</span>
+    <span class="sp-logo" data-es="Salud 🏥" data-en="Healthcare 🏥">Salud 🏥</span>
     <span class="sp-logo">·</span>
-    <span class="sp-logo">Tech 💻</span>
+    <span class="sp-logo" data-es="Tecnología 💻" data-en="Tech 💻">Tecnología 💻</span>
     <span class="sp-logo">·</span>
-    <span class="sp-logo">Salud 🏥</span>
+    <span class="sp-logo" data-es="Finanzas 💼" data-en="Finance 💼">Finanzas 💼</span>
     <span class="sp-logo">·</span>
-    <span class="sp-logo">Finanzas 💼</span>
+    <span class="sp-logo" data-es="Educación 🎓" data-en="Education 🎓">Educación 🎓</span>
     <span class="sp-logo">·</span>
-    <span class="sp-logo">Educación 🎓</span>
+    <span class="sp-logo" data-es="Ventas 🚀" data-en="Sales 🚀">Ventas 🚀</span>
     <span class="sp-logo">·</span>
-    <span class="sp-logo">Ventas 🚀</span>
+    <span class="sp-logo" data-es="Ingeniería 🏗️" data-en="Engineering 🏗️">Ingeniería 🏗️</span>
   </div>
 </div>
 
@@ -965,6 +965,8 @@ function setLandingLang(l) {
   lang = l;
   localStorage.setItem('cvpro_lang', l);
   localStorage.setItem('cvpro_lang_cv', l); // También para el chat
+  // Relanzar la demo animada en el idioma nuevo
+  if (typeof iniciarDemo === 'function') { try { iniciarDemo(); } catch(e) {} }
 
   // Actualizar botones del selector
   document.getElementById('btnEs').classList.toggle('active', l === 'es');
@@ -1366,32 +1368,74 @@ REGLAS:
 </script>
 <script>
 // ══ DEMO ANIMADA EN VIVO ══
-(function(){
+// La demo leía el idioma UNA sola vez al cargar y nunca volvía a mirarlo:
+// al cambiar a inglés, la página se traducía pero la demo seguía con su
+// guion en español. Ahora se expone como función reiniciable y el selector
+// de idioma la vuelve a lanzar (ver setLandingLang).
+window.iniciarDemo = function(){
   const isEN = (localStorage.getItem('cvpro_lang')||'es') === 'en';
   const chatEl = () => document.getElementById('demoChat');
   if (!document.getElementById('demoChat')) return;
 
-  const SCRIPT_ES = {
-    nombre: 'Carlos Mendoza', puesto: 'Piloto de Helicóptero',
-    msgs: [
-      {t:'ai', txt:'¿Cuáles fueron tus logros como piloto? ✈️'},
-      {t:'user', txt:'tengo 500hrs de vuelo en Bell 412, fui a misiones en Mali'},
-      {t:'ai', txt:'¡Perfecto! Transformando con IA... ⚡'}
-    ],
-    perfil: 'Oficial Aviador con 500+ horas de vuelo en Bell 412. Especializado en operaciones VFR/IFR con misiones internacionales bajo estándares OACI.',
-    bullets: ['▸ Acumuló 500+ horas de vuelo certificadas en operaciones de alta exigencia','▸ Ejecutó misiones internacionales de paz en Mali bajo mandato ONU','▸ Mantuvo historial impecable de seguridad operacional']
-  };
-  const SCRIPT_EN = {
-    nombre: 'Carlos Mendoza', puesto: 'Helicopter Pilot',
-    msgs: [
-      {t:'ai', txt:'What were your achievements as a pilot? ✈️'},
-      {t:'user', txt:'i have 500hrs flying Bell 412, went to missions in Mali'},
-      {t:'ai', txt:'Perfect! Transforming with AI... ⚡'}
-    ],
-    perfil: 'Aviation Officer with 500+ flight hours on Bell 412. Specialized in VFR/IFR operations with international missions under ICAO standards.',
-    bullets: ['▸ Accumulated 500+ certified flight hours in high-demand operations','▸ Executed international peacekeeping missions in Mali under UN mandate','▸ Maintained a flawless operational safety record']
-  };
-  const S = isEN ? SCRIPT_EN : SCRIPT_ES;
+  // Varias profesiones: antes la demo mostraba SIEMPRE piloto de helicóptero,
+  // un oficio muy minoritario con el que casi ningún visitante se identifica.
+  // Ahora rota entre perfiles frecuentes del mercado, y cada recarga muestra
+  // uno distinto. El mensaje del usuario va escrito como escribe la gente de
+  // verdad (sin mayúsculas, informal) para que se vea el valor de la IA.
+  const GUIONES_ES = [
+    { nombre:'Daniela Morales', puesto:'Auxiliar de Enfermería',
+      msgs:[{t:'ai',txt:'¿Qué haces en tu trabajo actual? 🏥'},
+            {t:'user',txt:'atiendo como 20 pacientes por turno, tomo signos y ayudo en curaciones'},
+            {t:'ai',txt:'¡Perfecto! Transformando con IA... ⚡'}],
+      perfil:'Auxiliar de Enfermería con experiencia en hospitalización de alta rotación. Acompaña a más de 20 pacientes por turno con registro clínico riguroso.',
+      bullets:['▸ Asiste los cuidados básicos de más de 20 pacientes por turno','▸ Registra signos vitales y evoluciones con exactitud sostenida','▸ Apoya procedimientos de enfermería junto al personal licenciado'] },
+    { nombre:'Roberto Cáceres', puesto:'Contador General',
+      msgs:[{t:'ai',txt:'¿De qué te encargas en contabilidad? 📊'},
+            {t:'user',txt:'llevo la contabilidad de 12 empresas y presento las declaraciones'},
+            {t:'ai',txt:'¡Perfecto! Transformando con IA... ⚡'}],
+      perfil:'Contador General responsable del ciclo contable completo de una cartera de 12 empresas, con declaraciones presentadas en plazo.',
+      bullets:['▸ Ejecuta el cierre contable mensual de 12 empresas del grupo','▸ Prepara y presenta las declaraciones ante el Ministerio de Hacienda','▸ Coordina la auditoría externa anual hasta el cierre del dictamen'] },
+    { nombre:'Andrea Guevara', puesto:'Ejecutiva de Ventas',
+      msgs:[{t:'ai',txt:'¿Cómo es tu trabajo en ventas? 🎯'},
+            {t:'user',txt:'atiendo 80 clientes de empresa, hago las cotizaciones y les doy seguimiento'},
+            {t:'ai',txt:'¡Perfecto! Transformando con IA... ⚡'}],
+      perfil:'Ejecutiva de Ventas en venta consultiva B2B, con una cartera de 80 clientes corporativos y seguimiento desde el primer contacto hasta la renovación.',
+      bullets:['▸ Gestiona una cartera de 80 clientes corporativos','▸ Elabora propuestas comerciales junto al área técnica','▸ Mantiene el embudo actualizado en CRM para la revisión semanal'] },
+    { nombre:'Marco Villalta', puesto:'Ingeniero Civil',
+      msgs:[{t:'ai',txt:'¿Qué proyectos has dirigido? 🏗️'},
+            {t:'user',txt:'soy residente de obra, llevo proyectos de hasta 40 casas con varios subcontratos'},
+            {t:'ai',txt:'¡Perfecto! Transformando con IA... ⚡'}],
+      perfil:'Ingeniero Civil en residencia y supervisión de obra, con proyectos residenciales de hasta 40 unidades y coordinación de subcontratos.',
+      bullets:['▸ Dirige proyectos residenciales de hasta 40 unidades','▸ Coordina cuadrillas propias y subcontratos simultáneos','▸ Supervisa el cumplimiento de planos y especificaciones en campo'] }
+  ];
+  const GUIONES_EN = [
+    { nombre:'Daniela Morales', puesto:'Nursing Assistant',
+      msgs:[{t:'ai',txt:'What do you do in your current job? 🏥'},
+            {t:'user',txt:'i take care of like 20 patients per shift, vitals and wound care'},
+            {t:'ai',txt:'Perfect! Transforming with AI... ⚡'}],
+      perfil:'Nursing Assistant experienced in high-turnover inpatient units. Supports 20+ patients per shift with rigorous clinical charting.',
+      bullets:['▸ Supports basic care for 20+ patients per shift','▸ Charts vital signs and progress notes with sustained accuracy','▸ Assists nursing procedures alongside licensed staff'] },
+    { nombre:'Roberto Cáceres', puesto:'Staff Accountant',
+      msgs:[{t:'ai',txt:'What do you handle in accounting? 📊'},
+            {t:'user',txt:'i do the books for 12 companies and file the tax returns'},
+            {t:'ai',txt:'Perfect! Transforming with AI... ⚡'}],
+      perfil:'Staff Accountant owning the full accounting cycle for a 12-entity portfolio, with filings submitted on time.',
+      bullets:['▸ Runs month-end close for a 12-entity portfolio','▸ Prepares and files VAT and income tax returns','▸ Coordinates the annual external audit through sign-off'] },
+    { nombre:'Andrea Guevara', puesto:'Sales Representative',
+      msgs:[{t:'ai',txt:'What does your sales work look like? 🎯'},
+            {t:'user',txt:'i manage 80 corporate accounts, do the quotes and follow up'},
+            {t:'ai',txt:'Perfect! Transforming with AI... ⚡'}],
+      perfil:'Sales Representative in B2B consultative selling, managing 80 corporate accounts from first contact through renewal.',
+      bullets:['▸ Manages a portfolio of 80 corporate accounts','▸ Builds commercial proposals with the technical team','▸ Keeps the pipeline current in CRM for weekly review'] },
+    { nombre:'Marco Villalta', puesto:'Civil Engineer',
+      msgs:[{t:'ai',txt:'What projects have you led? 🏗️'},
+            {t:'user',txt:'im a site engineer, i run projects of up to 40 homes with subcontractors'},
+            {t:'ai',txt:'Perfect! Transforming with AI... ⚡'}],
+      perfil:'Civil Engineer in site supervision and project residency, leading residential projects of up to 40 units with subcontractor coordination.',
+      bullets:['▸ Directs residential projects of up to 40 units','▸ Coordinates in-house crews and concurrent subcontractors','▸ Supervises compliance with drawings and specifications on site'] }
+  ];
+  const _lista = isEN ? GUIONES_EN : GUIONES_ES;
+  const S = _lista[Math.floor(Math.random() * _lista.length)];
 
   function typeText(el, texto, vel, cb) {
     el.innerHTML = '';
@@ -1480,7 +1524,8 @@ REGLAS:
     }
   }, {threshold: 0.3});
   obs.observe(document.getElementById('demo'));
-})();
+};
+iniciarDemo();
 </script>
 <div style="text-align:center;padding:24px;border-top:1px solid #222;font-size:0.8rem;color:#777"><a href="privacidad.html" style="color:#999" data-es="Privacidad y términos" data-en="Privacy &amp; terms">Privacidad y términos</a> · <a href="ejemplos/" style="color:#999">Ejemplos</a> · <a href="analizar-cv.html" style="color:#999" data-es="Analiza tu CV gratis" data-en="Free resume check">Analiza tu CV gratis</a></div>
 <script>

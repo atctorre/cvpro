@@ -1010,7 +1010,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <div class="foto-upload-area" onclick="document.getElementById('fotoInput').click()">
       <input type="file" id="fotoInput" accept="image/*" onchange="cargarFoto(event)">
       <div style="font-size:2rem">📷</div>
-      <p id="uploadTxt"><strong style="color:#FFD000">Haz clic para subir tu foto</strong><br>JPG o PNG recomendado</p>
+      <p id="uploadTxt"><strong style="color:#FFD000"><span data-t>Haz clic para subir tu foto</span></strong><br><span data-t>JPG o PNG recomendado</span></p>
     </div>
 
     <!-- AJUSTE FOTO -->
@@ -1351,13 +1351,23 @@ if (LANG === 'en') {
       '👩 Mujer': '👩 Style B',
       '📸 Tu foto profesional': '📸 Your professional photo',
       'Haz clic para subir tu foto': 'Click to upload your photo',
+      'JPG o PNG recomendado': 'JPG or PNG recommended',
+      '📸 TU FOTO PROFESIONAL': '📸 YOUR PROFESSIONAL PHOTO',
       'Ajusta tu foto dentro del recuadro:': 'Adjust your photo inside the frame:',
       '⚡ Generar mi CV con esta plantilla': '⚡ Generate my resume with this template',
       '📄 Descargar carta PDF': '📄 Download letter PDF',
       '📝 Descargar carta Word': '📝 Download letter Word',
       '✉️ Generar carta de presentación (IA)': '✉️ Generate cover letter (AI)',
       '📋 Versión ATS (texto seleccionable)': '📋 ATS version (selectable text)',
-      'Zoom': 'Zoom'
+      'Zoom': 'Zoom',
+      'Selecciona el estilo que mejor refleje tu personalidad profesional': 'Pick the style that best reflects your professional personality',
+      '✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom': '✋ Drag the photo to move it · 🖱️ Scroll to zoom',
+      '✏️ Editar textos del CV': '✏️ Edit resume text',
+      '✅ Terminar edición': '✅ Done editing',
+      '✉️ Carta de presentación': '✉️ Cover letter',
+      '🇺🇸 Convertir a Resume': '🇺🇸 Already in US format',
+      'Descargar': 'Download',
+      'Continuar': 'Continue'
     };
     if (map[t]) el.textContent = map[t];
     if (t.startsWith('Todas las plantillas')) el.textContent = 'All templates are ATS-optimized and recruiter-approved';

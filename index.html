@@ -1453,11 +1453,20 @@ window.iniciarDemo = function(){
         cb && cb();
       }
     }, vel);
+    (window._demoI = window._demoI || []).push(int);
   }
 
+  // Envoltorios que registran los temporizadores de la demo
+  const _dt = (fn, ms) => { const id = setTimeout(fn, ms); (window._demoT = window._demoT || []).push(id); return id; };
   function runDemo() {
     const chat = chatEl();
     if (!chat) return;
+    // Los temporizadores de la ejecución ANTERIOR seguían escribiendo mensajes
+    // del guion viejo sobre el nuevo: por eso la demo salía mezclada en dos
+    // idiomas al cambiar. Se cancelan todos antes de relanzar.
+    (window._demoT || []).forEach(clearTimeout);
+    (window._demoI || []).forEach(clearInterval);
+    window._demoT = []; window._demoI = [];
     chat.innerHTML = '';
     document.getElementById('demoCvNombre').textContent = '';
     document.getElementById('demoCvPuesto').textContent = '';
@@ -1466,15 +1475,15 @@ window.iniciarDemo = function(){
 
     let delay = 400;
     // Nombre y puesto aparecen primero
-    setTimeout(() => {
+    _dt(() => {
       typeText(document.getElementById('demoCvNombre'), S.nombre, 40);
-      setTimeout(() => { document.getElementById('demoCvPuesto').textContent = S.puesto; }, 900);
+      _dt(() => { document.getElementById('demoCvPuesto').textContent = S.puesto; }, 900);
     }, delay);
     delay += 1400;
 
     // Mensajes del chat
     S.msgs.forEach((m) => {
-      setTimeout(() => {
+      _dt(() => {
         const d = document.createElement('div');
         d.className = 'demo-msg ' + m.t;
         d.textContent = m.txt;
@@ -1485,7 +1494,7 @@ window.iniciarDemo = function(){
     });
 
     // Typing dots antes del resultado
-    setTimeout(() => {
+    _dt(() => {
       const t = document.createElement('div');
       t.className = 'demo-msg ai show';
       t.id = 'demoTyping';
@@ -1495,12 +1504,12 @@ window.iniciarDemo = function(){
     delay += 1500;
 
     // CV se escribe
-    setTimeout(() => {
+    _dt(() => {
       document.getElementById('demoTyping')?.remove();
       typeText(document.getElementById('demoCvPerfil'), S.perfil, 14, () => {
         const bl = document.getElementById('demoCvBullets');
         S.bullets.forEach((b, i) => {
-          setTimeout(() => {
+          _dt(() => {
             const p = document.createElement('div');
             p.style.cssText = 'opacity:0;transition:opacity .5s;margin-bottom:4px';
             p.textContent = b;
@@ -1513,7 +1522,7 @@ window.iniciarDemo = function(){
     delay += 8500;
 
     // Loop
-    setTimeout(runDemo, delay + 2500);
+    _dt(runDemo, delay + 2500);
   }
 
   // Arrancar cuando la sección sea visible

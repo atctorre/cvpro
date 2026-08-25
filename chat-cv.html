@@ -812,12 +812,12 @@ function actualizarPreview() {
       </div>
       <div class="cv-prev-mn">
         ${d.resumen_personal||datos.resumen_personal_enriquecido?`
-        <div class="cv-prev-st">Perfil</div>
+        <div class="cv-prev-st">${LANG==='en'?'Profile':'Perfil'}</div>
         <p style="font-size:0.6rem;color:#555;line-height:1.5;margin-bottom:10px">${(datos.resumen_personal_enriquecido||d.resumen_personal||'').substring(0,220)}...</p>
         `:''}
 
         ${d.exp1?`
-        <div class="cv-prev-st">Experiencia</div>
+        <div class="cv-prev-st">${LANG==='en'?'Experience':'Experiencia'}</div>
         <div class="cv-prev-item">
           <div class="cv-prev-jt">${exp1parts[0]||''}</div>
           <div class="cv-prev-jm">${exp1parts[1]||''} ${exp1parts[2]?'· '+exp1parts[2]:''}</div>
@@ -4315,7 +4315,11 @@ const ONB_PASOS_EN = [
   { icon:'✅', titulo:'Review before <em>downloading</em>', desc:'After generating your resume you can edit any field directly before choosing a template.',
     lista:[{ic:'👁️',txt:'Visual editor on your resume'},{ic:'✏️',txt:'Edit anything you want'},{ic:'📄',txt:'Download as professional PDF'}], btn:'Create my resume!' }
 ];
-const ONB_PASOS = LANG === 'en' ? ONB_PASOS_EN : ONB_PASOS_ES;
+// BUG HISTÓRICO: se resolvía con const al CARGAR el archivo, cuando LANG
+// todavía valía 'es' por defecto — el idioma de la URL se lee después. Así
+// que la antesala salía siempre en español aunque la página fuera inglesa.
+// Ahora se evalúa en el momento de mostrarla.
+function _onbPasos() { return LANG === 'en' ? ONB_PASOS_EN : ONB_PASOS_ES; }
 
 let onbPaso = 0;
 
@@ -4326,8 +4330,8 @@ function mostrarOnboarding() {
 }
 
 function renderOnbPaso() {
-  const p = ONB_PASOS[onbPaso];
-  const total = ONB_PASOS.length;
+  const p = _onbPasos()[onbPaso];
+  const total = _onbPasos().length;
   const pct = Math.round(((onbPaso+1)/total)*100);
 
   document.getElementById('onbFill').style.width = pct+'%';
@@ -4352,7 +4356,7 @@ function renderOnbPaso() {
 
 function siguienteOnb() {
   onbPaso++;
-  if (onbPaso >= ONB_PASOS.length) {
+  if (onbPaso >= _onbPasos().length) {
     cerrarOnboarding();
   } else {
     renderOnbPaso();

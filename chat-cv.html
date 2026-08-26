@@ -963,7 +963,7 @@ IDIOMA: ${LANG==='en' ? 'Responde COMPLETAMENTE en inglés.' : 'Responde en espa
       body: JSON.stringify({prompt: systemPrompt})
     });
     const data = await res.json();
-    if (data.cv && data.cv.trim().length > 20) return data.cv.trim();
+    if (data.cv && limpiarPreambuloIA(data.cv).length > 20) return limpiarPreambuloIA(data.cv);
   } catch(e) {}
   return generarPreguntaLocal(key, puesto, datos);
 }
@@ -1980,7 +1980,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    const cvTexto = data.cv || '';
+    const cvTexto = limpiarPreambuloIA(data.cv || '');
 
     // FIX 2 — Verificar que Claude realmente transformó el texto
     // Detectar copia con word boundaries — 'Mantengo/Obtengo' NO son copia
@@ -2005,8 +2005,8 @@ CV:
 ${cvTexto.substring(0,12000)}`})
       });
       const dr = await rr.json();
-      if (dr.cv && dr.cv.trim().length > cvTexto.length * 0.7) {
-        return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(dr.cv.trim(), enIngles), _fuenteRespuestas(), enIngles), _fuenteRespuestas(), enIngles);
+      if (dr.cv && limpiarPreambuloIA(dr.cv).length > cvTexto.length * 0.7) {
+        return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(limpiarPreambuloIA(dr.cv), enIngles), _fuenteRespuestas(), enIngles), _fuenteRespuestas(), enIngles);
       }
     } catch(e2) {}
     return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(cvTexto, enIngles), _fuenteRespuestas(), enIngles), _fuenteRespuestas(), enIngles);
@@ -2024,7 +2024,7 @@ ${cvTexto.substring(0,12000)}`})
         body: JSON.stringify({prompt})
       });
       const data2 = await res2.json();
-      if (data2.cv && data2.cv.trim().length > 200) {
+      if (data2.cv && limpiarPreambuloIA(data2.cv).length > 200) {
         console.log('✅ Reintento exitoso');
         return data2.cv;
       }
@@ -2358,7 +2358,7 @@ GENERA EL CV ADAPTADO AHORA:`;
     const data = await res.json();
     if (!data.cv || data.cv.trim().length < 300) throw new Error('respuesta corta del servidor');
 
-    let cvAd = data.cv.trim();
+    let cvAd = limpiarPreambuloIA(data.cv);
     const _enIng = LANG === 'en';
     // Filtro 2: revisión de reclutador
     try {
@@ -2371,7 +2371,7 @@ CV:
 ${cvAd.substring(0,12000)}`})
       });
       const dr = await rr.json();
-      if (dr.cv && dr.cv.trim().length > cvAd.length * 0.7) cvAd = dr.cv.trim();
+      if (dr.cv) { const _l = limpiarPreambuloIA(dr.cv); if (_l.length > cvAd.length * 0.7) cvAd = _l; }
     } catch(e2) {}
     // Filtros 3 y 4
     cvAd = await pasadaATS(cvAd, _enIng);
@@ -2637,6 +2637,55 @@ function fetchIA(url, opciones, segundos) {
 // problema NUMÉRICO, y eso se puede verificar en el navegador al instante:
 // toda cifra del CV generado tiene que existir en la fuente del candidato.
 // Si todas cuadran, nos ahorramos la llamada. Si alguna no, la hacemos.
+// ── LIMPIAR PREÁMBULOS DE LA IA ──
+// BUG REAL EN PRODUCCIÓN: la pasada de verificación devolvía a veces sus
+// NOTAS DE AUDITORÍA antes del CV ("Auditoría y corrección del CV /
+// Problemas detectados: 1. ... 2. ..."), y esas notas se guardaban y se
+// entregaban al cliente como parte de su documento. Aquí se detecta ese
+// preámbulo y se recorta hasta donde empieza el CV de verdad.
+function limpiarPreambuloIA(cv) {
+  if (!cv || typeof cv !== 'string') return cv;
+  let t = cv.trim();
+
+  // Señales de que la IA está narrando su trabajo en vez de entregar el CV
+  const SENALES = /^(auditor[íi]a|voy a (verificar|revisar|analizar)|problemas? detectados?|correcci[óo]n del cv|he (revisado|verificado|corregido)|an[áa]lisis del cv|verificaci[óo]n|aqu[íi] (est[áa]|tienes)|perfecto[,.]|entendido[,.]|claro[,.]|a continuaci[óo]n)/i;
+
+  if (SENALES.test(t)) {
+    // El CV real empieza en el nombre (línea en mayúsculas), en un separador
+    // o en un encabezado de sección conocido.
+    const lineas = t.split('\n');
+    let inicio = -1;
+    for (let i = 0; i < lineas.length; i++) {
+      const l = lineas[i].trim();
+      if (!l) continue;
+      const esNombre = /^[A-ZÁÉÍÓÚÑÜ][A-ZÁÉÍÓÚÑÜ\s'’.\-]{6,60}$/.test(l) && l.split(/\s+/).length >= 2;
+      const esSeccion = /^(RESUMEN|PERFIL|EXPERIENCIA|EDUCACI[ÓO]N|FORMACI[ÓO]N|HABILIDADES|PROFESSIONAL|SUMMARY|EXPERIENCE|EDUCATION|SKILLS)/i.test(l);
+      const esSeparador = /^[═─=\-—_]{6,}$/.test(l);
+      // Descartar líneas numeradas de la propia auditoría ("1. ...", "2. ...")
+      const esItemAuditoria = /^\d+\.\s/.test(l);
+      if (esItemAuditoria) continue;
+      if (esNombre || esSeccion || esSeparador) { inicio = i; break; }
+    }
+    if (inicio > 0) {
+      const recortado = lineas.slice(inicio).join('\n').trim();
+      // Solo aceptar el recorte si conserva la mayor parte del documento
+      // Umbral bajo a propósito: si detectamos señales claras de auditoría,
+      // es preferible entregar el CV recortado que un documento con las notas
+      // internas de la IA pegadas encima. Solo se descarta el recorte si
+      // dejaría un texto demasiado corto para ser un CV.
+      if (recortado.length > 200) {
+        console.warn('⚠️ La IA antepuso notas de auditoría al CV — preámbulo eliminado (' + (t.length - recortado.length) + ' caracteres)');
+        if (typeof ev === 'function') ev('preambulo_ia_limpiado', {chars: t.length - recortado.length});
+        return recortado;
+      }
+    }
+    // No se pudo aislar el CV: se avisa, pero no se destruye el contenido
+    console.error('⚠️ Posible preámbulo de la IA que no se pudo recortar con seguridad');
+    if (typeof ev === 'function') ev('preambulo_ia_no_recortable');
+  }
+  return t;
+}
+
 function verificarCifrasLocal(cv, fuente) {
   const norm = (s) => String(s || '').replace(/[.,]/g, '');
   const src = norm(fuente);
@@ -2779,7 +2828,9 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres un Executive Recruiter élite Y auditor ATS revisando el trabajo de un colega. Haz AMBAS cosas en una sola pasada:
 (A) CRITICA y MEJORA: elimina cualquier bullet débil o genérico, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos.
-(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 1½-2 páginas A4 (900-1200 palabras) con bullets de 22-35 palabras. (C) VERIFICACIÓN DE VERACIDAD contra la información original que aparece abajo: ELIMINA toda cifra, porcentaje, cantidad de personas, empresa, cargo, título, certificación o premio que NO aparezca en esa fuente. Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes. CONSERVA intactos los datos que SÍ están en la fuente.
+(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 1½-2 páginas A4 (900-1200 palabras) con bullets de 22-35 palabras. ⚠️ FORMATO DE SALIDA — REGLA ABSOLUTA: devuelve ÚNICAMENTE el CV corregido, empezando directamente por el nombre del candidato. NO escribas explicaciones, ni listas de problemas detectados, ni "Auditoría", ni "Voy a verificar", ni resúmenes de tus correcciones, ni comentarios de ningún tipo antes o después del CV. Tu razonamiento es interno: el usuario recibe tu respuesta tal cual y cualquier texto extra queda impreso en su documento.
+
+(C) VERIFICACIÓN DE VERACIDAD contra la información original que aparece abajo: ELIMINA toda cifra, porcentaje, cantidad de personas, empresa, cargo, título, certificación o premio que NO aparezca en esa fuente. Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes. CONSERVA intactos los datos que SÍ están en la fuente.
 Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
 
 INFORMACIÓN ORIGINAL DEL CANDIDATO (única fuente de verdad):
@@ -2789,8 +2840,9 @@ CV A REVISAR:
 ${cvV1.substring(0,9000)}`})
       }, 90);
       const d2 = await res2.json();
-      if (d2.cv && d2.cv.trim().length > cvV1.length * 0.45) {
-        cvV1 = d2.cv.trim();
+      const _limpio2 = d2.cv ? limpiarPreambuloIA(d2.cv) : '';
+      if (_limpio2 && _limpio2.length > cvV1.length * 0.45) {
+        cvV1 = _limpio2;
         if (typeof ev === 'function') ev('truth_check_applied', {fusionada: true});
       }
     } catch(e2) {

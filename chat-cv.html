@@ -391,6 +391,62 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 </head>
 <body>
 <script>
+// ══════════════════════════════════════════════════════════════════
+//  ALMACENAMIENTO SEGURO — CRÍTICO PARA NAVEGADORES EMBEBIDOS
+//  En los navegadores internos de Instagram, Facebook y TikTok, y en
+//  modo privado de Safari, localStorage LANZA EXCEPCIÓN al usarlo.
+//  El chat tenía 12 accesos sin protección en el arranque: bastaba que
+//  el primero fallara para que todo el arranque muriera y el usuario
+//  se quedara en "Preparando tu asistente…" para siempre.
+//
+//  En vez de reemplazar el objeto nativo (que algunos navegadores no
+//  permiten), se envuelven sus MÉTODOS: si el original lanza, se cae a
+//  memoria temporal. El chat funciona igual durante la sesión.
+// ══════════════════════════════════════════════════════════════════
+(function(){
+  function blindar(nombre) {
+    var mem = {};
+    var nativo = null;
+    try { nativo = window[nombre]; } catch(e) { nativo = null; }
+    // ¿El nativo funciona de verdad?
+    var sirve = false;
+    try {
+      var k = '__cvpro_t__';
+      nativo.setItem(k, '1');
+      sirve = nativo.getItem(k) === '1';
+      nativo.removeItem(k);
+    } catch(e) { sirve = false; }
+
+    if (sirve) return;   // todo bien, no hace falta blindar
+
+    console.warn(nombre + ' no disponible (navegador embebido o modo privado) — se usa memoria temporal');
+    var falso = {
+      getItem: function(k){ return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+      setItem: function(k, v){ mem[k] = String(v); },
+      removeItem: function(k){ delete mem[k]; },
+      clear: function(){ mem = {}; },
+      key: function(i){ return Object.keys(mem)[i] || null; }
+    };
+    try { Object.defineProperty(falso, 'length', { get: function(){ return Object.keys(mem).length; } }); } catch(e){}
+    // Intento 1: redefinir la propiedad
+    try {
+      Object.defineProperty(window, nombre, { configurable: true, get: function(){ return falso; } });
+      if (window[nombre] === falso) return;
+    } catch(e) {}
+    // Intento 2: parchear los métodos del objeto nativo en el sitio
+    try {
+      nativo.getItem = falso.getItem;
+      nativo.setItem = falso.setItem;
+      nativo.removeItem = falso.removeItem;
+      nativo.clear = falso.clear;
+    } catch(e) { console.error('No se pudo blindar ' + nombre); }
+  }
+  blindar('localStorage');
+  blindar('sessionStorage');
+})();
+</script>
+
+<script>
 // ══ RED DE SEGURIDAD: fetch() no lanza excepción con 400/500, así que un
 // try/catch sin mirar res.ok esconde el fallo por completo. Este envoltorio
 // registra en consola CUALQUIER respuesta no-OK de toda la aplicación.
@@ -4564,8 +4620,41 @@ function cerrarOnboarding() {
   }
   // Sin idioma → selector permanece visible
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _arrancar);
-  else _arrancar();
+  // Envolver el arranque para que NINGÚN fallo deje el chat muerto
+  const _arrancarSeguro = () => {
+    try { _arrancar(); }
+    catch (e) {
+      console.error('Fallo en el arranque del chat:', e);
+      if (typeof ev === 'function') ev('arranque_fallido', {error: String(e && e.message).substring(0,90)});
+      // Aun así, lanzar el chat: es mejor un chat funcional sin estado
+      // guardado que una pantalla congelada en "Preparando tu asistente…"
+      try {
+        const sel = document.getElementById('langSelector');
+        if (sel && sel.style.display !== 'none') return;   // el selector sigue visible: es correcto esperar
+        if (typeof arrancarChat === 'function') arrancarChat();
+      } catch(e2) { console.error('Arranque de emergencia también falló:', e2); }
+    }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _arrancarSeguro);
+  else _arrancarSeguro();
+
+  // ── VIGILANTE ──
+  // Si a los 3 segundos el chat sigue vacío y el selector de idioma no está
+  // visible, algo falló en silencio. Se fuerza el arranque en vez de dejar
+  // al usuario mirando el indicador de carga indefinidamente.
+  setTimeout(() => {
+    try {
+      const msgs = document.getElementById('chatMessages');
+      const sel = document.getElementById('langSelector');
+      const selVisible = sel && sel.style.display !== 'none' && sel.offsetParent !== null;
+      const cargando = document.getElementById('chatCargando');
+      if (!selVisible && cargando && msgs && msgs.querySelectorAll('.msg').length === 0) {
+        console.warn('⏱️ El chat no arrancó en 3s — forzando arranque');
+        if (typeof ev === 'function') ev('arranque_forzado_watchdog');
+        if (typeof arrancarChat === 'function') arrancarChat();
+      }
+    } catch(e) { console.error('Vigilante de arranque falló:', e); }
+  }, 3000);
 })();
 </script>
 <!-- WIDGET DE SOPORTE -->

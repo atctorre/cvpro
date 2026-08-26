@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KW9MFX9K5E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KW9MFX9K5E');
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Elige tu plantilla | CVPro</title>
@@ -966,6 +975,61 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <meta name="theme-color" content="#0a0a0a">
 </head>
 <body>
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  ALMACENAMIENTO SEGURO — CRÍTICO PARA NAVEGADORES EMBEBIDOS
+//  En los navegadores internos de Instagram, Facebook y TikTok, y en
+//  modo privado de Safari, localStorage LANZA EXCEPCIÓN al usarlo.
+//  El chat tenía 12 accesos sin protección en el arranque: bastaba que
+//  el primero fallara para que todo el arranque muriera y el usuario
+//  se quedara en "Preparando tu asistente…" para siempre.
+//
+//  En vez de reemplazar el objeto nativo (que algunos navegadores no
+//  permiten), se envuelven sus MÉTODOS: si el original lanza, se cae a
+//  memoria temporal. El chat funciona igual durante la sesión.
+// ══════════════════════════════════════════════════════════════════
+(function(){
+  function blindar(nombre) {
+    var mem = {};
+    var nativo = null;
+    try { nativo = window[nombre]; } catch(e) { nativo = null; }
+    // ¿El nativo funciona de verdad?
+    var sirve = false;
+    try {
+      var k = '__cvpro_t__';
+      nativo.setItem(k, '1');
+      sirve = nativo.getItem(k) === '1';
+      nativo.removeItem(k);
+    } catch(e) { sirve = false; }
+
+    if (sirve) return;   // todo bien, no hace falta blindar
+
+    console.warn(nombre + ' no disponible (navegador embebido o modo privado) — se usa memoria temporal');
+    var falso = {
+      getItem: function(k){ return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+      setItem: function(k, v){ mem[k] = String(v); },
+      removeItem: function(k){ delete mem[k]; },
+      clear: function(){ mem = {}; },
+      key: function(i){ return Object.keys(mem)[i] || null; }
+    };
+    try { Object.defineProperty(falso, 'length', { get: function(){ return Object.keys(mem).length; } }); } catch(e){}
+    // Intento 1: redefinir la propiedad
+    try {
+      Object.defineProperty(window, nombre, { configurable: true, get: function(){ return falso; } });
+      if (window[nombre] === falso) return;
+    } catch(e) {}
+    // Intento 2: parchear los métodos del objeto nativo en el sitio
+    try {
+      nativo.getItem = falso.getItem;
+      nativo.setItem = falso.setItem;
+      nativo.removeItem = falso.removeItem;
+      nativo.clear = falso.clear;
+    } catch(e) { console.error('No se pudo blindar ' + nombre); }
+  }
+  blindar('localStorage');
+  blindar('sessionStorage');
+})();
+</script>
 <script>
 // ══ RED DE SEGURIDAD: fetch() no lanza excepción con 400/500, así que un
 // try/catch sin mirar res.ok esconde el fallo por completo. Este envoltorio

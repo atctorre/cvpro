@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KW9MFX9K5E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KW9MFX9K5E');
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Crear mi CV | CVPro</title>
@@ -137,6 +146,7 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 /* TYPING */
 .typing-wrap{display:flex;gap:10px;align-items:flex-start}
 .typing{display:flex;gap:5px;padding:13px 17px;background:#161616;border:1px solid #252525;border-radius:18px;border-top-left-radius:4px;width:fit-content}
+@keyframes cargaPunto{0%,100%{opacity:.25}50%{opacity:1}}
 .typing span{width:6px;height:6px;border-radius:50%;background:#444;animation:bounce 1.2s infinite}
 .typing span:nth-child(2){animation-delay:0.2s}
 .typing span:nth-child(3){animation-delay:0.4s}
@@ -468,7 +478,13 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <!-- COLUMNA CHAT -->
   <div class="chat-col">
     <div class="chat-wrap">
-      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-messages" id="chatMessages"><div id="chatCargando" style="text-align:center;color:#666;font-size:0.82rem;padding:36px 20px">
+        <span style="display:inline-flex;gap:5px;margin-bottom:10px">
+          <span style="width:7px;height:7px;border-radius:50%;background:#FFD000;animation:cargaPunto 1.2s infinite"></span>
+          <span style="width:7px;height:7px;border-radius:50%;background:#FFD000;animation:cargaPunto 1.2s .2s infinite"></span>
+          <span style="width:7px;height:7px;border-radius:50%;background:#FFD000;animation:cargaPunto 1.2s .4s infinite"></span>
+        </span><br>Preparando tu asistente…
+      </div></div>
       <div class="chat-input-wrap">
         <div class="input-hint" id="inputHint"></div>
         <div class="chat-input-box">
@@ -1291,7 +1307,12 @@ function elegirIdiomaCV(langElegido) {
 }
 
 async function arrancarChat() {
-  await mostrarTyping(600);
+  // PRIMERA IMPRESIÓN: antes se esperaban 600ms de animación ANTES de pintar
+  // nada, así que en móvil el chat se veía completamente vacío al abrir —
+  // el usuario no sabía si había cargado. Ahora la primera pregunta aparece
+  // de inmediato: no hay nada que "pensar" todavía, es el saludo.
+  // La animación de escribiendo se conserva para las preguntas siguientes,
+  // donde sí tiene sentido (la IA está procesando su respuesta).
   const p = PASOS[0];
   renderMsgAI(typeof p.preg === 'function' ? p.preg(datos) : p.preg, resolver(p.opts)||[], true, 0, p.chips||null);
   setHint(resolver(p.hint));
@@ -1439,6 +1460,9 @@ async function init() {
 
 // ── RENDER ──
 function renderMsg(tipo, texto, opts=[], animar=true, pasoIdx=null, chips=null) {
+  // El aviso de carga desaparece en cuanto hay contenido real
+  const _carg = document.getElementById('chatCargando');
+  if (_carg) _carg.remove();
   const msgs = document.getElementById('chatMessages');
   if (!msgs) { console.log('Chat no visible — mensaje omitido:', String(texto).substring(0,60)); return; }
   const div = document.createElement('div');
@@ -4402,7 +4426,14 @@ function cerrarOnboarding() {
   }, 280);
 }
 
-window.addEventListener('load', () => {
+// ARRANQUE DEL CHAT: antes esperaba a 'load', que se dispara cuando TODO
+// terminó de descargar (fuentes, imágenes, el script de Analytics). En un
+// móvil con conexión lenta eso dejaba la pantalla del chat vacía varios
+// segundos, sin señal de que estuviera cargando. Ahora arranca con
+// DOMContentLoaded: en cuanto el HTML está listo, sin esperar recursos
+// externos que el chat no necesita para mostrar la primera pregunta.
+(function(){
+  const _arrancar = () => {
   // ── MODO OPTIMIZAR (viene del analizador) ──
   const _urlP = new URLSearchParams(window.location.search);
 
@@ -4480,7 +4511,10 @@ window.addEventListener('load', () => {
     arrancarChat();
   }
   // Sin idioma → selector permanece visible
-});
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _arrancar);
+  else _arrancar();
+})();
 </script>
 <!-- WIDGET DE SOPORTE -->
 <style>

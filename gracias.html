@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pago confirmado · CVPro</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Confirmación de pago de CVPro.">
+<link rel="canonical" href="https://getcvpro.com/gracias.html">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:#111;color:#111;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:20px;line-height:1.55;
+  }
+  .card{
+    background:#fff;border-radius:20px;max-width:440px;width:100%;
+    padding:32px 26px;text-align:center;
+  }
+  .icono{font-size:2.8rem;line-height:1;margin-bottom:10px}
+  h1{font-size:1.35rem;margin-bottom:6px;letter-spacing:-.01em}
+  .sub{color:#666;font-size:.88rem;margin-bottom:20px}
+  .plan{font-weight:700;color:#111}
+
+  .codigo-caja{
+    background:#fffbe6;border:2px solid #FFD000;border-radius:12px;
+    padding:14px;margin-bottom:16px;
+  }
+  .codigo-label{font-size:.72rem;color:#7a6500;margin-bottom:5px}
+  .codigo{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:1.25rem;font-weight:700;letter-spacing:.09em;
+    color:#111;word-break:break-all;
+  }
+  .copiar{
+    margin-top:9px;background:#fff;border:1.5px solid #FFD000;border-radius:8px;
+    padding:6px 14px;font:inherit;font-size:.78rem;font-weight:600;
+    color:#111;cursor:pointer;
+  }
+  .copiar:hover{background:#fffbe6}
+
+  .aviso{
+    font-size:.8rem;color:#555;background:#f6f6f6;border-radius:10px;
+    padding:12px;margin-bottom:18px;text-align:left;
+  }
+  .aviso b{color:#111}
+
+  .btn{
+    display:block;width:100%;background:#FFD000;color:#111;
+    border:none;border-radius:999px;padding:14px;
+    font:inherit;font-size:.96rem;font-weight:700;
+    text-decoration:none;cursor:pointer;
+  }
+  .btn:hover{background:#f0c400}
+  .btn-sec{
+    display:inline-block;margin-top:14px;color:#666;font-size:.8rem;
+    text-decoration:underline;
+  }
+
+  .spinner{
+    width:34px;height:34px;margin:0 auto 14px;
+    border:3px solid #eee;border-top-color:#FFD000;border-radius:50%;
+    animation:giro .8s linear infinite;
+  }
+  @keyframes giro{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){
+    .spinner{animation-duration:2.5s}
+  }
+
+  .error h1{color:#c00}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-size:.8rem}
+  a{color:#111}
+  :focus-visible{outline:3px solid #FFD000;outline-offset:2px}
+</style>
+</head>
+<body>
+
+<main class="card" id="tarjeta" role="status" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <h1 id="titulo">Confirmando tu pago…</h1>
+  <p class="sub" id="mensaje">Un momento, estamos verificando la transacción.</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  var SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
+  var SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+  var LANG = (localStorage.getItem('cvpro_lang_cv') === 'en') ? 'en' : 'es';
+  var T = {
+    es: {
+      verificando: 'Confirmando tu pago…',
+      verificandoSub: 'Un momento, estamos verificando la transacción.',
+      ok: '¡Pago confirmado!',
+      okSub: 'Tu pago se completó correctamente. El recibo llega a tu correo electrónico.',
+      codLabel: '🔑 Tu código de recuperación — guárdalo',
+      copiar: 'Copiar código',
+      copiado: '¡Copiado!',
+      avisoCod: '<b>Guarda este código.</b> Con él puedes volver a entrar a tu CV desde cualquier dispositivo, sin contraseña.',
+      avisoEmail: 'Te enviamos el recibo y tu código por correo. Si no lo ves en unos minutos, revisa la carpeta de spam.',
+      volver: 'Continuar con mi CV',
+      pendiente: 'Pago en proceso',
+      pendienteSub: 'Tu pago aún se está procesando. Esto puede tardar unos minutos.',
+      reintentar: 'Verificar de nuevo',
+      error: 'No pudimos confirmar el pago',
+      errorSub: 'Si el cargo aparece en tu tarjeta, escríbenos y lo resolvemos de inmediato.',
+      sinOrden: 'No encontramos la orden',
+      sinOrdenSub: 'Vuelve a la página de tu CV e inténtalo otra vez.',
+      contacto: 'Escribir a soporte'
+    },
+    en: {
+      verificando: 'Confirming your payment…',
+      verificandoSub: 'One moment, we are verifying the transaction.',
+      ok: 'Payment successful!',
+      okSub: 'Your payment went through. The receipt is on its way to your email.',
+      codLabel: '🔑 Your recovery code — save it',
+      copiar: 'Copy code',
+      copiado: 'Copied!',
+      avisoCod: '<b>Save this code.</b> Use it to get back into your resume from any device, no password needed.',
+      avisoEmail: 'We emailed your receipt and code. If it is not there in a few minutes, check your spam folder.',
+      volver: 'Continue with my resume',
+      pendiente: 'Payment processing',
+      pendienteSub: 'Your payment is still being processed. This can take a few minutes.',
+      reintentar: 'Check again',
+      error: 'We could not confirm the payment',
+      errorSub: 'If the charge shows on your card, contact us and we will fix it right away.',
+      sinOrden: 'Order not found',
+      sinOrdenSub: 'Go back to your resume page and try again.',
+      contacto: 'Contact support'
+    }
+  }[LANG];
+
+  var tarjeta = document.getElementById('tarjeta');
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function paramUrl(n) {
+    try { return new URLSearchParams(location.search).get(n) || ''; } catch (e) { return ''; }
+  }
+
+  // El orderCode se guarda antes de redirigir al checkout de n1co.
+  // Como respaldo se acepta ?order= en la URL.
+  function obtenerOrderCode() {
+    var deUrl = paramUrl('order') || paramUrl('orderCode');
+    if (deUrl) return deUrl.trim();
+    try { return (sessionStorage.getItem('cvpro_n1co_order') || '').trim(); } catch (e) { return ''; }
+  }
+
+  function pintarEstado(icono, titulo, sub, extraHtml, clase) {
+    tarjeta.className = 'card' + (clase ? ' ' + clase : '');
+    tarjeta.innerHTML =
+      '<div class="icono" aria-hidden="true">' + icono + '</div>' +
+      '<h1>' + esc(titulo) + '</h1>' +
+      '<p class="sub">' + esc(sub) + '</p>' +
+      (extraHtml || '');
+  }
+
+  function pintarCargando() {
+    tarjeta.className = 'card';
+    tarjeta.innerHTML =
+      '<div class="spinner" aria-hidden="true"></div>' +
+      '<h1>' + esc(T.verificando) + '</h1>' +
+      '<p class="sub">' + esc(T.verificandoSub) + '</p>';
+  }
+
+  function pintarExito(datos) {
+    var nombres = {
+      basico: { es: 'Básico', en: 'Basic' },
+      estandar: { es: 'Estándar', en: 'Standard' },
+      premium: { es: 'Premium', en: 'Premium' }
+    };
+    var nom = (nombres[datos.plan] || nombres.basico)[LANG];
+    var monto = Number(datos.monto || 0).toFixed(2);
+
+    var codigo = '';
+    try { codigo = sessionStorage.getItem('cvpro_codigo') || datos.codigo_cv || ''; } catch (e) { codigo = datos.codigo_cv || ''; }
+
+    var html = '<p class="sub">Plan <span class="plan">' + esc(nom) + '</span> · $' + esc(monto) + ' USD</p>';
+
+    if (codigo) {
+      html +=
+        '<div class="codigo-caja">' +
+          '<div class="codigo-label">' + esc(T.codLabel) + '</div>' +
+          '<div class="codigo" id="cod">' + esc(codigo) + '</div>' +
+          '<button class="copiar" id="btnCopiar" type="button">' + esc(T.copiar) + '</button>' +
+        '</div>' +
+        '<div class="aviso">' + T.avisoCod + '</div>';
+    }
+
+    html +=
+      '<div class="aviso">' + esc(T.avisoEmail) + '</div>' +
+      '<a class="btn" href="/chat-cv.html">' + esc(T.volver) + '</a>';
+
+    pintarEstado('✅', T.ok, T.okSub, html);
+
+    // Guardar el acceso para que chat-cv.html lo reconozca al volver.
+    try {
+      localStorage.setItem('cvpro_pago', JSON.stringify({
+        ok: true, plan: datos.plan, orden: datos.orderCode || '', ts: Date.now()
+      }));
+    } catch (e) {}
+
+    var btn = document.getElementById('btnCopiar');
+    if (btn && navigator.clipboard) {
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(codigo).then(function () {
+          btn.textContent = T.copiado;
+          setTimeout(function () { btn.textContent = T.copiar; }, 2000);
+        });
+      });
+    }
+  }
+
+  function pintarPendiente() {
+    pintarEstado('⏳', T.pendiente, T.pendienteSub,
+      '<button class="btn" type="button" id="btnReintentar">' + esc(T.reintentar) + '</button>' +
+      '<a class="btn-sec" href="/chat-cv.html">' + esc(T.volver) + '</a>');
+    var b = document.getElementById('btnReintentar');
+    if (b) b.addEventListener('click', function () { pintarCargando(); verificar(); });
+  }
+
+  function pintarError(titulo, sub) {
+    pintarEstado('⚠️', titulo, sub,
+      '<a class="btn" href="/chat-cv.html">' + esc(T.volver) + '</a>' +
+      '<a class="btn-sec" href="mailto:hola@getcvpro.com">' + esc(T.contacto) + '</a>',
+      'error');
+  }
+
+  var intentos = 0;
+
+  function verificar() {
+    var orderCode = obtenerOrderCode();
+
+    if (!orderCode) {
+      pintarError(T.sinOrden, T.sinOrdenSub);
+      return;
+    }
+
+    fetch(SB_U + '/functions/v1/n1co-confirmar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_K,
+        'Authorization': 'Bearer ' + SB_K
+      },
+      body: JSON.stringify({ orderCode: orderCode })
+    })
+    .then(function (r) { return r.json().catch(function () { return null; }); })
+    .then(function (d) {
+      if (d && d.pagado) {
+        d.orderCode = orderCode;
+        try { sessionStorage.removeItem('cvpro_n1co_order'); } catch (e) {}
+        pintarExito(d);
+        return;
+      }
+      // Aún no acreditado: reintento automático una vez (la pasarela
+      // puede tardar unos segundos en marcar la orden como pagada).
+      intentos++;
+      if (intentos < 3) {
+        setTimeout(verificar, 2500);
+        return;
+      }
+      if (d && d.estado) { pintarPendiente(); return; }
+      pintarError(T.error, T.errorSub);
+    })
+    .catch(function () {
+      intentos++;
+      if (intentos < 3) { setTimeout(verificar, 2500); return; }
+      pintarError(T.error, T.errorSub);
+    });
+  }
+
+  verificar();
+})();
+</script>
+</body>
+</html>

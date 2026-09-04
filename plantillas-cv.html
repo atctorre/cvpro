@@ -2720,9 +2720,8 @@ function mostrarBadgeTester() {
 }
 </script>
 <script>
-// ══════════ SISTEMA DE PAGO PAYPAL ══════════
-const PP_CLIENT_ID = 'BAArSKzmXrrmOvMwGD0gx8etTbUmpdcGvUTGF1sDW43HE5mpa8IiJxZq-xcj-0QOx0NbarG4ynxxtehm94';
-const PP_ENTORNO = 'sandbox'; // cambiar a 'live' con el Client ID de producción
+// ══════════ SISTEMA DE PAGO n1co ══════════
+// El precio y el entorno viven en el servidor (Edge Function n1co-pago).
 const PLANES = {
   basico:   {precio:'4.99',  nombre:{es:'Básico',   en:'Basic'}},
   estandar: {precio:'9.99',  nombre:{es:'Estándar', en:'Standard'}},
@@ -2742,57 +2741,30 @@ function yaPago() {
   return !!(p && p.ok);
 }
 
-function cargarSDKPayPal() {
-  return new Promise((resolve, reject) => {
-    if (window.paypal) return resolve();
-    const s = document.createElement('script');
-    s.src = `https://www.paypal.com/sdk/js?client-id=${PP_CLIENT_ID}&currency=USD&intent=capture&disable-funding=paylater`;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error('SDK no disponible'));
-    document.head.appendChild(s);
-  });
-}
-
-async function registrarPago(ordenId, plan, monto, detalles) {
-  const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
-  const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-  const payload = {
-    orden_id: String(ordenId),
-    codigo_cv: sessionStorage.getItem('cvpro_codigo') || '',
-    plan: plan,
-    monto: parseFloat(monto),
-    moneda: 'USD',
-    email: (detalles && detalles.email) || '',
-    nombre: ((detalles && detalles.nombre) || '').trim(),
-    estado: 'completado',
-    entorno: PP_ENTORNO
-  };
+// ── INICIAR PAGO EN n1co ──
+async function iniciarPagoN1co(plan) {
+  const codigo = await asegurarCodigoCV();
   try {
-    const res = await fetch(`${SB_U}/rest/v1/pagos`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SB_K,
-        'Authorization': `Bearer ${SB_K}`,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify(payload)
-    });
-    if (res.ok) {
-      console.log('✅ Pago registrado en Supabase:', payload.orden_id);
-      enviarCodigoTrasPago(payload);   // ahora sí: el código viaja por email
-    } else {
-      const txt = await res.text();
-      console.error('❌ Supabase rechazó el pago:', res.status, txt);
-      // Guardar localmente para no perder el registro
-      const pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]');
-      pend.push(payload); localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(pend));
-    }
-  } catch(e) {
-    console.error('❌ Error de red al registrar pago:', e.message);
-    const pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]');
-    pend.push(payload); localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(pend));
+    const _em = ((typeof datos !== 'undefined' && datos && datos.email_tel) || '');
+    const _m = String(_em).match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+    if (_m) sessionStorage.setItem('cvpro_email', _m[0]);
+    const _nm = ((typeof datos !== 'undefined' && datos && datos.nombre) || '').trim();
+    if (_nm) sessionStorage.setItem('cvpro_nombre', _nm);
+  } catch(e) {}
+  const r = await fetch(`${SUPABASE_URL}/functions/v1/n1co-pago`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+    body: JSON.stringify({ plan: plan, codigo_cv: codigo })
+  });
+  const d = await r.json().catch(() => null);
+  if (!r.ok || !d || !d.paymentLinkUrl) {
+    throw new Error((d && d.error) || 'No se pudo iniciar el pago');
   }
+  try {
+    sessionStorage.setItem('cvpro_n1co_order', d.orderCode);
+    localStorage.setItem('cvpro_n1co_order', d.orderCode);
+  } catch(e) {}
+  return d.paymentLinkUrl;
 }
 
 // ── EMAIL DEL CÓDIGO TRAS EL PAGO ──
@@ -2964,28 +2936,6 @@ async function asegurarCodigoCV() {
   return cod;
 }
 
-// ══ P1 FIX: reintentar pagos que no llegaron a Supabase ══
-async function reintentarPagosPendientes() {
-  let pend = [];
-  try { pend = JSON.parse(localStorage.getItem('cvpro_pagos_pendientes') || '[]'); } catch(e) { return; }
-  if (!pend.length) return;
-  const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
-  const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-  const quedan = [];
-  for (const pago of pend) {
-    try {
-      const r = await fetch(`${SB_U}/rest/v1/pagos`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
-        body: JSON.stringify(pago)
-      });
-      if (!r.ok && r.status !== 409) quedan.push(pago);
-      else console.log('✅ Pago pendiente recuperado:', pago.orden_id);
-    } catch(e) { quedan.push(pago); }
-  }
-  localStorage.setItem('cvpro_pagos_pendientes', JSON.stringify(quedan));
-}
-window.addEventListener('load', () => setTimeout(reintentarPagosPendientes, 2500));
 
 
 
@@ -3049,8 +2999,8 @@ async function abrirMuroPago(planSugerido, alPagar) {
       <h2 style="font-size:1.25rem;color:#111;margin-bottom:4px">${L==='en'?'Your resume is ready 🎉':'Tu CV está listo 🎉'}</h2>
       <p style="color:#666;font-size:.87rem;line-height:1.55;margin-bottom:18px">${L==='en'?'One-time payment. No subscriptions, no recurring charges. Download instantly.':'Pago único. Sin suscripciones ni cobros recurrentes. Descarga al instante.'}</p>
       <div id="planesMuro" style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px"></div>
-      <div id="paypalBtns" style="min-height:52px"></div>
-      <p style="text-align:center;font-size:.72rem;color:#999;margin-top:14px">🔒 ${L==='en'?'Secure payment via PayPal · Card accepted':'Pago seguro con PayPal · Aceptamos tarjeta'}</p>
+      <div id="zonaPago" style="min-height:52px"></div>
+      <p style="text-align:center;font-size:.72rem;color:#999;margin-top:14px">🔒 ${L==='en'?'Secure payment · Visa and Mastercard accepted':'Pago seguro · Aceptamos Visa y Mastercard'}</p>
       <p style="text-align:center;font-size:.72rem;color:#7dd3a8;margin-top:6px">🛡️ ${L==='en'?'7-day money-back guarantee':'Garantía de 7 días — te devolvemos tu dinero'}</p>
     </div>`;
   document.body.appendChild(ov);
@@ -3076,61 +3026,39 @@ async function abrirMuroPago(planSugerido, alPagar) {
     });
   }
 
-  async function renderBotones() {
-    const cont = document.getElementById('paypalBtns');
-    cont.innerHTML = '';
-    try {
-      await cargarSDKPayPal();
-      window.paypal.Buttons({
-        style: {layout:'vertical', color:'gold', shape:'pill', label:'pay', height:46},
-        createOrder: (data, actions) => actions.order.create({
-          purchase_units: [{
-            description: `CVPro ${PLANES[planSel].nombre[L]}`,
-            amount: {value: PLANES[planSel].precio, currency_code: 'USD'}
-          }]
-        }),
-        onApprove: async (data, actions) => {
-          const det = await actions.order.capture();
-          const payer = (det && det.payer) || {};
-          // Monto REAL cobrado por PayPal (no el del frontend)
-          let montoReal = PLANES[planSel].precio;
-          try {
-            const pu = det.purchase_units && det.purchase_units[0];
-            const cap = pu && pu.payments && pu.payments.captures && pu.payments.captures[0];
-            if (cap && cap.amount && cap.amount.value) montoReal = cap.amount.value;
-          } catch(e) {}
-          // El plan se deriva del monto real, no de lo que diga el frontend
-          const planReal = parseFloat(montoReal) >= 14.99 ? 'premium'
-                         : parseFloat(montoReal) >= 9.99 ? 'estandar'
-                         : parseFloat(montoReal) >= 4.99 ? 'basico' : 'ninguno';
-          localStorage.setItem('cvpro_pago', JSON.stringify({ok:true, plan:planReal, orden:det.id, ts:Date.now()}));
-          await registrarPago(det.id, planReal, montoReal, {
-            email: payer.email_address || '',
-            nombre: ((payer.name||{}).given_name||'') + ' ' + ((payer.name||{}).surname||'')
-          });
-          ev('payment_success', {plan: planReal, monto: montoReal});
-          document.getElementById('muroPago')?.remove();
-          mostrarConfirmacionPago(planReal, det.id, montoReal);
-          if (typeof alPagar === 'function') setTimeout(() => alPagar(planReal), 400);
-        },
-        onCancel: () => {
-          ev('payment_cancelled');
-          const cont2 = document.getElementById('paypalBtns');
-          if (cont2) {
-            const aviso = document.createElement('p');
-            aviso.style.cssText = 'text-align:center;font-size:.8rem;color:#888;margin-top:10px';
-            aviso.textContent = L==='en' ? 'Payment cancelled — your resume is safe, you can try again anytime.' : 'Pago cancelado — tu CV está guardado, puedes intentarlo cuando quieras.';
-            cont2.parentElement.appendChild(aviso);
-          }
-        },
-        onError: (err) => {
-          console.error('PayPal error:', err);
-          cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center;line-height:1.5">${L==='en'?'Payment error. If you were charged, email hola@getcvpro.com with your order number and we will fix it immediately.':'Error en el pago. Si te cobraron, escríbenos a hola@getcvpro.com con tu número de orden y lo resolvemos de inmediato.'}</p>`;
-        }
-      }).render('#paypalBtns');
-    } catch(e) {
-      cont.innerHTML = `<p style="color:#c00;font-size:.82rem;text-align:center">${L==='en'?'Could not load PayPal. Check your connection.':'No se pudo cargar PayPal. Revisa tu conexión.'}</p>`;
-    }
+  function renderBotones() {
+    const cont = document.getElementById('zonaPago');
+    if (!cont) return;
+    const txt = L==='en' ? 'Pay $' : 'Pagar $';
+    const etiqueta = () => `${txt}${PLANES[planSel].precio} ${L==='en'?'with card':'con tarjeta'}`;
+    cont.innerHTML = `
+      <button id="btnPagar" type="button" style="width:100%;background:#FFD000;color:#111;border:none;border-radius:999px;padding:15px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer">${etiqueta()}</button>
+      <p id="errPago" style="color:#c00;font-size:.8rem;text-align:center;margin-top:10px;display:none"></p>`;
+
+    const btn = document.getElementById('btnPagar');
+    const err = document.getElementById('errPago');
+
+    btn.onclick = async () => {
+      btn.disabled = true;
+      btn.style.opacity = '.6';
+      btn.textContent = L==='en' ? 'Preparing payment…' : 'Preparando el pago…';
+      err.style.display = 'none';
+      try {
+        if (typeof ev === 'function') ev('payment_started', {plan: planSel, proveedor: 'n1co'});
+        const url = await iniciarPagoN1co(planSel);
+        location.href = url;
+      } catch (e) {
+        console.error('Pago n1co:', e.message);
+        if (typeof ev === 'function') ev('payment_error', {plan: planSel, motivo: e.message});
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.textContent = etiqueta();
+        err.textContent = L==='en'
+          ? 'We could not start the payment. Check your connection and try again.'
+          : 'No pudimos iniciar el pago. Revisa tu conexión e inténtalo de nuevo.';
+        err.style.display = 'block';
+      }
+    };
   }
 
   await asegurarCodigoCV();

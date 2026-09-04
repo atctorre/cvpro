@@ -151,7 +151,13 @@
   function obtenerOrderCode() {
     var deUrl = paramUrl('order') || paramUrl('orderCode');
     if (deUrl) return deUrl.trim();
-    try { return (sessionStorage.getItem('cvpro_n1co_order') || '').trim(); } catch (e) { return ''; }
+    try {
+      var s = (sessionStorage.getItem('cvpro_n1co_order') || '').trim();
+      if (s) return s;
+    } catch (e) {}
+    // Respaldo: algunos navegadores dentro de apps pierden la sesión de pestaña
+    // al volver de un dominio externo. Sin esto, un cliente que pagó vería un error.
+    try { return (localStorage.getItem('cvpro_n1co_order') || '').trim(); } catch (e) { return ''; }
   }
 
   function pintarEstado(icono, titulo, sub, extraHtml, clase) {
@@ -208,6 +214,8 @@
       }));
     } catch (e) {}
 
+    enviarCodigoPorEmail(codigo, datos);
+
     var btn = document.getElementById('btnCopiar');
     if (btn && navigator.clipboard) {
       btn.addEventListener('click', function () {
@@ -234,6 +242,48 @@
       'error');
   }
 
+  // Manda el código de recuperación por correo. Sin esto, quien cierre
+  // la pestaña pierde el acceso al CV que ya pagó.
+  function enviarCodigoPorEmail(codigo, datos) {
+    if (!codigo) return;
+
+    var email = '';
+    try { email = sessionStorage.getItem('cvpro_email') || ''; } catch (e) {}
+    if (!email) email = (datos && datos.email) || '';
+    var m = String(email).match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+    if (!m) return;
+
+    // No duplicar si el usuario recarga la página.
+    try {
+      if (localStorage.getItem('cvpro_codigo_emailed') === codigo) return;
+    } catch (e) {}
+
+    var nombre = '';
+    try { nombre = sessionStorage.getItem('cvpro_nombre') || ''; } catch (e) {}
+    if (!nombre) nombre = (datos && datos.nombre) || '';
+
+    fetch(SB_U + '/functions/v1/enviar-codigo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_K,
+        'Authorization': 'Bearer ' + SB_K
+      },
+      body: JSON.stringify({
+        email: m[0],
+        nombre: String(nombre).trim(),
+        codigo: codigo,
+        lang: LANG
+      })
+    })
+    .then(function (r) {
+      if (r.ok) {
+        try { localStorage.setItem('cvpro_codigo_emailed', codigo); } catch (e) {}
+      }
+    })
+    .catch(function () { /* el código ya se muestra en pantalla */ });
+  }
+
   var intentos = 0;
 
   function verificar() {
@@ -257,7 +307,10 @@
     .then(function (d) {
       if (d && d.pagado) {
         d.orderCode = orderCode;
-        try { sessionStorage.removeItem('cvpro_n1co_order'); } catch (e) {}
+        try {
+          sessionStorage.removeItem('cvpro_n1co_order');
+          localStorage.removeItem('cvpro_n1co_order');
+        } catch (e) {}
         pintarExito(d);
         return;
       }

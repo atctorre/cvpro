@@ -146,6 +146,17 @@
     try { return new URLSearchParams(location.search).get(n) || ''; } catch (e) { return ''; }
   }
 
+  // A dónde devolver al cliente: la misma página desde la que pagó.
+  // Sin esto, quien pagara desde plantillas-cv.html aterrizaba en el chat
+  // desde la pregunta 1, sin entender qué pasó con su CV.
+  function destinoVuelta() {
+    var d = '';
+    try { d = localStorage.getItem('cvpro_volver_a') || ''; } catch (e) {}
+    // Solo rutas internas: nunca redirigir a un dominio externo.
+    if (!d || d.charAt(0) !== '/' || d.charAt(1) === '/') return '/chat-cv.html';
+    return d;
+  }
+
   // El orderCode se guarda antes de redirigir al checkout de n1co.
   // Como respaldo se acepta ?order= en la URL.
   function obtenerOrderCode() {
@@ -203,7 +214,7 @@
 
     html +=
       '<div class="aviso">' + esc(T.avisoEmail) + '</div>' +
-      '<a class="btn" href="/chat-cv.html">' + esc(T.volver) + '</a>';
+      '<a class="btn" href="' + destinoVuelta() + '">' + esc(T.volver) + '</a>';
 
     pintarEstado('✅', T.ok, T.okSub, html);
 
@@ -230,14 +241,14 @@
   function pintarPendiente() {
     pintarEstado('⏳', T.pendiente, T.pendienteSub,
       '<button class="btn" type="button" id="btnReintentar">' + esc(T.reintentar) + '</button>' +
-      '<a class="btn-sec" href="/chat-cv.html">' + esc(T.volver) + '</a>');
+      '<a class="btn-sec" href="' + destinoVuelta() + '">' + esc(T.volver) + '</a>');
     var b = document.getElementById('btnReintentar');
     if (b) b.addEventListener('click', function () { pintarCargando(); verificar(); });
   }
 
   function pintarError(titulo, sub) {
     pintarEstado('⚠️', titulo, sub,
-      '<a class="btn" href="/chat-cv.html">' + esc(T.volver) + '</a>' +
+      '<a class="btn" href="' + destinoVuelta() + '">' + esc(T.volver) + '</a>' +
       '<a class="btn-sec" href="mailto:hola@getcvpro.com">' + esc(T.contacto) + '</a>',
       'error');
   }
@@ -311,6 +322,8 @@
           sessionStorage.removeItem('cvpro_n1co_order');
           localStorage.removeItem('cvpro_n1co_order');
         } catch (e) {}
+        // 'cvpro_volver_a' NO se borra aquí: los botones de la tarjeta
+        // aún lo necesitan para llevar al cliente de vuelta.
         pintarExito(d);
         return;
       }

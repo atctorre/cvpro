@@ -2763,6 +2763,8 @@ async function iniciarPagoN1co(plan) {
   try {
     sessionStorage.setItem('cvpro_n1co_order', d.orderCode);
     localStorage.setItem('cvpro_n1co_order', d.orderCode);
+    // De dónde salió el cliente: gracias.html lo devuelve exactamente aquí.
+    localStorage.setItem('cvpro_volver_a', location.pathname + location.search);
   } catch(e) {}
   return d.paymentLinkUrl;
 }

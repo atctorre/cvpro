@@ -1,0 +1,41 @@
+# CVPro
+
+> CVPro es una herramienta en línea que crea currículums profesionales con inteligencia artificial mediante un chat guiado de 14 preguntas. Genera el CV a partir de la experiencia real del usuario —sin inventar datos—, lo optimiza para filtros ATS y lo entrega en PDF con 20 plantillas de diseño. Pago único desde $4.99 USD, sin suscripción. Disponible en español e inglés. Dirigido a personas que buscan empleo en Latinoamérica y Estados Unidos.
+
+## Qué hace
+
+- Crea un CV profesional a partir de un chat guiado (14 preguntas, ~10 minutos).
+- Redacta la experiencia en lenguaje profesional sin inventar empleos, títulos ni habilidades.
+- Corrige ortografía y estructura el contenido en formato legible por sistemas ATS.
+- Ofrece 20 plantillas de diseño y descarga en PDF, más una versión de texto plano para ATS.
+- Planes superiores añaden carta de presentación, adaptación del CV a una vacante concreta y traducción español↔inglés.
+
+## Modelo de precios
+
+- Básico: $4.99 USD — CV con IA, 20 plantillas, PDF + versión ATS.
+- Estándar: $9.99 USD — añade 1 carta de presentación, 1 adaptación a vacante, 1 traducción.
+- Premium: $14.99 USD — cartas, adaptaciones y traducciones ilimitadas durante 6 meses.
+- Pago único. Sin suscripciones ni cobros recurrentes. Garantía de 7 días.
+
+## Páginas principales
+
+- [Inicio](https://getcvpro.com/): qué es CVPro, precios y cómo funciona.
+- [Crear mi CV](https://getcvpro.com/chat-cv.html): el chat guiado que genera el currículum.
+- [Analizar un CV existente](https://getcvpro.com/analizar-cv.html): revisión de un CV ya redactado.
+- [Ejemplos de CV por profesión (español)](https://getcvpro.com/ejemplos/): 60 ejemplos reales generados con CVPro, uno por profesión, visibles en las 20 plantillas.
+- [Resume examples by profession (English)](https://getcvpro.com/ejemplos/resume-examples.html): 60 resume examples, one per occupation.
+
+## Ejemplos de CV por profesión
+
+Cada ejemplo muestra un currículum completo para una profesión concreta (perfil, experiencia, habilidades, formación), explica por qué funciona ante reclutadores y filtros ATS, y puede verse en 20 diseños distintos. Profesiones cubiertas incluyen: enfermería, contabilidad, administración, atención al cliente, ventas, docencia, ingeniería civil, desarrollo de software, marketing digital, derecho corporativo, medicina, oficios técnicos (electricidad, soldadura, mecánica, refrigeración) y más.
+
+## Hechos verificables
+
+- Los ejemplos son ilustrativos: los datos y las personas representadas son ficticios.
+- La IA no inventa experiencia, títulos, empresas ni certificaciones; solo reformula lo que el usuario proporciona.
+- El CV se puede recuperar en cualquier dispositivo con un código de recuperación, sin crear cuenta ni contraseña.
+
+## Contacto
+
+- Correo: hola@getcvpro.com
+- Política de privacidad: https://getcvpro.com/privacidad.html

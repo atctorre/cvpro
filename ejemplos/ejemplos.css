@@ -62,3 +62,8 @@ footer a{color:var(--gl2)}
 .faq summary::after{content:'+';color:var(--yellow);font-weight:800;flex-shrink:0}
 .faq details[open] summary::after{content:'−'}
 .faq details p{margin:10px 0 0;color:#bbb}
+
+/* ── Nota de herramienta gratuita ── */
+.tool-note{margin:14px 0 4px;padding:12px 14px;background:#161616;border-left:3px solid var(--yellow);border-radius:0 8px 8px 0;color:#bbb;font-size:0.86rem;line-height:1.6}
+.tool-note a{color:var(--yellow);font-weight:600;text-decoration:none}
+.tool-note a:hover{text-decoration:underline}

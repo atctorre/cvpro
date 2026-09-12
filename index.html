@@ -317,6 +317,8 @@ button, a, .tpl-card { touch-action: manipulation; }
 html, body { max-width: 100%; overflow-x: hidden; }
 img, svg, canvas, video { max-width: 100%; height: auto; }
 
+
+.hero-free-note{margin:14px auto 0;max-width:520px;color:#9a9a9a;font-size:0.84rem;line-height:1.55}
 </style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0a0a'/><text y='72' x='50' font-size='60' font-family='sans-serif' font-weight='bold' fill='%23FFD000' text-anchor='middle'>C</text></svg>">
 <script type="application/ld+json">
@@ -477,8 +479,9 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 
   <div class="hero-actions">
     <a href="chat-cv.html" class="btn-primary" id="heroCta">⚡ Crear mi CV ahora</a>
-    <a href="#how" class="btn-secondary" id="heroCtaSecondary">Ver cómo funciona →</a>
+    <a href="analizar-cv.html" class="btn-secondary" id="heroCtaFree">🔎 Analizar mi CV gratis</a>
   </div>
+    <p class="hero-free-note" id="heroFreeNote">¿Ya tienes un CV? Analízalo gratis y mira tu puntuación ATS en 30 segundos — sin registro.</p>
 
   <!-- Cliente que YA pagó y vuelve por su CV: antes no tenía por dónde entrar
        desde la portada. Enlace discreto para no competir con los CTA. -->
@@ -956,7 +959,8 @@ const TEXTOS = {
     heroHeadline: 'El CV que <em>sí consigue</em> entrevistas.<br>Generado por IA en minutos.',
     heroSub: 'Chat guiado de 14 preguntas · 4 controles de calidad de IA que nunca inventan datos · 20 plantillas · PDF con versión ATS',
     heroCta: '⚡ Crear mi CV ahora',
-    heroCtaSecondary: 'Ver cómo funciona →',
+    heroCtaFree: '🔎 Analizar mi CV gratis',
+    heroFreeNote: '¿Ya tienes un CV? Analízalo gratis y mira tu puntuación ATS en 30 segundos — sin registro.',
     trust1: 'Chat guiado de 14 preguntas',
     trust2: 'IA corrige tu ortografía',
     trust3: '20 plantillas profesionales',
@@ -992,7 +996,8 @@ const TEXTOS = {
     heroHeadline: 'The resume that <em>actually gets</em> interviews.<br>AI-generated in minutes.',
     heroSub: 'Guided 14-question chat · 4 AI quality checks that never invent data · 20 templates · ATS-ready PDF',
     heroCta: '⚡ Create my resume now',
-    heroCtaSecondary: 'See how it works →',
+    heroCtaFree: '🔎 Check my resume free',
+    heroFreeNote: 'Already have a resume? Check it free and see your ATS score in 30 seconds — no sign-up.',
     trust1: 'Guided 14-question chat',
     trust2: 'AI corrects your spelling',
     trust3: '20 professional templates',
@@ -1097,7 +1102,9 @@ function aplicarIdioma() {
   setHTML('heroHeadline', t.heroHeadline);
   setHTML('heroSub', t.heroSub);
   setHTML('heroCta', t.heroCta);
-  setHTML('heroCtaSecondary', t.heroCtaSecondary);
+  setHTML('heroCtaFree', t.heroCtaFree);
+  { const _a=document.getElementById('heroCtaFree'); if(_a) _a.href = ((localStorage.getItem('cvpro_lang')||'es')==='en') ? 'resume-checker.html' : 'analizar-cv.html'; }
+  setHTML('heroFreeNote', t.heroFreeNote);
   setText('trust1', t.trust1);
   setText('trust2', t.trust2);
   setText('trust3', t.trust3);

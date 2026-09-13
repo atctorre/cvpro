@@ -482,6 +482,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <a href="analizar-cv.html" class="btn-secondary" id="heroCtaFree">🔎 Analizar mi CV gratis</a>
   </div>
     <p class="hero-free-note" id="heroFreeNote">¿Ya tienes un CV? Analízalo gratis y mira tu puntuación ATS en 30 segundos — sin registro.</p>
+    <p class="hero-free-note" id="heroFrustNote" style="margin-top:6px"><a href="por-que-no-me-llaman.html" id="heroFrustLink" style="color:#9a9a9a;text-decoration:underline">¿Mandas CV y no te llaman? Las 9 razones reales →</a></p>
 
   <!-- Cliente que YA pagó y vuelve por su CV: antes no tenía por dónde entrar
        desde la portada. Enlace discreto para no competir con los CTA. -->
@@ -961,6 +962,7 @@ const TEXTOS = {
     heroCta: '⚡ Crear mi CV ahora',
     heroCtaFree: '🔎 Analizar mi CV gratis',
     heroFreeNote: '¿Ya tienes un CV? Analízalo gratis y mira tu puntuación ATS en 30 segundos — sin registro.',
+    heroFrustLink: '¿Mandas CV y no te llaman? Las 9 razones reales →',
     trust1: 'Chat guiado de 14 preguntas',
     trust2: 'IA corrige tu ortografía',
     trust3: '20 plantillas profesionales',
@@ -998,6 +1000,7 @@ const TEXTOS = {
     heroCta: '⚡ Create my resume now',
     heroCtaFree: '🔎 Check my resume free',
     heroFreeNote: 'Already have a resume? Check it free and see your ATS score in 30 seconds — no sign-up.',
+    heroFrustLink: 'Applying and never hearing back? The 9 real reasons →',
     trust1: 'Guided 14-question chat',
     trust2: 'AI corrects your spelling',
     trust3: '20 professional templates',
@@ -1105,6 +1108,8 @@ function aplicarIdioma() {
   setHTML('heroCtaFree', t.heroCtaFree);
   { const _a=document.getElementById('heroCtaFree'); if(_a) _a.href = ((localStorage.getItem('cvpro_lang')||'es')==='en') ? 'resume-checker.html' : 'analizar-cv.html'; }
   setHTML('heroFreeNote', t.heroFreeNote);
+  setHTML('heroFrustLink', t.heroFrustLink);
+  { const _f=document.getElementById('heroFrustLink'); if(_f) _f.href = ((localStorage.getItem('cvpro_lang')||'es')==='en') ? 'why-no-interviews.html' : 'por-que-no-me-llaman.html'; }
   setText('trust1', t.trust1);
   setText('trust2', t.trust2);
   setText('trust3', t.trust3);

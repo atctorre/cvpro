@@ -1112,6 +1112,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <div class="cv-actions">
     <button class="btn-editar" onclick="toggleEdicion()" id="btnEditar" style="background:#fff;border:2px solid #FFD000;color:#0d1b2a;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;width:100%;margin-bottom:8px;font-family:inherit;font-size:0.9rem">✏️ Editar textos del CV</button>
     <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar PDF</button>
+    <p id="avisoPdfDiseno" style="width:100%;margin:2px 0 0;font-size:0.78rem;line-height:1.4;color:#8a8a8a">Este PDF es de diseño (imagen). Para postulaciones en línea y sistemas ATS, descarga la versión ATS (texto) de abajo.</p>
     <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
     <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
     <button class="btn-carta" id="btnCartaOtro" style="background:#6b4fa8" onclick="generarCarta((_idiomaActual||LANG)==='en'?'es':'en')">✉️ Carta en el otro idioma</button>
@@ -1425,6 +1426,7 @@ if (LANG === 'en') {
       '📝 Descargar carta Word': '📝 Download letter Word',
       '✉️ Generar carta de presentación (IA)': '✉️ Generate cover letter (AI)',
       '📋 Versión ATS (texto seleccionable)': '📋 ATS version (selectable text)',
+      'Este PDF es de diseño (imagen). Para postulaciones en línea y sistemas ATS, descarga la versión ATS (texto) de abajo.': 'This PDF is a design (image) file. For online applications and ATS systems, download the ATS (text) version below.',
       'Zoom': 'Zoom',
       'Selecciona el estilo que mejor refleje tu personalidad profesional': 'Pick the style that best reflects your professional personality',
       '✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom': '✋ Drag the photo to move it · 🖱️ Scroll to zoom',
@@ -1928,6 +1930,43 @@ function volverSelector() {
 // (_cvOriginalIdioma, _idiomaActual y _fotoRespaldo se declaran en el
 //  bloque de estado global, arriba — moverlas aquí de vuelta ROMPE la página)
 
+// Secciones traducibles del CV. Cada una se fusiona de forma independiente:
+// si la IA la devuelve con contenido se usa, si viene vacía o ausente se
+// conserva la versión original en ese idioma (nunca se pierde un dato por
+// un fallo parcial de la traducción).
+const SECCIONES_TRADUCIBLES_CV = ['resumen', 'experiencia', 'educacion', 'habilidades', 'idiomas', 'logros'];
+
+function _seccionTieneContenido(v) {
+  if (Array.isArray(v)) return v.length > 0;
+  if (typeof v === 'string') return v.trim().length > 0;
+  return v !== undefined && v !== null;
+}
+
+// Fusiona la traducción recibida con el CV original, sección por sección.
+// Función pura (sin DOM/red) para poder probarla de forma aislada.
+// Devuelve { D: objeto fusionado, faltantes: [claves de sección no usadas] }.
+function fusionarTraduccionCV(original, trad) {
+  const D2 = JSON.parse(JSON.stringify(original || {}));
+  const faltantes = [];
+  SECCIONES_TRADUCIBLES_CV.forEach(clave => {
+    const valor = trad ? trad[clave] : undefined;
+    if (_seccionTieneContenido(valor)) {
+      D2[clave] = valor;
+    } else {
+      faltantes.push(clave);
+      // D2[clave] ya es la original (copia profunda): se conserva tal cual.
+    }
+  });
+  // Campos de encabezado (no son "secciones" con contenido/vacío, pero sí
+  // se traducen/limpian): se copian cuando la IA los devolvió.
+  ['nombre', 'puesto', 'pais', 'telefono', 'linkedin', 'email'].forEach(campo => {
+    if (trad && trad[campo] !== undefined && trad[campo] !== null && String(trad[campo]).trim() !== '') {
+      D2[campo] = trad[campo];
+    }
+  });
+  return { D: D2, faltantes };
+}
+
 async function traducirCV() {
   ev('translate_clicked');
   if (!(await accesoVerificado('estandar'))) { abrirMuroPago('estandar', () => traducirCV()); return; }
@@ -2014,6 +2053,7 @@ REGLAS ESTRICTAS:
 - Devuelve ÚNICAMENTE el JSON traducido. Sin explicaciones, sin markdown, sin \`\`\`.
 - Conserva EXACTAMENTE la misma estructura y los mismos nombres de campo.
 - LOS NOMBRES DE CAMPO QUEDAN EN ESPAÑOL TAL CUAL: "nombre", "puesto", "pais", "resumen", "experiencia", "titulo", "empresa", "periodo", "bullets", "educacion", "institucion", "año", "habilidades", "idiomas", "nivel", "logros". Traducir una CLAVE (p. ej. "experiencia" → "experience") ROMPE el programa que procesa tu respuesta y el usuario pierde la conversión. Solo se traducen los VALORES.
+- OBLIGATORIO: devuelve TODAS estas claves de sección con el MISMO esquema del JSON de entrada, incluso si una sección no requiere cambios de idioma: "resumen", "experiencia", "educacion", "habilidades", "idiomas", "logros". Si el CV original trae una de estas secciones con contenido, tu respuesta DEBE incluirla también con contenido — omitir o vaciar una sección que sí existía en el original se trata como un ERROR GRAVE de tu respuesta (el sistema que procesa esto detecta la sección faltante y descarta la traducción). Si una sección no existe en el original (por ejemplo el CV no trae "idiomas"), puedes omitirla u devolverla vacía.
 - NO traduzcas: nombres de personas, nombres de empresas, ciudades, países, URLs, emails ni teléfonos.
 - SÍ traduce: puesto, resumen, títulos de cargo, bullets de logros, títulos académicos, nombres de habilidades e idiomas.
 - Adapta los títulos de cargo al uso real del mercado destino (ej: "Jefe de Ventas" → "Sales Manager", no traducción literal).
@@ -2079,15 +2119,41 @@ ${JSON.stringify(D)}`;
       typeof l === 'string' ? {nombre:l, nivel:''}
       : (l && l.name !== undefined && l.nombre === undefined ? {nombre:l.name, nivel:(l.level ?? l.nivel ?? '')} : l));
 
-    if (!trad.nombre || !Array.isArray(trad.experiencia)) {
+    if (!trad || typeof trad !== 'object' || !trad.nombre) {
       // Dejar la evidencia en consola: sin esto, "estructura incompleta" no
       // dice QUÉ devolvió la IA y el bug es imposible de diagnosticar.
-      console.error('Conversión inválida. Claves recibidas:', Object.keys(trad).join(', '));
+      console.error('Conversión inválida. Claves recibidas:', Object.keys(trad||{}).join(', '));
       console.error('Primeros 600 chars de la respuesta:', txt.substring(0, 600));
       throw new Error('estructura incompleta');
     }
 
-    Object.assign(D, trad);
+    // Fusión por sección: una sección que la traducción trae vacía o ausente
+    // NO borra la original — se conserva y se avisa. Solo si faltan 2 o más
+    // secciones que sí existían en el original se aborta sin escribir nada,
+    // para no entregar un CV parcialmente traducido sin que el usuario lo sepa.
+    const _origParaFusion = _cvOriginalIdioma && (_cvOriginalIdioma._lang || LANG) === desde
+      ? _cvOriginalIdioma : D;
+    const _seccionesOrigConContenido = SECCIONES_TRADUCIBLES_CV.filter(c => _seccionTieneContenido(_origParaFusion[c]));
+    const { D: _fusionado, faltantes: _faltantesTodas } = fusionarTraduccionCV(D, trad);
+    // Solo cuentan como "faltante" las secciones que el CV original SÍ tenía.
+    const _faltantes = _faltantesTodas.filter(c => _seccionesOrigConContenido.includes(c));
+
+    if (_faltantes.length >= 2) {
+      console.error('Traducción incompleta. Secciones ausentes:', _faltantes.join(', '));
+      ev('translate_sections_missing_abort', {secciones: _faltantes.join(',')});
+      throw new Error(LANG === 'en'
+        ? 'The translation did not include all sections; please review the result and try again.'
+        : 'La traducción no incluyó todas las secciones; revisa el resultado e inténtalo de nuevo.');
+    }
+
+    _faltantes.forEach(seccion => ev('translate_section_missing', {seccion}));
+    if (_faltantes.length > 0) {
+      mostrarToast(LANG === 'en'
+        ? '⚠️ Some sections were not translated and were kept in the original language.'
+        : '⚠️ Algunas secciones no se tradujeron y se conservaron en el idioma original.');
+    }
+
+    Object.assign(D, _fusionado);
     limpiarPlaceholdersCV(D);   // la conversión puede traer sus propios placeholders
     _idiomaActual = hacia;
 
@@ -2547,9 +2613,16 @@ async function descargarPDF() {
   html2pdf().set({
     margin:0,
     filename:`CV_${nombre}.pdf`,
-    image:{type:'jpeg',quality:0.98},
+    // scale 1.5 + calidad 0.9 (antes 2 / 0.98): reduce sensiblemente el peso
+    // del archivo (menos píxeles capturados y menos bytes de JPEG) sin que la
+    // pérdida de nitidez sea perceptible a simple vista sobre texto de CV a
+    // tamaño normal de lectura/impresión — esto sigue siendo una imagen
+    // rasterizada, así que en pantallas muy grandes o con zoom alto se nota
+    // más que en un PDF vectorial; por eso el PDF ATS (texto real) es la
+    // opción recomendada para postulaciones e impresión de precisión.
+    image:{type:'jpeg',quality:0.9},
     html2canvas:{
-      scale:2, useCORS:true, logging:false,
+      scale:1.5, useCORS:true, logging:false,
       backgroundColor:'#ffffff',
       scrollX:0, scrollY:0, x:0, y:0,
       width:_w, height:_h,
@@ -2792,7 +2865,7 @@ async function enviarCodigoTrasPago(payload) {
       headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({email: m[0], nombre: ((typeof D!=='undefined' && D && D.nombre) || (payload && payload.nombre) || '').trim(), codigo, lang: LANG})
     });
-    if (r.ok) { sessionStorage.setItem('cvpro_codigo_emailed', codigo); console.log('📧 Código enviado por email tras el pago a', m[0]); if (typeof ev==='function') ev('code_email_sent_paid'); }
+    if (r.ok) { sessionStorage.setItem('cvpro_codigo_emailed', codigo); console.log('📧 Código enviado por email tras el pago'); if (typeof ev==='function') ev('code_email_sent_paid'); }
     else { console.error('❌ Email del código tras el pago falló:', r.status, await r.text()); }
   } catch(e) { console.error('❌ Email del código tras el pago falló:', e.message); }
 }

@@ -944,10 +944,11 @@ function actualizarPreview() {
     .filter(h=>h.nombre && h.nombre.length>1 && h.nombre.length<45)
     .slice(0,6);
 
-  // Idiomas
+  // Idiomas (FIX C5: sin nivel indicado, no se inventa "Nativo" — misma
+  // regla que construirCVData(), aquí para la vista previa en vivo)
   const idiomasArr = (d.idiomas_nivel||'').split(',').map(id=>{
     const p = id.trim().split(/\s+/);
-    return {nombre:p[0],nivel:p.slice(1).join(' ')||'Nativo'};
+    return {nombre:p[0],nivel:p.slice(1).join(' ')};
   }).filter(i=>i.nombre&&i.nombre.length>1);
 
   // Experiencia
@@ -1446,6 +1447,11 @@ function reiniciar() {
   if (!confirm((LANG==='en' ? 'Restart? You will lose current progress.' : '¿Seguro que quieres reiniciar? Perderás el progreso actual.'))) return;
   localStorage.removeItem('cvpro_chat16');
   localStorage.removeItem('cvpro_onboarding_visto');
+  // RONDA C — FIX C7: si no se limpia esto, la recarga que sigue restaura
+  // automáticamente el CV ya generado (ver _arrancar()) en vez de arrancar
+  // un chat nuevo, que es justo lo que "Reiniciar" promete hacer.
+  sessionStorage.removeItem('cvTexto');
+  sessionStorage.removeItem('cvData');
   location.reload();
 }
 
@@ -1835,16 +1841,33 @@ async function enviar() {
 
   if (paso < PASOS.length) {
     const key = PASOS[paso].key;
-    datos[key] = texto;
+    // RONDA C — FIX C1 [CRÍTICO]: cuando evaluarRespuesta() detecta que la
+    // respuesta fue pobre, hace `paso--` (ver evaluarRespuesta más abajo)
+    // para volver a preguntar por el MISMO campo. Antes, la respuesta a esa
+    // repregunta pisaba `datos[key]` con un simple `=`, borrando la primera
+    // respuesta del candidato (bug confirmado en T4: "Roadmapping, SQL y
+    // Jira desaparecieron del CV" tras una pregunta de seguimiento sobre
+    // habilidades). `seguimientosDados[key] > 0` en este punto significa
+    // que ya se disparó al menos un seguimiento para esta key y por tanto
+    // este envío es la respuesta AMPLIADA, no la primera — se concatena en
+    // vez de reemplazar.
+    const _esRespuestaDeSeguimiento = (seguimientosDados[key] || 0) > 0;
+    datos[key] = _esRespuestaDeSeguimiento
+      ? (datos[key] ? datos[key] + '\n' + texto : texto)
+      : texto;
     paso++;
     actualizarUI();
     guardarEstado();
 
     // ── ENRIQUECIMIENTO IA EN TIEMPO REAL ──
-    // Para campos clave, enriquecer con IA y actualizar preview inmediatamente
+    // Para campos clave, enriquecer con IA y actualizar preview inmediatamente.
+    // FIX C1: se enriquece con datos[key] YA CONCATENADO (respuesta base +
+    // seguimientos), nunca solo el fragmento de este envío — si no, el
+    // enriquecimiento de la 2ª respuesta pisaría el de la 1ª igual que
+    // pasaba con el dato crudo.
     const camposEnriquecer = ['logros1','logros2','resumen_personal','habilidades_tecnicas'];
     if (camposEnriquecer.includes(key) && texto.trim().length > 3) {
-      enriquecerYActualizarPreview(key, texto);
+      enriquecerYActualizarPreview(key, datos[key]);
     } else {
       actualizarPreview();
     }
@@ -1888,24 +1911,33 @@ async function enviar() {
   if (ci) ci.focus();
 }
 
-// Estima cuántas preguntas quedan: base restantes tras la actual + los
-// seguimientos que aún podrían dispararse en preguntas no respondidas
-// (usa MAX_SEGUIMIENTOS y cuántos ya se dieron). Es una ESTIMACIÓN: el
-// seguimiento solo se activa si la IA decide que la respuesta fue pobre.
+// RONDA C — FIX C2 [MAYOR]: antes esta función sumaba a las preguntas base
+// restantes TODOS los seguimientos que aún podrían dispararse (hasta 6 más
+// en el peor caso), así que con PASOS.length = 14 el contador podía mostrar
+// "quedan ~19" en la primera pregunta — un número mayor que el total
+// anunciado, que confunde más de lo que ayuda. Ahora devuelve SOLO las
+// preguntas BASE restantes (nunca > PASOS.length), y la posibilidad de
+// repreguntas se comunica aparte, como un sufijo pequeño, solo mientras
+// siga siendo posible (ver actualizarUI).
 function _estimarPreguntasRestantes() {
   try {
+    const pasoBase = Math.min(paso, PASOS.length);
+    return Math.max(0, PASOS.length - pasoBase);
+  } catch(e) { return null; }
+}
+
+// ¿Puede aún dispararse algún seguimiento entre las preguntas base que
+// quedan por responder (incluida la actual)? Es una ESTIMACIÓN: el
+// seguimiento solo se activa si la IA decide que la respuesta fue pobre.
+function _puedeHaberSeguimiento() {
+  try {
     const p = Math.min(paso, PASOS.length);
-    let restantes = Math.max(0, PASOS.length - (p + 1));
     for (let i = p; i < PASOS.length; i++) {
       const k = PASOS[i] && PASOS[i].key;
-      if (k && KEYS_SEGUIMIENTO.has(k)) {
-        const max = MAX_SEGUIMIENTOS[k] || 0;
-        const dado = seguimientosDados[k] || 0;
-        restantes += Math.max(0, max - dado);
-      }
+      if (k && KEYS_SEGUIMIENTO.has(k) && (seguimientosDados[k] || 0) < (MAX_SEGUIMIENTOS[k] || 0)) return true;
     }
-    return restantes;
-  } catch(e) { return null; }
+    return false;
+  } catch(e) { return false; }
 }
 
 // ── UI ──
@@ -1925,14 +1957,15 @@ function actualizarUI() {
   else if (nr && LANG === 'en') nr.textContent = 'Restart';
   const ns = document.getElementById('navStep');
   if (ns) {
-    const _restantes = _estimarPreguntasRestantes();
-    ns.innerHTML = (_restantes === null)
-      ? (LANG === 'en'
-          ? `Question <strong id="stepNum">${_stepActual}</strong> of ${PASOS.length} (+ follow-ups)`
-          : `Pregunta <strong id="stepNum">${_stepActual}</strong> de ${PASOS.length} (+ seguimientos)`)
-      : (LANG === 'en'
-          ? `Question <strong id="stepNum">${_stepActual}</strong> · ~${_restantes} left`
-          : `Pregunta <strong id="stepNum">${_stepActual}</strong> · quedan ~${_restantes}`);
+    // FIX C2: "Pregunta X de 14" siempre — el total nunca cambia ni supera
+    // PASOS.length. El posible seguimiento se anuncia aparte, en un sufijo
+    // pequeño, solo mientras aún pueda dispararse uno.
+    const _sufijoSeguimiento = _puedeHaberSeguimiento()
+      ? (LANG === 'en' ? ' <span style="opacity:.65;font-size:.85em">(there may be 1-2 follow-ups)</span>' : ' <span style="opacity:.65;font-size:.85em">(puede haber 1-2 repreguntas)</span>')
+      : '';
+    ns.innerHTML = (LANG === 'en'
+        ? `Question <strong id="stepNum">${_stepActual}</strong> of ${PASOS.length}${_sufijoSeguimiento}`
+        : `Pregunta <strong id="stepNum">${_stepActual}</strong> de ${PASOS.length}${_sufijoSeguimiento}`);
   }
   // Barra de progreso: avance real sobre el total de preguntas
   const _pf = document.getElementById('navProgressFill');
@@ -2041,7 +2074,7 @@ US RESUME STANDARDS (this is a US resume, not a translated Latin American CV):
 - NO "References" section and NO "References available upon request" — obsolete in the US for over a decade.
 - NO "Curriculum Vitae" or "CV" heading — in the US that designates an academic document. The resume starts with the candidate's name.
 - Standard ATS headings only: Professional Summary · Professional Experience · Education · Skills · Certifications. Never "Objective".
-- LANGUAGES: the resume MUST state English proficiency (e.g. "English — Professional working proficiency", "Spanish — Native"). A US resume with no declared English level is an immediate red flag. Use the standard scale: Native / Fluent / Professional working proficiency / Intermediate / Basic. If the candidate never stated their English level, do NOT invent one — list only the languages they actually declared.
+- LANGUAGES: the resume MUST state English proficiency (e.g. "English — Professional working proficiency", "Spanish — Native"). A US resume with no declared English level is an immediate red flag. Use the standard scale: Native / Fluent / Professional working proficiency / Intermediate / Basic. If the candidate never stated a level — for English or for any OTHER language they mention (Tamil, Hindi, Portuguese, etc.) — do NOT invent one: list that language WITHOUT a level rather than guessing "Native" or "Professional working proficiency".
 - DATES in consistent US format throughout: "Jan 2024 – Present", "Mar 2019 – Dec 2022". Never mix formats.
 - LENGTH: 1 page for under 10 years of experience, up to 2 pages beyond that. Prioritise recent and relevant.
 - RESULTS-ORIENTED BULLETS: US convention rewards outcome over duty. Preferred shape: action verb + what was done + what resulted. E.g. "Led a team of 10, exceeding sales targets by 20%" rather than "Responsible for the sales team". BUT truthfulness overrides style: quantify ONLY with figures the candidate actually gave. With no figures, express scope concretely and qualitatively — never invent a number or an "industry-typical" percentage.
@@ -2142,7 +2175,7 @@ REGLAS (estándar de reclutador ejecutivo élite):
 5g. HABILIDADES equilibradas: primero las competencias técnicas concretas del oficio (herramientas, software, técnicas) — son las que pesca el ATS —, después las transversales que sus respuestas respalden. Nunca abras la lista con "Trabajo en equipo" ni "Comunicación".
 5h. SIN MAYÚSCULAS SOSTENIDAS en el cuerpo del texto ni en el nombre (María López, no MARÍA LÓPEZ): dificultan la lectura. Los encabezados cortos de sección sí pueden ir en mayúsculas.
 5i. EL CV TIENE UN SOLO TRABAJO: conseguir la entrevista. Incluye lo relevante para el puesto objetivo y descarta lo que no aporta. Deja material para que el candidato tenga algo que contar en la entrevista.
-5j. SECCIONES ADICIONALES cuando aporten valor: Idiomas (con nivel), Certificaciones, Voluntariado, Proyectos. Inclúyelas solo si el candidato las declaró.
+5j. SECCIONES ADICIONALES cuando aporten valor: Idiomas (con nivel si el candidato lo indicó), Certificaciones, Voluntariado, Proyectos. Inclúyelas solo si el candidato las declaró. NIVELES DE IDIOMA: si el candidato mencionó un idioma SIN indicar su nivel, inclúyelo sin nivel — nunca le asignes "nativo", "fluido", "avanzado" ni ningún otro nivel que no haya dicho, ni siquiera por ser su idioma materno aparente.
 5k. PUESTOS SIMULTÁNEOS EN LA MISMA EMPRESA: si varias responsabilidades ocurren a la vez en el mismo lugar y período, NO las listes como empleos separados — un reclutador lee tres cargos solapados como tres trabajos distintos y desconfía. Agrúpalos bajo el cargo principal y describe las demás funciones en sus bullets (ej.: un médico que además coordina turnos y da docencia es UN puesto con tres responsabilidades, no tres puestos). Solo se listan por separado si son empleadores distintos o períodos distintos.
 5l. FECHAS SIN SOLAPES INJUSTIFICADOS: revisa que los períodos tengan sentido. Dos puestos que se solapan solo se justifican si son empleadores diferentes; en el mismo empleador, unifícalos.
 5m. NO LISTES EL BACHILLERATO ni la educación secundaria si el candidato tiene título universitario o superior: ocupa espacio sin aportar y delata un CV sin criterio. Solo aparece si es su credencial más alta.
@@ -2188,7 +2221,7 @@ ${enIngles?'SKILLS':'HABILIDADES'}
 ───────────
 ${enIngles?'Technical':'Técnicas'}: [${enIngles?'clean comma-separated list, no asterisks':'lista limpia separada por comas, sin asteriscos'}]
 ${enIngles?'Soft skills':'Blandas'}: [${enIngles?'clean list':'lista limpia'}]
-${enIngles?'Languages':'Idiomas'}: ${datos.idiomas_nivel||'Español (Nativo)'}
+${enIngles?'Languages':'Idiomas'}: ${datos.idiomas_nivel||(enIngles?'Spanish':'Español')}
 
 ${datos.disponibilidad?`${enIngles?'ADDITIONAL INFORMATION':'INFORMACIÓN ADICIONAL'}
 ─────────────────────
@@ -2595,7 +2628,8 @@ GENERA EL CV ADAPTADO AHORA:`;
       const rr = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${_enIng?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres Executive Recruiter élite revisando un CV adaptado a una vacante. CRITICA y MEJORA: elimina bullets débiles, refuerza los que respondan a la oferta, asegura que el perfil venda en 5 segundos. VERIFICA que ninguna cifra sea inventada. NO agregues hechos nuevos. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
+Eres Executive Recruiter élite revisando un CV adaptado a una vacante. CRITICA y MEJORA: elimina bullets débiles, refuerza los que respondan a la oferta, asegura que el perfil venda en 5 segundos. VERIFICA que ninguna cifra sea inventada.
+RONDA C — FIX C3: puedes reordenar secciones y bullets, priorizar lo más relevante para la vacante y usar la terminología EXACTA de la vacante, SIEMPRE que el hecho subyacente esté respaldado por las respuestas originales del candidato (lista blanca) — es decir, puedes reformular con las palabras de la oferta un hecho que el candidato ya declaró, pero no puedes añadir un hecho, herramienta, cifra o alcance que no esté en sus respuestas. NO agregues hechos nuevos. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
 CV:
 ${cvAd.substring(0,12000)}`, ..._iaExtra()})
       });
@@ -2604,7 +2638,20 @@ ${cvAd.substring(0,12000)}`, ..._iaExtra()})
     } catch(e2) {}
     // Filtros 3 y 4
     cvAd = await pasadaATS(cvAd, _enIng);
-    cvAd = await generarConValidacion(async () => await pasadaVeracidad(cvAd, cvOriginalBackup || cvGenerado, _enIng), cvOriginalBackup || cvGenerado, _enIng);
+    // AUDITORÍA RONDA C — FIX #1 [MAYOR]: la lista blanca de veracidad debe
+    // ser las respuestas REALES del candidato (_fuenteRespuestasUsuario()),
+    // no el CV previo — usar el CV previo como "fuente de verdad" permite
+    // que errores/invenciones ya colados en él se validen a sí mismos. Solo
+    // cuando viene de "Optimizar CV subido" (flujo sin datos de chat,
+    // `_fuenteRespuestasUsuario()` vacía) se cae al CV previo como único
+    // respaldo disponible.
+    const fuenteVeracidad = (_fuenteRespuestasUsuario() || '').length > 50
+      ? _fuenteRespuestasUsuario()
+      : (cvOriginalBackup || cvGenerado);
+    // FIX C3: `esAdaptacion=true` — la veracidad no debe revertir el
+    // reordenamiento/terminología de la vacante que sí está respaldada por
+    // la lista blanca (ver pasadaVeracidad).
+    cvAd = await generarConValidacion(async () => await pasadaVeracidad(cvAd, fuenteVeracidad, _enIng, true), fuenteVeracidad, _enIng);
     cvGenerado = cvAd;
     sessionStorage.setItem('cvTexto', cvGenerado);
     const cvData = construirCVData();
@@ -3234,9 +3281,13 @@ const MAX_PROMPT_CHARS = 20000;
 // LISTA BLANCA de respuestas del candidato: SOLO texto escrito por el
 // usuario — las 14 claves base. `datos[k]` es el crudo tal como el usuario
 // lo tecleó; cuando hubo pregunta de seguimiento, `paso--` reutiliza el
-// mismo campo, así que `datos[k]` YA contiene la respuesta ampliada por el
-// candidato. Nunca se incluye `datos[k+'_enriquecido']` aquí: ese campo lo
-// redacta la IA (enriquecerYActualizarPreview) y mezclarlo en la lista
+// mismo campo y la captura en enviar() CONCATENA la respuesta ampliada con
+// un salto de línea en vez de pisar la original (RONDA C — FIX C1: antes
+// SÍ se pisaba con `=`, y esta lista blanca terminaba con menos datos
+// reales de los que el candidato había escrito). `datos[k]` por tanto
+// contiene siempre el texto ÍNTEGRO del candidato para esa key: base +
+// seguimientos. Nunca se incluye `datos[k+'_enriquecido']` aquí: ese campo
+// lo redacta la IA (enriquecerYActualizarPreview) y mezclarlo en la lista
 // blanca contaminaría la auditoría de veracidad con texto no escrito por
 // el candidato.
 function _fuenteRespuestasUsuario() {
@@ -3246,7 +3297,13 @@ function _fuenteRespuestasUsuario() {
     .filter(Boolean).join('\n');
 }
 
-async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng) {
+// RONDA C — FIX C3: `esAdaptacion` (opcional, default false) se pasa en
+// true SOLO desde la ruta de "Adaptar a una vacante". Antes esta pasada de
+// veracidad revertía el reordenamiento/terminología de la vacante que la
+// 2ª pasada de adaptación sí había aplicado con respaldo en la lista
+// blanca, porque el prompt no distinguía "hecho nuevo" de "misma cosa
+// dicha con las palabras de la oferta". Ver _construirPromptVeracidad.
+async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng, esAdaptacion) {
   if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
   try {
     if (typeof marcarPaso === 'function') marcarPaso(4);
@@ -3275,6 +3332,9 @@ ${enIng?"- If a term in the resume is just a more professional phrasing of the S
 - INFLACIÓN DE ALCANCE: cualificadores técnicos, procesos o responsabilidades que amplíen lo que la LISTA BLANCA dice. Ejemplos: la lista dice "levantamientos" y el CV dice "levantamientos topográficos"; la lista dice "compra de materiales" y el CV dice "control de inventarios" o "trazabilidad financiera"; la lista no menciona "licitación" y el CV sí. Reduce cada afirmación al alcance EXACTO de la lista, conservando la buena redacción.
 - PLACEHOLDERS: elimina por completo todo segmento tipo "Período no especificado", "Not specified", "N/A" o similar. Si la lista no da fechas, el encabezado del puesto queda "Cargo | Empresa" — la ausencia de un dato se omite, nunca se anuncia.
 - CIUDAD DE RESIDENCIA: si el CV declara una ciudad que la lista no da como residencia del candidato (p. ej. tomada de su universidad o empresa), elimínala y deja solo el país.
+${esAdaptacion ? (enIng
+  ? '- ADAPTED-TO-A-JOB-POSTING VERSION: this resume was reordered and its wording aligned to a specific job posting. That is EXPECTED and must be KEPT — do not undo it. Reordering sections/bullets, prioritizing what matters most for the posting, and rephrasing a fact with the posting\'s exact terminology are all ALLOWED as long as the underlying fact is backed by the WHITELIST. Only strip what adds a fact, tool, figure or scope absent from the whitelist — never strip a reordering or a same-fact rewording just because it now uses the posting\'s wording.'
+  : '- VERSIÓN ADAPTADA A UNA VACANTE: este CV fue reordenado y redactado con la terminología de una vacante específica. Eso es ESPERADO y debe CONSERVARSE — no lo deshagas. Reordenar secciones/bullets, priorizar lo más relevante para la vacante y reformular un hecho con la terminología EXACTA de la oferta están PERMITIDOS siempre que el hecho subyacente esté respaldado por la LISTA BLANCA. Elimina solo lo que añada un hecho, herramienta, cifra o alcance ausente en la lista — nunca deshagas un reordenamiento ni una reformulación del mismo hecho solo porque ahora usa las palabras de la vacante.') : ''}
 Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes.
 VERIFICA ADEMÁS LAS FECHAS:
 - Ninguna fecha de inicio puede ser posterior a la de fin.
@@ -3935,17 +3995,21 @@ function habilidadesDeRespaldo() {
     datos.puesto || ''
   ].join(', ');
 
-  let items = fuentes.split(/[,;\/\n]/)
+  // FIX C4: separador de "/" solo cuando va RODEADO de espacios ("Excel /
+  // Word" sí se separa) — nunca pegado a texto ("A/B testing", "TCP/IP")
+  // porque eso partía "A/B testing" en "A" (descartado por corto) + "B
+  // testing", perdiendo la "A/" del CV final.
+  let items = fuentes.split(/[,;\n]|\s\/\s/)
     .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').trim())
-    .filter(s => s.length > 2 && s.length < 40 && !/^(no|ninguna|n\/a|none|sin )/i.test(s));
+    .filter(s => s.length > 0 && s.length < 40 && !esRuido(s) && !/^(no|ninguna|n\/a|none|sin )/i.test(s));
 
   // Si el chat no dio nada, intentamos rescatar de las secciones del CV generado
   if (!items.length) {
     const m = (cvGenerado || '').match(/(?:HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES)[^\n]*\n[─\-═]*\s*\n([\s\S]{5,400}?)(?=\n[A-ZÁÉÍÓÚ]{4,}|$)/i);
     if (m) {
-      items = m[1].split(/[,;\/\n]/)
+      items = m[1].split(/[,;\n]|\s\/\s/)
         .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').replace(/^(Técnicas?|Technical|Blandas?|Soft)\s*:/i, '').trim())
-        .filter(s => s.length > 2 && s.length < 40);
+        .filter(s => s.length > 0 && s.length < 40 && !esRuido(s));
     }
   }
 
@@ -3961,12 +4025,19 @@ function habilidadesDeRespaldo() {
 const _HEADERS_CV = 'RESUMEN|PERFIL|PROFESSIONAL|EXPERIENCIA|EXPERIENCE|WORK|EDUCACI[ÓO]N|EDUCATION|FORMACI[ÓO]N|HABILIDADES|SKILLS|COMPETENCIAS|COMPETENCIES|APTITUDES|CERTIFICACIONES|CERTIFICATIONS|IDIOMAS|LANGUAGES|LOGROS|ACHIEVEMENTS|INFORMACI[ÓO]N|REFERENCIAS|REFERENCES|PUBLICACIONES|PUBLICATIONS|MEMBRES[ÍI]AS|MEMBERSHIPS|CURSOS|COURSES|INVESTIGACI[ÓO]N|RESEARCH|TESIS|THESIS|CONGRESOS|CONFERENCES|PREMIOS|AWARDS|RECONOCIMIENTOS|PROYECTOS|PROJECTS|VOLUNTARIADO|VOLUNTEER|OBJETIVO|OBJECTIVE|CONTACTO|CONTACT|DATOS PERSONALES|SOBRE M[ÍI]|ABOUT ME|EXTRACURRICULAR';
 const ES_HEADER = new RegExp('^(?:' + _HEADERS_CV + ')\\b', 'i');
 
+// RONDA C — FIX C4: tokens técnicos cortos y legítimos (lenguajes,
+// abreviaturas) que el corte por longitud de abajo descartaba sin más.
+// "C", "R", "Go" son lenguajes de programación reales; sin esta lista
+// quedaban fuera de cualquier habilidad aunque el candidato los escribiera.
+const _TOKENS_CORTOS_VALIDOS = /^(c|r|go|ai|ml|ui|ux|it|qa|ci|cd|db|os|bi|hr|pr|3d|2d|c#|f#|r&d)$/i;
+
 // Descarta encabezados, separadores y basura que el parser confunde con datos.
 // Sin esto, títulos como "INVESTIGACIÓN" o líneas de guiones acababan
 // impresos como si fueran una habilidad o un estudio del candidato.
 function esRuido(t) {
 const s = String(t || '').replace(/^[\s•·▸▪\-\*]+/, '').trim();
-if (!s || s.length < 3) return true;
+if (!s) return true;
+if (s.length < 3 && !_TOKENS_CORTOS_VALIDOS.test(s)) return true;
 if (ES_HEADER.test(s)) return true;
 if (/^[─═_\-–—.·•\s]+$/.test(s)) return true;          // separadores
 if (!/[a-záéíóúñA-ZÁÉÍÓÚÑ0-9]/.test(s)) return true;    // sin contenido real
@@ -4384,14 +4455,18 @@ function construirCVData() {
 
   // esRuido() descarta encabezados como "INVESTIGACIÓN" o "MEMBRESÍAS" que
   // el parser colaba en la lista de habilidades, y las líneas de guiones.
-  const habsTec = habsTexto.split(/[,;\/\n]/)
+  // FIX C4: split solo corta "/" cuando va rodeado de espacios (no en medio
+  // de "A/B testing" o "TCP/IP"); el filtro ya no exige length>2 — eso
+  // descartaba tokens cortos reales ("C", "R", "Go", "SQL"), esRuido() es
+  // quien decide qué es basura.
+  const habsTec = habsTexto.split(/[,;\n]|\s\/\s/)
     .map((h, i) => ({ nombre: h.trim().replace(/^[\-•·▸▪\s]+/, '').replace(/[.,;]$/,'').trim(), nivel: Math.max(65, 92 - i * 6) }))
-    .filter(h => h.nombre && h.nombre.length > 2 && h.nombre.length < 40 && !esRuido(h.nombre))
+    .filter(h => h.nombre && h.nombre.length > 0 && h.nombre.length < 40 && !esRuido(h.nombre))
     .slice(0, 8);
 
-  const habsBlan = habsBTexto.split(/[,;\/\n]/)
+  const habsBlan = habsBTexto.split(/[,;\n]|\s\/\s/)
     .map((h, i) => ({ nombre: h.trim().replace(/^[\-•·▸▪\s]+/, '').replace(/[.,;]$/,'').trim(), nivel: Math.max(60, 85 - i * 5) }))
-    .filter(h => h.nombre && h.nombre.length > 2 && h.nombre.length < 35 && !esRuido(h.nombre))
+    .filter(h => h.nombre && h.nombre.length > 0 && h.nombre.length < 35 && !esRuido(h.nombre))
     .slice(0, 4);
 
   let todasHabs = sinDuplicados([...habsTec, ...habsBlan], 'nombre').slice(0, 12);
@@ -4427,8 +4502,13 @@ function construirCVData() {
         nivel = partes.slice(1).join(' ');
       }
       nombre = nombre.trim().replace(/[()]/g, '');
-      nivel  = (nivel || 'Nativo').trim().replace(/[()]/g, '').replace(/^[·\-–—:\s]+|[·\-–—:\s]+$/g, '');
-      return { nombre, nivel: nivel || 'Nativo' };
+      // RONDA C — FIX C5: antes, si el candidato no indicó nivel para un
+      // idioma, se le asignaba "Nativo" por defecto — un dato inventado que
+      // el candidato nunca declaró (bug confirmado en T4: "niveles de
+      // idioma inventados para Tamil/Hindi"). Ahora, sin nivel indicado, el
+      // idioma se lista SIN nivel — nunca se inventa uno.
+      nivel = (nivel || '').trim().replace(/[()]/g, '').replace(/^[·\-–—:\s]+|[·\-–—:\s]+$/g, '');
+      return { nombre, nivel };
     })
     .filter(i => i && i.nombre && i.nombre.length > 1 && !/^[\-•·]/.test(i.nombre));
 
@@ -4534,7 +4614,10 @@ function construirCVData() {
     experiencia: ordenarExperiencia(experiencia),
     educacion,
     habilidades: todasHabs.length ? todasHabs : habilidadesDeRespaldo(),
-    idiomas: idiomas.length ? idiomas : [{ nombre: 'Español', nivel: 'Nativo' }],
+    // FIX C5: fallback cuando no hay NINGÚN dato de idiomas — traducido
+    // según LANG, y SIN nivel (no se inventa "Nativo": el candidato nunca
+    // lo declaró explícitamente en este caso extremo).
+    idiomas: idiomas.length ? idiomas : [{ nombre: LANG === 'en' ? 'Spanish' : 'Español', nivel: '' }],
     logros
   });
 }
@@ -4608,6 +4691,11 @@ function actualizarBtnVerCV() {
   const enChat = !!document.querySelector('.chat-col');
   const abierto = document.querySelector('.preview-col.movil-abierto');
   btn.style.display = (hayDatos && enChat && !abierto) ? 'flex' : 'none';
+  // RONDA C — FIX C6: el aria-label quedaba fijo en "Ver mi CV" en el HTML
+  // (nunca se tocaba desde JS), así que un lector de pantalla en inglés
+  // seguía anunciando el botón en español aunque el texto visible ya se
+  // tradujera abajo.
+  btn.setAttribute('aria-label', LANG === 'en' ? 'View my resume' : 'Ver mi CV');
   const t = document.getElementById('btnVerCVTxt');
   if (t) t.textContent = LANG === 'en' ? 'View my resume' : 'Ver mi CV';
   const c2 = document.getElementById('btnCerrarPreviewTxt');
@@ -4694,7 +4782,17 @@ let onbPaso = 0;
 
 function mostrarOnboarding() {
   if (localStorage.getItem('cvpro_onboarding_visto')) return;
-  document.getElementById('onbOverlay').style.display = 'flex';
+  // RONDA C — FIX C8: solo hay dos rutas que llaman a mostrarOnboarding()
+  // (elegirIdiomaCV() y _arrancar() cuando el idioma llega por URL/guardado)
+  // y son mutuamente excluyentes, pero si por lo que sea alguna vuelve a
+  // invocarla mientras el modal ya está abierto (p. ej. un doble clic en el
+  // selector de idioma), reiniciar onbPaso a 0 y volver a pintar dejaba al
+  // usuario viendo "Paso 1 de 3" otra vez sobre un modal que ya había
+  // avanzado — de ahí la sensación de tener que cerrarlo varias veces.
+  const ov = document.getElementById('onbOverlay');
+  if (ov && ov.style.display === 'flex') return;
+  onbPaso = 0;
+  if (ov) ov.style.display = 'flex';
   renderOnbPaso();
 }
 
@@ -4768,6 +4866,18 @@ function cerrarOnboarding() {
   setTimeout(() => {
     overlay.style.display = 'none';
     localStorage.setItem('cvpro_onboarding_visto', 'true');
+    // AUDITORÍA RONDA C — FIX #3 [MENOR]: el vigilante de 3s (ver más abajo)
+    // ahora se abstiene de arrancar el chat mientras el onboarding está
+    // abierto (Ronda C, FIX C8) para no pintar una pregunta duplicada por
+    // debajo del modal. Pero si el usuario tardó más de 3s en cerrarlo, esa
+    // abstención dejaba el chat sin arrancar NUNCA — aquí se retoma el
+    // arranque si de verdad no llegó a pintarse ningún mensaje.
+    try {
+      const msgs = document.getElementById('chatMessages');
+      if (msgs && msgs.querySelectorAll('.msg').length === 0 && typeof arrancarChat === 'function') {
+        arrancarChat();
+      }
+    } catch(e) { console.error('Arranque tras cerrar onboarding falló:', e); }
   }, 280);
 }
 
@@ -4785,7 +4895,12 @@ function cerrarOnboarding() {
   // ── RECUPERAR CV CON CÓDIGO (viene del botón de la portada) ──
   // Un cliente que ya pagó vuelve por su CV: llega con ?recuperar=1 y se le
   // pide el código en cuanto la página está lista, sin tener que buscar el 🔑.
-  if (_urlP.get('recuperar') === '1') {
+  // AUDITORÍA RONDA C — FIX #2 [MENOR]: esta ruta debe ganar sobre el
+  // restauro automático de sessionStorage.cvTexto — si no, un cliente que
+  // llega a recuperar SU código veía en su lugar (sin pedírselo) el CV que
+  // hubiera quedado cacheado en esta pestaña de una sesión anterior.
+  const _recuperarActivo = _urlP.get('recuperar') === '1';
+  if (_recuperarActivo) {
     const _lr = _urlP.get('lang');
     if (_lr) LANG = _lr === 'en' ? 'en' : 'es';
     setTimeout(() => { if (typeof mostrarRecuperarHeader === 'function') mostrarRecuperarHeader(); }, 700);
@@ -4827,6 +4942,13 @@ function cerrarOnboarding() {
       if (_langSesion && _langSesion !== _pedido) {
         console.log('Idioma distinto al de la sesión guardada — se empieza limpio en', _pedido);
         localStorage.removeItem('cvpro_chat16');
+        // AUDITORÍA RONDA C — FIX #2 [MENOR]: el CV ya generado en
+        // sessionStorage.cvTexto también pertenece a la sesión ANTERIOR
+        // (otro idioma). Sin esto, el restauro automático de más abajo
+        // mostraba ese CV viejo en el idioma equivocado en vez de arrancar
+        // limpio en `_pedido`.
+        sessionStorage.removeItem('cvTexto');
+        sessionStorage.removeItem('cvData');
       }
       localStorage.setItem('cvpro_lang_sesion', _pedido);
     }
@@ -4837,6 +4959,35 @@ function cerrarOnboarding() {
 
     // Restaurar progreso guardado
     const saved = localStorage.getItem('cvpro_chat16');
+    let _savedDatos = null;
+    if (saved) {
+      try { _savedDatos = JSON.parse(saved).datos || null; } catch(e) {}
+    }
+
+    // ── RONDA C — FIX C7: NO regenerar con IA en cada recarga ──
+    // Antes, si `cvpro_chat16` quedaba guardado con paso >= PASOS.length
+    // (por ejemplo porque guardarCVConCodigo()/guardarEnSupabase() lanzó
+    // tras generar y el catch de mostrarGenerando() impidió llegar a la
+    // línea que limpia esa bandera — ver mostrarGenerando()), una simple
+    // recarga de página volvía a llamar a generarConIA() completo: ~15-20s
+    // de IA y un CV ligeramente distinto reemplazando el ya entregado.
+    // Ahora, si el CV YA fue generado en esta pestaña (sessionStorage
+    // sobrevive a un F5, se pierde al cerrar la pestaña — por eso ya
+    // "corresponde a la sesión actual" sin comprobación adicional), se
+    // restaura la vista de resultado directamente con el texto guardado,
+    // SIN ninguna llamada a la IA. Solo se regenera si el usuario pulsa
+    // explícitamente "🔄 Regenerar" (regenerarCV()) o "Reiniciar" (que
+    // ahora también limpia este CV guardado, ver reiniciar()).
+    // FIX #2: si el usuario llegó a recuperar su CV por código, esa ruta
+    // gana — no lo interceptamos mostrando un CV cacheado de esta pestaña.
+    const _cvYaGenerado = !_recuperarActivo ? sessionStorage.getItem('cvTexto') : null;
+    if (_cvYaGenerado && _cvYaGenerado.trim().length > 200) {
+      if (_savedDatos) datos = {...datos, ..._savedDatos};
+      localStorage.removeItem('cvpro_chat16');
+      mostrarResultado(_cvYaGenerado);
+      return;
+    }
+
     if (saved) {
       try {
         const s = JSON.parse(saved);
@@ -4885,6 +5036,16 @@ function cerrarOnboarding() {
       const sel = document.getElementById('langSelector');
       const selVisible = sel && sel.style.display !== 'none' && sel.offsetParent !== null;
       const cargando = document.getElementById('chatCargando');
+      // RONDA C — FIX C8: el modal de onboarding también deja chatMessages
+      // vacío mientras el usuario lo está leyendo (arrancarChat() pinta la
+      // primera pregunta recién al cerrarlo). Sin esta comprobación, el
+      // vigilante interpretaba eso como un arranque fallido y llamaba a
+      // arrancarChat() por debajo del modal — una segunda pregunta inicial
+      // quedaba pintada y lista para cuando el usuario por fin cerraba el
+      // onboarding, dando la sensación de que había que cerrarlo varias
+      // veces / que bloqueaba el input.
+      const onbAbierto = document.getElementById('onbOverlay');
+      if (onbAbierto && onbAbierto.style.display === 'flex') return;
       if (!selVisible && cargando && msgs && msgs.querySelectorAll('.msg').length === 0) {
         console.warn('⏱️ El chat no arrancó en 3s — forzando arranque');
         if (typeof ev === 'function') ev('arranque_forzado_watchdog');

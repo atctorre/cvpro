@@ -217,21 +217,38 @@
       '<p class="sub">' + esc(T.verificandoSub) + '</p>';
   }
 
+  // Respaldo SOLO para cuando "monto" llega vacío/0 desde el proveedor de
+  // pago. NO es la fuente de verdad del precio (el precio real vive en la
+  // pasarela de pago / backend); es únicamente para que el evento de
+  // analytics y la pantalla de confirmación no muestren $0.00 cuando el
+  // dato esperado no llegó. Si estos precios cambian, deben actualizarse
+  // aquí también o el respaldo quedará desactualizado.
+  var MONTO_RESPALDO_PLAN = { basico: 4.99, estandar: 9.99, premium: 14.99 };
+
   function pintarExito(datos) {
     var _orderCode = datos && datos.orderCode || '';
+    // Monto efectivo: usa el que llegó del proveedor; si viene vacío o 0,
+    // cae al respaldo por plan y deja evidencia en analytics de que se usó
+    // el respaldo (para poder auditar cuántas veces pasa esto).
+    var _planIdReal = (datos && datos.plan) || 'basico';
+    var _montoOriginal = Number((datos && datos.monto) || 0);
+    var _montoUsoRespaldo = !(_montoOriginal > 0);
+    var _montoEfectivo = _montoUsoRespaldo
+      ? (MONTO_RESPALDO_PLAN[_planIdReal] || MONTO_RESPALDO_PLAN.basico)
+      : _montoOriginal;
     if (_orderCode) {
       try {
         if (!localStorage.getItem('cvpro_purchase_' + _orderCode)) {
           var _nombresPlan = { basico: 'Básico', estandar: 'Estándar', premium: 'Premium' };
-          var _planId = (datos && datos.plan) || 'basico';
+          var _planId = _planIdReal;
           var _nombrePlanEs = _nombresPlan[_planId] || _nombresPlan.basico;
-          var _monto = Number((datos && datos.monto) || 0);
+          if (_montoUsoRespaldo) ev('purchase_monto_vacio', { plan: _planId, orderCode: _orderCode, monto_respaldo: _montoEfectivo });
           ev('purchase', {
             transaction_id: _orderCode,
-            value: _monto,
+            value: _montoEfectivo,
             currency: 'USD',
             plan: _planId,
-            items: [{ item_id: _planId, item_name: _nombrePlanEs, price: _monto, quantity: 1 }]
+            items: [{ item_id: _planId, item_name: _nombrePlanEs, price: _montoEfectivo, quantity: 1 }]
           });
           localStorage.setItem('cvpro_purchase_' + _orderCode, '1');
         }
@@ -243,7 +260,7 @@
       premium: { es: 'Premium', en: 'Premium' }
     };
     var nom = (nombres[datos.plan] || nombres.basico)[LANG];
-    var monto = Number(datos.monto || 0).toFixed(2);
+    var monto = _montoEfectivo.toFixed(2);
 
     var codigo = '';
     try { codigo = sessionStorage.getItem('cvpro_codigo') || datos.codigo_cv || ''; } catch (e) { codigo = datos.codigo_cv || ''; }

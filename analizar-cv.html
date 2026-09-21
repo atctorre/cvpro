@@ -638,12 +638,45 @@ function sanitizarEntrada(txt) {
     .replace(/```[\s\S]{0,200}?```/g, '');
 }
 
+// ══ Identificador anónimo de sesión + código tester, igual que chat-cv.html ══
+// Sin esto, esta página llamaba a super-service sin "sesion" ni "tester" y
+// el servidor la trataba como tráfico anónimo por IP (límite de 40/h
+// compartido entre todos los visitantes de esa IP/red), no por sesión.
+function obtenerSesionCVPro() {
+  try {
+    let s = localStorage.getItem('cvpro_sesion');
+    if (!s || typeof s !== 'string' || s.length < 8) {
+      s = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID()
+        : 'sx-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+      localStorage.setItem('cvpro_sesion', s);
+    }
+    return s;
+  } catch (e) { return ''; }
+}
+function obtenerTesterParaIA() {
+  try { return localStorage.getItem('cvpro_tester_cod') || ''; } catch (e) { return ''; }
+}
+function _iaExtra() {
+  return { sesion: obtenerSesionCVPro(), tester: obtenerTesterParaIA() };
+}
+
 async function llamarIA(prompt) {
   const res = await fetch(`${SB_URL}/functions/v1/super-service`, {
     method: 'POST',
     headers: {'Content-Type':'application/json','Authorization':`Bearer ${SB_KEY}`},
-    body: JSON.stringify({prompt})
+    body: JSON.stringify({prompt, ..._iaExtra()})
   });
+  if (res.status === 429) {
+    // Límite temporal del servidor: no es un error de la app, hay que
+    // decírselo al usuario con honestidad (cuándo puede reintentar) en vez
+    // de un mensaje genérico de fallo.
+    let retryAfterSeconds = null;
+    try { const j = await res.clone().json(); retryAfterSeconds = j && j.retry_after_seconds; } catch (_e) {}
+    const e429 = new Error('rate_limited');
+    e429.isLimite = true;
+    e429.retryAfterSeconds = retryAfterSeconds;
+    throw e429;
+  }
   const data = await res.json();
   const raw = (data.cv || '').replace(/```json|```/g, '').trim();
   return JSON.parse(raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
@@ -661,6 +694,19 @@ ${cvTextoGlobal}`;
     const r = await llamarIA(prompt);
     mostrarResultado(r);
   } catch(e) {
+    if (e && e.isLimite) {
+      const mins = (e.retryAfterSeconds != null && isFinite(e.retryAfterSeconds) && e.retryAfterSeconds > 0)
+        ? Math.max(1, Math.ceil(e.retryAfterSeconds / 60)) : null;
+      const cuando = mins != null
+        ? (LANG==='en' ? `in ${mins} min` : `en ${mins} min`)
+        : (LANG==='en' ? 'in a few minutes' : 'en unos minutos');
+      const msg = LANG==='en'
+        ? `⏳ You've reached the temporary analysis limit. You can try again ${cuando}.`
+        : `⏳ Has alcanzado el límite temporal de análisis. Puedes intentar de nuevo ${cuando}.`;
+      err(`${msg}<br><br><button onclick="analizarCV()" style="background:#FFD000;color:#0a0a0a;border:none;border-radius:50px;padding:11px 24px;font-weight:800;cursor:pointer;margin-top:6px">${LANG==='en'?'🔄 Retry':'🔄 Reintentar'}</button>`);
+      ev('free_analysis_rate_limited', {retry_after_seconds: e.retryAfterSeconds || null});
+      return;
+    }
     err(LANG==='en' ? 'Analysis failed. Wait 30 seconds and try again.' : 'El análisis falló. Espera 30 segundos e intenta de nuevo.');
     dz.style.display = 'block';
   }

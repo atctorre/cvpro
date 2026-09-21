@@ -1013,6 +1013,9 @@ const TEXTOS = {
     planPeriod: 'pago único',
     planBtn: '⚡ Crear mi CV ahora',
     secLabelPricing: 'Precios',
+    secLabelFaq: 'Preguntas frecuentes',
+    finalLabel: '¿Listo?',
+    finalTitle: 'Tu próximo trabajo empieza<br>con un buen CV',
     secTitlePricing: 'Sin sorpresas. <em>Sin suscripciones.</em>',
     secSubPricing: 'Pago único. Todo incluido.',
   },
@@ -1051,6 +1054,9 @@ const TEXTOS = {
     planPeriod: 'one-time payment',
     planBtn: '⚡ Create my resume now',
     secLabelPricing: 'Pricing',
+    secLabelFaq: 'FAQ',
+    finalLabel: 'Ready?',
+    finalTitle: 'Your next job starts<br>with a great resume',
     secTitlePricing: 'No surprises. <em>No subscriptions.</em>',
     secSubPricing: 'One-time payment. Everything included.',
   }
@@ -1189,8 +1195,8 @@ function aplicarIdioma() {
   });
 }
 
-function setText(id, val) { const el = document.getElementById(id); if(el) el.textContent = val; }
-function setHTML(id, val) { const el = document.getElementById(id); if(el) el.innerHTML = val; }
+function setText(id, val) { if (val === undefined || val === null) return; const el = document.getElementById(id); if(el) el.textContent = val; }
+function setHTML(id, val) { if (val === undefined || val === null) return; const el = document.getElementById(id); if(el) el.innerHTML = val; }
 window.addEventListener('scroll', () => {
   document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
 });

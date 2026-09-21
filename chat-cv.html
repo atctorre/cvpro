@@ -4491,7 +4491,7 @@ function renderOnbPaso() {
     ${total > 1 ? `<div class="onb-swipe-hint">${LANG==="en"?"Swipe to navigate":"Desliza para navegar"}</div>` : ''}`;
 
   const dots = document.getElementById('onbDots');
-  dots.innerHTML = ONB_PASOS.map((_,i)=>`<div class="onb-dot ${i===onbPaso?'act':''}"></div>`).join('');
+  dots.innerHTML = _onbPasos().map((_,i)=>`<div class="onb-dot ${i===onbPaso?'act':''}"></div>`).join('');
 }
 
 function siguienteOnb() {

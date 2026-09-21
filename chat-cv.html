@@ -2030,8 +2030,15 @@ async function enviar() {
     // este envío es la respuesta AMPLIADA, no la primera — se concatena en
     // vez de reemplazar.
     const _esRespuestaDeSeguimiento = (seguimientosDados[key] || 0) > 0;
+    // RONDA D6b — FIX #1a [MAYOR]: si el candidato repite literalmente su
+    // respuesta anterior en la repregunta (eco), concatenar producía texto
+    // duplicado ("manejo de caja, atención al cliente manejo de caja,
+    // atención al cliente"). No se concatena cuando el texto nuevo,
+    // normalizado, ya está contenido en el dato previo normalizado.
+    const _normEco = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+    const _esEco = _esRespuestaDeSeguimiento && datos[key] && _normEco(datos[key]).includes(_normEco(texto));
     datos[key] = _esRespuestaDeSeguimiento
-      ? (datos[key] ? datos[key] + '\n' + texto : texto)
+      ? (_esEco ? datos[key] : (datos[key] ? datos[key] + '\n' + texto : texto))
       : texto;
     paso++;
     actualizarUI();
@@ -2215,7 +2222,7 @@ async function mostrarGenerando() {
   await mostrarTyping(600);
   renderMsgAI(LANG==='en'
     ? `Perfect ${datos.nombre?.split(' ')[0]}! 🎉 I have everything.\n\nNow the AI will:\n✅ Transform and polish your writing\n✅ Quantify your achievements with industry metrics\n✅ Optimize for ATS filters\n✅ Generate your complete executive resume\n\nThis takes 10-20 seconds...`
-    : `¡Perfecto ${datos.nombre?.split(' ')[0]}! 🎉 Tengo toda la información.\n\nAhora Claude va a:\n✅ Transformar y profesionalizar tu redacción\n✅ Cuantificar tus logros con métricas del sector\n✅ Optimizar para filtros ATS\n✅ Generar tu CV ejecutivo completo\n\nEsto tomará entre 10-20 segundos...`);
+    : `¡Perfecto ${datos.nombre?.split(' ')[0]}! 🎉 Tengo toda la información.\n\nAhora la IA va a:\n✅ Transformar y profesionalizar tu redacción\n✅ Cuantificar tus logros con métricas del sector\n✅ Optimizar para filtros ATS\n✅ Generar tu CV ejecutivo completo\n\nEsto tomará entre 10-20 segundos...`);
 
   await mostrarTyping(2000);
 
@@ -2402,6 +2409,7 @@ REGLAS (estándar de reclutador ejecutivo élite):
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. ${enIngles?'PROHIBITED to compensate for a missing figure with unstated scope/intensity adjectives (\'high volume\', \'complex environment\', \'demanding\', \'multiple\'...). Without a number, describe the task PLAINLY: verb + object + named tool/process — no quantifying and no qualifying. Correct example with no figures: \'Managed a corporate client portfolio in the pharmaceutical sector, from prospecting through after-sales.\' A true bullet with no numbers is ALWAYS better than one with fabricated figures: the candidate must be able to defend every claim in an interview.':'PROHIBIDO compensar una cifra ausente con adjetivos de alcance/intensidad no declarados (\'alto volumen\', \'entorno complejo\', \'exigente\', \'múltiples\'...). Sin cifra, describe la tarea de forma LLANA: verbo + objeto + herramienta/proceso nombrado — sin cuantificar ni calificar. Ejemplo correcto sin cifras: \'Gestionó cartera de clientes corporativos del sector farmacéutico, desde prospección hasta postventa.\' Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.'}
 5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
+5a2. ${enIngles?'COMPANY NAME: use EXACTLY the text the candidate gave. If they didn\'t give a name (e.g. "my uncle\'s workshop", "a small family shop"), write that literal description as the employer — never invent a formal-sounding company name.':'EMPRESA: usa exactamente el texto que dio el candidato; si no dio nombre, escribe la descripción literal ("taller de mi tío"), nunca un nombre nuevo.'}
 5z. ${enIngles?'PUESTO MARCADO "[NO FUNCTIONS DECLARED]": write ONLY the job title, company and dates for that position — no bullets, no description. Never deduce duties from the job title alone; if you were not told what the candidate did there, you don\'t know it.':'PUESTO MARCADO "[SIN FUNCIONES DECLARADAS]": escribe ÚNICAMENTE cargo, empresa y fechas para ese puesto — sin viñetas ni descripción. Nunca deduzcas funciones a partir del cargo: si no te dijeron qué hacía ahí, no lo sabes.'}
 5b. SI EL CANDIDATO TIENE POCA O NINGUNA EXPERIENCIA LABORAL: no dejes secciones vacías ni inventes empleos. Construye el CV alrededor de formación académica, proyectos de estudio, prácticas, voluntariado, cursos, competencias técnicas adquiridas y capacidad demostrada. Encabeza con el perfil y la educación en lugar de la experiencia. Un CV honesto de recién graduado bien redactado supera a uno con experiencia fabricada. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
 5c. PROHIBIDO AMPLIAR EL ALCANCE: no añadas sustantivos técnicos, procesos ni cualificadores que el candidato no haya declarado (ej.: "levantamientos" no se convierte en "levantamientos topográficos"; "compra de materiales" no se convierte en "gestión de inventarios" ni "trazabilidad financiera"). Cada término técnico debe salir de las respuestas del candidato — lo defenderá en la entrevista.
@@ -2409,7 +2417,7 @@ REGLAS (estándar de reclutador ejecutivo élite):
 5e. FORMACIÓN, convención hispana en tres niveles cuando aplique: estudios oficiales (titulación reglada), formación complementaria (cursos, certificaciones) y competencias en informática e idiomas. Formato: "Titulación — Institución, Ciudad — Año". ${enIngles?'List secondary school only if it is the highest level the candidate reached, or if the candidate declared it explicitly — see the education rule (5i2): never omit a study the candidate mentioned.':'Lista el bachillerato solo si es el nivel máximo alcanzado o si el candidato lo declaró expresamente — ver regla de educación (5i2): jamás omitas un estudio que el candidato haya mencionado.'}
 5f. FECHAS coherentes en todo el documento: usa el mismo formato en todas las entradas ("Ene 2020 – Dic 2023" o "2020 – 2023", pero no mezcles). Si el candidato dio mes y año, consérvalos: aportan precisión.
 5f2. FECHA ACTUAL: ${fechaHoyYYYYMM}. Ninguna fecha del CV puede ser posterior a hoy. Si el puesto es el actual del candidato, la fecha de fin debe ser "${enIngles?'Present':'Actualidad'}", nunca una fecha futura inventada.
-5f3. ${enIngles?"DATE ATTRIBUTION: a year backs only the entry on whose own line it appears; if a position has no year given, its header stays without a period. TOTAL YEARS: 'X years of experience' only if it derives exactly from the dates given; if it doesn't, don't write it.":"ATRIBUCIÓN DE FECHAS: un año solo respalda la entrada en cuya misma línea aparece; si un puesto no trae año, el encabezado queda sin período. TOTALES DE AÑOS: 'X años de experiencia' solo si se deriva exactamente de las fechas dadas; si no, no lo escribas."}
+5f3. ${enIngles?"DATE ATTRIBUTION: a year backs only the entry on whose own line it appears; if a position has no year given, its header stays without a period. TOTAL YEARS: forbidden anywhere in the resume unless it derives EXACTLY from complete dates given (a start year AND an end year, for one entry or summed across entries). 'Since 2016' does NOT authorize a total — there is no end date to compute one from. If you can't compute it exactly, don't write it.":"ATRIBUCIÓN DE FECHAS: un año solo respalda la entrada en cuya misma línea aparece; si un puesto no trae año, el encabezado queda sin período. TOTALES DE AÑOS: prohibido en cualquier parte del CV salvo que se derive EXACTAMENTE de fechas completas declaradas (año de inicio Y año de fin, de una entrada o sumando varias). 'Desde 2016' NO habilita un total — no hay fecha de fin con la que calcularlo. Si no puedes calcularlo con exactitud, no lo escribas."}
 5g. HABILIDADES equilibradas: primero las competencias técnicas concretas del oficio (herramientas, software, técnicas) — son las que pesca el ATS —, después las transversales que sus respuestas respalden. Nunca abras la lista con "Trabajo en equipo" ni "Comunicación".
 5g2. ${enIngles?'SOFT SKILLS: only ones the candidate actually wrote or clearly demonstrated in their answers. If the candidate did not write any soft skill and none is evident from what they described, do NOT include a soft-skills section — an empty or generic one (\'teamwork, communication\' with no basis) is worse than none.':'HABILIDADES BLANDAS: solo las que el candidato realmente escribió o que se desprenden con claridad de lo que describió. Si el candidato no escribió ninguna habilidad blanda y no se desprende ninguna de lo que contó, NO incluyas sección de blandas — una vacía o genérica (\'trabajo en equipo, comunicación\' sin base) es peor que no ponerla.'}
 5h. SIN MAYÚSCULAS SOSTENIDAS en el cuerpo del texto ni en el nombre (María López, no MARÍA LÓPEZ): dificultan la lectura. Los encabezados cortos de sección sí pueden ir en mayúsculas.
@@ -2421,7 +2429,7 @@ REGLAS (estándar de reclutador ejecutivo élite):
 5m. ${enIngles?'SECONDARY SCHOOL / HIGH SCHOOL: list it only if it is the highest level the candidate reached, or if the candidate declared it explicitly — never omit a study the candidate mentioned (see 5i2). Order EDUCATION from highest to lowest level; a secondary-school entry below a degree is fine, omitting it is not.':'BACHILLERATO / EDUCACIÓN SECUNDARIA: lista el bachillerato solo si es el nivel máximo alcanzado o si el candidato lo declaró expresamente — jamás omitas un estudio que el candidato haya mencionado (ver 5i2). Ordena EDUCACIÓN de mayor a menor nivel; que el bachillerato quede debajo de un título está bien, omitirlo no.'}
 5n. TELÉFONO CON PREFIJO INTERNACIONAL siempre, también en el CV en español: "+503 7601-2010", no "7601-2010". Un reclutador de otro país no puede marcar un número sin prefijo. Usa el prefijo del país que el candidato declaró (El Salvador +503, México +52, Colombia +57, Guatemala +502, Honduras +504, Costa Rica +506, Perú +51, Chile +56, Argentina +54, Ecuador +593, R. Dominicana +1809, Panamá +507, Bolivia +591, Paraguay +595, Uruguay +598, Venezuela +58, Nicaragua +505, España +34). Si ya trae prefijo, respétalo.
 5o. PERFIL PROFESIONAL BREVE: de 4 a 6 líneas (60-90 palabras). Un perfil de 180 palabras no se lee: el reclutador salta directo a la experiencia. Condensa lo esencial — quién es, su especialidad, su alcance y su diferencial — y deja el detalle para los bullets.
-5o2. ${enIngles?'PROFESSIONAL SUMMARY AND BULLETS — same standard of proof. Both may only contain: target title, declared degrees, declared employers and periods, named tools and tasks, figures given. FORBIDDEN unstated adjectives/nouns of scope, volume, intensity, recognition or method, anywhere in the resume: high foot traffic, high volume, high-volume, high demands, demand peaks, dynamic environment, internal controls, multiple, rigorous, sustained, recognized for, proprietary methodology, culture of, busy, fast-paced, high-acuity, high-pressure, high-traffic, across all, all completed, company-wide, at scale, repeat visits, repeat business, short wait times, complex and diverse, evidence-based, seamless, mission-critical, proven track record, consistently, robust, extensive, best-in-class, state-of-the-art. If a position is [NO FUNCTIONS DECLARED], the summary does not describe what the candidate did there.':'PERFIL PROFESIONAL Y VIÑETAS — mismo estándar de prueba. Ambos solo pueden contener: cargo objetivo, titulaciones declaradas, empleadores y períodos declarados, herramientas y tareas nombradas, cifras dadas. PROHIBIDOS adjetivos/sustantivos de alcance, volumen, intensidad, reconocimiento o método no declarados, en cualquier parte del CV: alta afluencia, alto volumen, alta exigencia, picos de demanda, entorno dinámico, controles internos, múltiples, riguroso, sostenido, reconocido/a por, metodología propia, cultura de. Si un puesto está [SIN FUNCIONES DECLARADAS], el perfil no describe lo que hacía ahí.'}
+5o2. ${enIngles?'PROFESSIONAL SUMMARY AND BULLETS — same standard of proof. Both may only contain: target title, declared degrees, declared employers and periods, named tools and tasks, figures given. FORBIDDEN unstated adjectives/nouns of scope, volume, intensity, recognition or method, anywhere in the resume: high foot traffic, high volume, high-volume, high demands, demand peaks, dynamic environment, internal controls, multiple, rigorous, sustained, recognized for, proprietary methodology, culture of, busy, fast-paced, high-acuity, high-pressure, high-traffic, across all, all completed, company-wide, at scale, repeat visits, repeat business, short wait times, complex and diverse, evidence-based, seamless, mission-critical, proven track record, consistently, robust, extensive, best-in-class, state-of-the-art. If a position is [NO FUNCTIONS DECLARED], the summary does not describe what the candidate did there. Forbidden to state any total years of experience in the summary unless it derives exactly from complete dates (a start year and an end year) the candidate gave; \'since 2016\' does not authorize a total.':'PERFIL PROFESIONAL Y VIÑETAS — mismo estándar de prueba. Ambos solo pueden contener: cargo objetivo, titulaciones declaradas, empleadores y períodos declarados, herramientas y tareas nombradas, cifras dadas. PROHIBIDOS adjetivos/sustantivos de alcance, volumen, intensidad, reconocimiento o método no declarados, en cualquier parte del CV: alta afluencia, alto volumen, alta exigencia, picos de demanda, entorno dinámico, controles internos, múltiples, riguroso, sostenido, reconocido/a por, metodología propia, cultura de. Si un puesto está [SIN FUNCIONES DECLARADAS], el perfil no describe lo que hacía ahí. Prohibido cualquier total de años en el perfil salvo que se derive exactamente de fechas completas (año de inicio y de fin) declaradas; \'desde 2016\' no permite un total.'}
 5o3. ${enIngles?'EACH BULLET describes ONLY the task or fact the candidate stated. Forbidden to add a purpose ("to ensure...", "in order to..."), a result ("reducing...", "achieving...", "improving..."), a mechanism ("through...", "by applying...", "using a...") or a beneficiary the candidate did not mention — those turn a stated task into an unstated achievement.':'CADA VIÑETA describe SOLO la tarea o el hecho declarado. Prohibido añadir propósito ("para garantizar…", "con el fin de…"), resultado ("reduciendo…", "logrando…", "mejorando…"), mecanismo ("mediante…", "aplicando…", "a través de…") o beneficiario que el candidato no haya dicho — eso convierte una tarea declarada en un logro no declarado.'}
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
 7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis. Si un dato no existe (período, ciudad...), OMÍTELO — jamás escribas "no especificado", "not specified" ni "N/A".
@@ -3573,6 +3581,7 @@ ${cvV1.substring(0,9000)}`, ..._iaExtra(0)})
     } catch (eVer) { console.warn('pasadaVeracidad omitida en optimizarCVSubido:', eVer.message); }
     cvGenerado = limpiarFormatoCV(cvGenerado);
     cvGenerado = _filtrarAlcance(cvGenerado, texto);
+    cvGenerado = _filtrarTotales(cvGenerado, texto);
 
     // La extracción de habilidades se lanzó EN PARALELO al inicio (no depende
     // del CV generado). Aquí solo recogemos el resultado: cero espera extra.
@@ -3766,6 +3775,54 @@ function _esTokenPegamento(w) {
   if (!w) return true;
   return new RegExp('^' + _RE_CONECTOR_COLGANTE + '$', 'i').test(w);
 }
+// RONDA D6 — FIX #4 [MAYOR]: red de seguridad determinista hermana de
+// _filtrarAlcance. Quita locuciones de TOTAL DE AÑOS ("más de 10 años",
+// "10+ años", "over 9 years", "9+ years") que la IA coló en el perfil sin
+// que la fuente declare exactamente ese número — p. ej. el candidato dijo
+// "desde 2016" (sin fecha de fin) y el CV afirmó "más de diez años" o
+// "incluyendo nueve años": un total no derivable de fechas completas.
+function _filtrarTotales(texto, fuente) {
+  const fuenteNorm = String(fuente || '').toLowerCase();
+  // Se incluye un "de"/"of" colgante inmediatamente después ("más de 10 años DE
+  // experiencia") en la propia coincidencia: si no se absorbe, el recorte deja
+  // la frase empezando en "de …", que _fraseRota correctamente marca como rota
+  // y el total NUNCA se llega a eliminar aunque sí sea un total no declarado.
+  const RE_TOTAL = /\b(?:más de|mas de|over)\s+(\d+)\+?\s*(?:años?|years?)\b(?:\s+(?:de|of))?|\b(\d+)\+\s*(?:años?|years?)\b(?:\s+(?:de|of))?/gi;
+  const lineas = String(texto || '').split('\n');
+  const salida = lineas.map(linea => {
+    if (_esLineaEncabezado(linea)) return linea;
+    // RONDA D6b — FIX #2 [MENOR]: el total a menudo ABRE la línea con un
+    // dígito ("10+ años de experiencia..."); tras eliminarlo la línea debe
+    // recapitalizarse igual que si hubiera empezado en mayúscula.
+    const empiezaMayus = /^\s*[A-ZÁÉÍÓÚÑ0-9]/.test(linea);
+    let l = linea;
+    let guard = 0;
+    let m;
+    RE_TOTAL.lastIndex = 0;
+    while (guard++ < 5 && (m = RE_TOTAL.exec(l))) {
+      const numero = m[1] || m[2];
+      // Si la fuente SÍ declara ese número junto a "año(s)"/"year(s)", se conserva.
+      const reFuente = new RegExp('\\b' + numero + '\\+?\\s*(años?|years?)\\b', 'i');
+      if (reFuente.test(fuenteNorm)) { RE_TOTAL.lastIndex = 0; continue; }
+      const candidata = (l.slice(0, m.index) + l.slice(m.index + m[0].length))
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\s+([,.;:])/g, '$1')
+        .replace(/,\s*,/g, ',')
+        .replace(/,\s*([.;:])/g, '$1')
+        .replace(/^\s*,\s*/, '')
+        .trim();
+      if (_fraseRota(candidata)) { RE_TOTAL.lastIndex = 0; continue; }
+      l = candidata;
+      if (typeof ev === 'function') ev('total_anios_eliminado', { numero });
+      RE_TOTAL.lastIndex = 0;
+    }
+    if (empiezaMayus && /^[a-záéíóúñ]/.test(l)) {
+      l = l.charAt(0).toUpperCase() + l.slice(1);
+    }
+    return l;
+  });
+  return salida.join('\n');
+}
 function _filtrarAlcance(texto, fuente) {
   const fuenteNorm = String(fuente || '').toLowerCase();
   const terminos = [..._TERMINOS_ALCANCE_ES, ..._TERMINOS_ALCANCE_EN];
@@ -3784,12 +3841,27 @@ function _filtrarAlcance(texto, fuente) {
       while (guard++ < 5) {
         const m = l.match(re);
         if (!m) break;
-        // Protección de nombres propios: "Busy Bee Café", "Seamless Health Inc."
+        // RONDA D6 — FIX #3 [MAYOR]: la protección anterior trataba
+        // CUALQUIER palabra Capitalizada siguiente como nombre propio
+        // ("high-volume Target location" no se tocaba porque "Target"
+        // empieza en mayúscula). Ahora solo se protege si (a) el propio
+        // término aparece Capitalizado en el texto — señal de que es
+        // parte de un nombre ("Busy Bee Café", "Seamless Health Inc.") —
+        // o (b) la palabra Capitalizada siguiente va seguida de OTRA
+        // palabra Capitalizada o de un sufijo corporativo (Inc, LLC, Co,
+        // S.A., Café...), es decir, señal de un nombre propio de 2+
+        // palabras, no una sola mayúscula ambigua.
         const despues = l.slice(m.index + m[0].length);
-        const siguiente = despues.match(/^\s+([A-Za-zÁÉÍÓÚÑáéíóúñ])/);
+        const _terminoCapitalizado = /^[A-ZÁÉÍÓÚÑ]/.test(m[0]);
+        const siguiente = despues.match(/^\s+([A-Za-zÁÉÍÓÚÑáéíóúñ]+)(?:\s+([A-Za-zÁÉÍÓÚÑáéíóúñ.]+))?/);
+        const _SUFIJOS_CORP = /^(Inc\.?|LLC\.?|Ltd\.?|Corp\.?|Co\.?|S\.?A\.?|GmbH|Caf[ée]|Cía\.?)$/;
         if (siguiente && /^[A-ZÁÉÍÓÚÑ]/.test(siguiente[1])) {
-          if (typeof ev === 'function') ev('alcance_no_eliminable', { termino: term, motivo: 'nombre_propio' });
-          break;
+          const _segunda = siguiente[2] || '';
+          const _siguienteEsPropioCompuesto = /^[A-ZÁÉÍÓÚÑ]/.test(_segunda) || _SUFIJOS_CORP.test(_segunda);
+          if (_terminoCapitalizado || _siguienteEsPropioCompuesto) {
+            if (typeof ev === 'function') ev('alcance_no_eliminable', { termino: term, motivo: 'nombre_propio' });
+            break;
+          }
         }
         // FIX #4: términos conector-portantes no pueden dejar dos sustantivos
         // de contenido directamente pegados donde antes había preposición.
@@ -3856,7 +3928,7 @@ async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng, esAdaptacion) {
 Eres auditor de integridad de CVs. Compara el CV FINAL contra la LISTA BLANCA (texto íntegro de las respuestas del candidato, base + seguimientos) y corrige toda afirmación no respaldada.
 ELIMINA O SUSTITUYE:
 ${enIng?"- If a term in the resume is just a more professional phrasing of the SAME fact the candidate stated, keep it. Only remove what adds an object, standard, tool, certification, institution, figure or scope that is absent from the whitelist. When in doubt, narrow the claim to the whitelist's exact scope.":"- Si un término del CV es una formulación más profesional del MISMO hecho declarado por el candidato, consérvalo. Elimina solo lo que añada un objeto, norma, herramienta, certificación, institución, cifra o alcance ausente en la lista. Ante la duda, reduce la afirmación al alcance exacto de la lista."}
-${enIng?"- SCOPE: a fact backs ONLY claims in the field (key 'k:') where it appears. A tool listed under skills does NOT back a claim that it was used at a specific job, unless the candidate said so for that job.":"- ÁMBITO: un hecho respalda ÚNICAMENTE afirmaciones del campo (clave 'k:') donde aparece. Una herramienta listada en habilidades NO respalda afirmar que se usó en un empleo concreto, salvo que el candidato lo dijera en ese empleo."}
+${enIng?"- SCOPE: a fact backs ONLY claims in the field (key 'k:') where it appears. A tool listed under skills does NOT back a claim that it was used at a specific job, unless the candidate said so for that job. This also covers UNNAMED SUBTASKS: if the candidate said 'install and service furnaces and AC units', a bullet may NOT add 'sizing', 'airflow' or 'startup checks' — those are unnamed subtasks/mechanisms, not the stated task. Reduce the bullet to the named task.":"- ÁMBITO: un hecho respalda ÚNICAMENTE afirmaciones del campo (clave 'k:') donde aparece. Una herramienta listada en habilidades NO respalda afirmar que se usó en un empleo concreto, salvo que el candidato lo dijera en ese empleo. Esto también cubre SUBTAREAS NO DECLARADAS: si el candidato dijo 'instalar y dar mantenimiento a hornos y unidades de aire acondicionado', una viñeta NO puede añadir 'dimensionamiento', 'flujo de aire' ni 'pruebas de arranque' — son subtareas/mecanismos no nombrados, no la tarea declarada. Reduce la viñeta a la tarea nombrada."}
 ${enIng?"- BINDING NEGATIONS: if the candidate said 'I don't know', 'I don't remember', 'I don't track that', 'I don't have that figure', it is FORBIDDEN to describe that fact as measurable, quantified, significant or proven.":"- NEGACIONES VINCULANTES: si el candidato dijo 'no sé', 'no recuerdo', 'no llevo la cuenta', 'no tengo esa cifra', está PROHIBIDO calificar ese hecho como medible, cuantificable, significativo o comprobado."}
 ${enIng?"- DATE ATTRIBUTION: a year backs only the entry on whose own line it appears; if a position has no year given, its header stays without a period.":"- ATRIBUCIÓN DE FECHAS: un año solo respalda la entrada en cuya misma línea aparece; si un puesto no trae año, el encabezado queda sin período."}
 ${enIng?"- TOTAL YEARS: 'X years of experience' only if it derives exactly from the dates given; if it doesn't, remove it.":"- TOTALES DE AÑOS: 'X años de experiencia' solo si se deriva exactamente de las fechas dadas; si no, elimínalo."}
@@ -4097,6 +4169,7 @@ ${String(cv).substring(0,6000)}`, ..._iaExtra(), temperature: 0.3})
   // declarados que la IA se coló sin que sea una cifra (por eso el
   // verificador de veracidad, centrado en cifras/hechos, no los atrapaba).
   cv = _filtrarAlcance(cv, fuente);
+  cv = _filtrarTotales(cv, fuente);
   const restantes = validarCV(cv);
   if (restantes.length) console.warn('Validación final — avisos:', restantes);
   return cv;
@@ -4864,7 +4937,35 @@ function construirCVData() {
   const _puesto2SinFunciones = !_puesto2Declarado || datos.logros2_sin_funciones;
   if (_puesto1SinFunciones && _puesto2SinFunciones) {
     const _formacion = ((datos.estudios || '').split('\n')[0] || '').replace(/\s+/g, ' ').trim();
-    const _habs = (datos.habilidades_tecnicas || '').replace(/\s+/g, ' ').trim();
+    // RONDA D6 — FIX #2 [CRÍTICO]: el perfil mínimo mostró habilidades
+    // duplicadas ("manejo de caja, atención al cliente manejo de caja,
+    // atención al cliente"). Se arma la lista desde un Set de ítems
+    // normalizados (sin acentos/mayúsculas) para que ningún ítem repetido
+    // — venga de un solo campo con eco interno o de dos campos con el
+    // mismo contenido — sobreviva, y se une con ", ".
+    // RONDA D6b — FIX #1b [MAYOR]: colapsa una frase repetida completa
+    // ("manejo de caja, atención al cliente manejo de caja, atención al
+    // cliente") ANTES del split — el eco puede duplicar la cadena entera
+    // sin separador, así que el Set por ítems (ya presente) no bastaba.
+    const _colapsarRepeticion = s => {
+      const t = String(s || '').replace(/\s+/g, ' ').trim();
+      const mitad = Math.floor(t.length / 2);
+      for (const corte of [mitad, mitad + 1, mitad - 1]) {
+        if (corte <= 0) continue;
+        const a = t.slice(0, corte).trim();
+        const b = t.slice(corte).trim().replace(/^[,;]\s*/, '');
+        if (a && a === b) return a;
+      }
+      return t;
+    };
+    const _habsItems = _colapsarRepeticion(datos.habilidades_tecnicas).split(/[,;\n]+/).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    const _habsVistos = new Set();
+    const _habsUnicos = [];
+    _habsItems.forEach(h => {
+      const _clave = h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (_clave && !_habsVistos.has(_clave)) { _habsVistos.add(_clave); _habsUnicos.push(h); }
+    });
+    const _habs = _habsUnicos.join(', ');
     resumen = LANG === 'en'
       ? `${datos.puesto || 'Professional'} candidate${_formacion ? `, with training in ${_formacion}` : ''}${_habs ? ` and skills in ${_habs}` : ''}.`
       : `Candidato/a a ${datos.puesto || 'el puesto'}${_formacion ? `, con formación en ${_formacion}` : ''}${_habs ? ` y habilidades en ${_habs}` : ''}.`;
@@ -5002,39 +5103,21 @@ function construirCVData() {
     return { titulo, empresa, periodo };
   }
 
-  // RONDA D3/D4 — FIX #1 [CRÍTICO] (red de seguridad): si el puesto quedó
-  // marcado SIN FUNCIONES pero el parser no generó ningún bloque para él
-  // (el CV de la IA no lo incluyó, o el parseo falló), se reinserta desde
-  // los datos crudos del candidato — cargo/empresa/fechas, sin viñetas —
-  // en vez de dejar que el puesto desaparezca del CV. Se usa push/unshift
-  // (nunca asignación por índice, que dejaba huecos tipo `[null, {...}]`
-  // y rompía el render en plantillas-cv.html) y al final se limpian
-  // huecos residuales con filter(Boolean).
-  // RONDA D5 — FIX #1 [CRÍTICO]: el guard `experiencia[idx]` era por ÍNDICE,
-  // así que un unshift() previo desplazaba los bloques y el guard terminaba
-  // comparando contra el bloque equivocado (o anulando el rescate). Ahora
-  // el guard es por CONTENIDO: solo se considera "ya existe" si algún
-  // bloque ya presente comparte título (prefijo normalizado) o empresa.
-  const _normRescate = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  // RONDA D6 — FIX #1 [CRÍTICO]: la red de rescate (D3–D5) insertaba un
+  // bloque nuevo a partir del texto crudo cuando no encontraba, por
+  // contenido, un bloque ya generado por la IA para ese puesto. Pero
+  // `_bloqueValido` YA conserva el bloque de la IA aunque su título no
+  // coincida textualmente con el dato crudo (reformulado por la IA) — el
+  // chequeo de "¿ya existe?" comparaba título/empresa normalizados y
+  // fallaba con reformulaciones legítimas, duplicando el puesto (E2: 4
+  // bloques para 2 empleos). Decisión del auditor: ELIMINAR la inserción.
+  // Se deja solo como evento de diagnóstico para poder auditar cuántas
+  // veces el parser realmente no encuentra un bloque para un puesto
+  // marcado sin funciones, sin arriesgar una duplicación silenciosa.
   [['logros1_sin_funciones', 'exp1', 0], ['logros2_sin_funciones', 'exp2', 1]].forEach(([flag, expKey, idx]) => {
     if (!datos[flag] || !datos[expKey] || _exp2Negativa(datos[expKey])) return;
-    const { titulo, empresa, periodo } = _parsearExpTexto(datos[expKey]);
-    const tituloClave = _normRescate(titulo).slice(0, 12);
-    const empresaNorm = _normRescate(empresa);
-    const yaExiste = experiencia.some(b => {
-      if (!b) return false;
-      const bTitulo = _normRescate(b.titulo);
-      const bEmpresa = _normRescate(b.empresa);
-      if (tituloClave && bTitulo.includes(tituloClave)) return true;
-      if (empresaNorm && bEmpresa && bEmpresa === empresaNorm) return true;
-      return false;
-    });
-    if (yaExiste) return;
-    const bloque = { titulo, empresa, periodo, bullets: [] };
-    if (idx === 0) experiencia.unshift(bloque); else experiencia.push(bloque);
-    if (typeof ev === 'function') ev('puesto_rescatado', {idx});
+    if (typeof ev === 'function') ev('puesto_no_encontrado', {idx});
   });
-  experiencia = experiencia.filter(Boolean);
 
   // ── EDUCACIÓN ──
   let educacion = [];

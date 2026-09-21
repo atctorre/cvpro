@@ -252,6 +252,10 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <input type="file" id="fileInput" accept=".pdf,.docx,.txt">
   </div>
 
+  <p id="pasteAltWrap" style="text-align:center;margin:14px 0 0">
+    <a href="#" id="pasteAltLink" onclick="event.preventDefault();mostrarPegarTexto()" style="color:#FFD000;font-size:0.85rem;text-decoration:underline;cursor:pointer">📋 o pega el texto de tu CV</a>
+  </p>
+
   <div class="err" id="errBox"></div>
 
   <div class="loading" id="loading">
@@ -380,7 +384,14 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <script>
 const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-const LANG = (new URLSearchParams(location.search).get('lang') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+// Esta página es la versión ES canónica (ver hreflang): su idioma NO debe
+// depender del selector de idioma compartido del sitio (localStorage
+// 'cvpro_lang'), porque resume-checker.html (la versión EN) fuerza esa
+// misma clave a 'en' en cuanto se visita. Antes esta página heredaba ese
+// valor y mostraba el encabezado/nav en inglés con el resto del contenido
+// en español. Ahora solo cambia de idioma si se pide explícitamente por
+// query string (?lang=en), igual que hacen los enlaces hreflang.
+const LANG = (new URLSearchParams(location.search).get('lang') || 'es') === 'en' ? 'en' : 'es';
 let cvTextoGlobal = '';
 
 // UI bilingüe
@@ -391,6 +402,7 @@ if (LANG === 'en') {
   document.getElementById('subT').textContent = 'Upload your resume and get your score, the issues that scare recruiters away, and how to fix them — in 30 seconds. No sign-up.';
   document.getElementById('dropT').textContent = 'Drag your resume here or click to upload';
   document.getElementById('dropS').textContent = 'PDF, Word (.docx) or TXT — max 5MB';
+  document.getElementById('pasteAltLink').textContent = '📋 or paste your resume text';
   document.getElementById('navCta').textContent = 'Build my Resume →';
   document.getElementById('loadT').textContent = 'Analyzing your resume like an elite recruiter...';
   document.getElementById('probT').textContent = '⚠️ Issues detected';
@@ -419,6 +431,8 @@ function err(msg) {
   eb.innerHTML = msg; eb.style.display = 'block';
   document.getElementById('loading').style.display = 'none';
   dz.style.display = 'block';
+  const paw = document.getElementById('pasteAltWrap');
+  if (paw) paw.style.display = 'block';
   document.getElementById('fileInput').value = '';
 }
 
@@ -473,6 +487,8 @@ function mostrarPegarTexto() {
   document.getElementById('errBox').style.display = 'none';
   const dzEl = document.getElementById('dropZone');
   if (dzEl) dzEl.style.display = 'none';
+  const paw = document.getElementById('pasteAltWrap');
+  if (paw) paw.style.display = 'none';
   if (document.getElementById('pegarWrap')) {
     document.getElementById('pegarWrap').style.display = 'block';
     document.getElementById('pegarArea').focus();
@@ -492,7 +508,7 @@ function mostrarPegarTexto() {
       <button onclick="analizarTextoPegado()" style="background:#FFD000;color:#0a0a0a;border:none;border-radius:50px;padding:12px 26px;font-weight:800;cursor:pointer;font-size:0.9rem">
         ${LANG==='en' ? 'Analyze my resume →' : 'Analizar mi CV →'}
       </button>
-      <button onclick="document.getElementById('pegarWrap').style.display='none';document.getElementById('dropZone').style.display='block'"
+      <button onclick="document.getElementById('pegarWrap').style.display='none';document.getElementById('dropZone').style.display='block';const _paw=document.getElementById('pasteAltWrap');if(_paw)_paw.style.display='block'"
         style="background:transparent;color:#888;border:1px solid #333;border-radius:50px;padding:12px 22px;cursor:pointer;font-size:0.9rem">
         ${LANG==='en' ? 'Try another file' : 'Probar con otro archivo'}
       </button>
@@ -589,6 +605,7 @@ async function procesarArchivo(file) {
   if (!['pdf','docx','txt'].includes(_ext)) return err(LANG==='en' ? 'Format not supported. Use PDF, DOCX or TXT.' : 'Formato no soportado. Usa PDF, DOCX o TXT.');
   if (!cuposDisponibles()) return err(LANG==='en' ? 'Free limit: 3 scans per day. Come back tomorrow or optimize your resume now.' : 'Límite gratis: 3 análisis por día. Vuelve mañana u optimiza tu CV ahora.');
   dz.style.display = 'none';
+  { const _paw = document.getElementById('pasteAltWrap'); if (_paw) _paw.style.display = 'none'; }
   document.getElementById('loading').style.display = 'block';
   iniciarProgresoAnalisis();
   try {
@@ -941,7 +958,7 @@ async function activarTester(codigo) {
 }
 
 (async function initTester() {
-  const _L = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+  const _L = LANG;
   const p = new URLSearchParams(location.search).get('tester');
   if (p) {
     const ok = await activarTester(p);
@@ -974,7 +991,7 @@ function mostrarBadgeTester() {
     b.onmouseleave = () => { b.classList.add('mini'); b.textContent = '🧪'; };
   }, 5000);
   b.onclick = () => {
-    const _L2 = (localStorage.getItem('cvpro_lang_cv') || localStorage.getItem('cvpro_lang') || 'es') === 'en' ? 'en' : 'es';
+    const _L2 = LANG;
     const _msg = _L2==='en'
       ? 'Exit tester mode? You will see the site as a regular customer.'
       : '¿Salir del modo tester? Volverás a ver la web como un cliente normal.';

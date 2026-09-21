@@ -606,8 +606,13 @@ function obtenerTesterParaIA() {
 }
 
 // Campos extra que viajan en TODO body hacia super-service.
-function _iaExtra() {
-  return { sesion: obtenerSesionCVPro(), tester: obtenerTesterParaIA() };
+// RONDA D — D3: temperatura baja y acotada para reducir la variabilidad
+// (y por tanto la probabilidad de invención) en todas las llamadas de
+// generación/adaptación. `temp` permite forzar 0 en las pasadas de
+// veracidad ("truth check"), donde no queremos NINGUNA creatividad.
+// Si el servidor no reconoce el campo, simplemente lo ignora.
+function _iaExtra(temp) {
+  return { sesion: obtenerSesionCVPro(), tester: obtenerTesterParaIA(), temperature: (typeof temp === 'number' ? temp : 0.3) };
 }
 
 // Mensaje ES/EN cuando el servidor devuelve 429 con retry_after_seconds.
@@ -1062,6 +1067,67 @@ const seguimientosDados = {};
 
 // Máximo seguimientos permitidos por campo
 const MAX_SEGUIMIENTOS = { logros1:2, logros2:1, resumen_personal:1, habilidades_tecnicas:1, estudios:1 };
+
+// RONDA D — D1 [CRÍTICO]: "puesto sin funciones" — la IA no debe redactar
+// bullets a partir SOLO del cargo. Si logros1/logros2 llega vacío, es una
+// negación ("no"/"ninguno"/"no recuerdo") o tiene menos de 8 palabras, se
+// hace UNA repregunta obligatoria de texto fijo (no generada por IA, para
+// no depender de que el modelo decida hacerla). Si el candidato insiste con
+// "solo cargo"/"only title" (o vuelve a dejarlo corto/vacío), se marca
+// `datos.logrosN_sin_funciones = true` y el CV se genera SOLO con cargo,
+// empresa y fechas para ese puesto — ver generarConIA() y construirCVData().
+const FUNCIONES_PREGUNTADO = {};
+
+function _contarPalabras(t) {
+  return String(t || '').trim().split(/\s+/).filter(Boolean).length;
+}
+
+// ¿La respuesta a logros1/logros2 no aporta funciones reales del puesto?
+function _respuestaSinFunciones(texto) {
+  const t = String(texto || '').trim().toLowerCase();
+  if (!t) return true;
+  if (/^(no|ninguno|ninguna|no recuerdo|no tengo|nada|n\/a|na|none|nothing|i don'?t remember|i don'?t have any)$/i.test(t)) return true;
+  if (_contarPalabras(t) < 8) return true;
+  return false;
+}
+
+function _esSoloCargo(texto) {
+  const t = String(texto || '').trim().toLowerCase();
+  return /^(solo cargo|s[oó]lo el cargo|only title|only the title)$/.test(t);
+}
+
+// Repregunta obligatoria (texto fijo, no depende de la IA) para logros1/logros2.
+// Devuelve true si disparó la repregunta (y por tanto hay que detener el
+// avance del flujo, igual que evaluarRespuesta()).
+async function evaluarFuncionesPuesto(key, texto, datosRef) {
+  if (key !== 'logros1' && key !== 'logros2') return false;
+
+  if (FUNCIONES_PREGUNTADO[key]) {
+    // Ya se hizo la repregunta obligatoria una vez: esto es la respuesta a
+    // ella. Si sigue sin haber funciones reales, se respeta la decisión del
+    // candidato y se deja el puesto solo con cargo/empresa/fechas.
+    if (_esSoloCargo(texto) || _respuestaSinFunciones(texto)) {
+      datosRef[`${key}_sin_funciones`] = true;
+    }
+    return false;
+  }
+
+  if (!_respuestaSinFunciones(texto)) return false;
+
+  FUNCIONES_PREGUNTADO[key] = true;
+  // Reutiliza el contador de seguimientosDados para que la respuesta a esta
+  // repregunta se CONCATENE en datos[key] (ver enviarRespuesta) en vez de
+  // pisar la respuesta original — mismo mecanismo que el seguimiento de IA.
+  seguimientosDados[key] = (seguimientosDados[key] || 0) + 1;
+  const pregunta = LANG === 'en'
+    ? `To avoid inventing anything, tell me 2-3 things you did in that role (tasks, tools, results). If you prefer, type "only title" and I'll leave it with title, company and dates only.`
+    : `Para no inventar nada, cuéntame 2-3 cosas que hacías en ese puesto (tareas, herramientas, resultados). Si prefieres, escribe "solo cargo" y lo dejo con cargo, empresa y fechas.`;
+  paso--;
+  actualizarUI();
+  await mostrarTyping(900);
+  renderMsgAI(pregunta);
+  return true;
+}
 
 async function evaluarRespuesta(key, texto, datos) {
   if (!KEYS_SEGUIMIENTO.has(key)) return false;
@@ -1872,6 +1938,18 @@ async function enviar() {
       actualizarPreview();
     }
 
+    // ── D1: REPREGUNTA OBLIGATORIA SI EL PUESTO NO TRAE FUNCIONES ──
+    // Va ANTES del seguimiento genérico de IA: para logros1/logros2, "no" o
+    // "ninguno" no deben tratarse como respuesta válida (evaluarRespuesta()
+    // los trata como negación clara y NO repregunta — ver esNegacionClara).
+    const necesitaFunciones = await evaluarFuncionesPuesto(key, texto, datos);
+    if (necesitaFunciones) {
+      enviando = false;
+      document.getElementById('sendBtn').disabled = false;
+      document.getElementById('chatInput').focus();
+      return;
+    }
+
     // ── SEGUIMIENTO EXPERTO IA ──
     const necesitaSeguimiento = await evaluarRespuesta(key, texto, datos);
     if (necesitaSeguimiento) {
@@ -1955,6 +2033,15 @@ function actualizarUI() {
   if (LANG === 'en') window._resetTxt = 'Restart';
   if (typeof window._ajustarNavReset === 'function') window._ajustarNavReset();
   else if (nr && LANG === 'en') nr.textContent = 'Restart';
+  // RONDA D — D5: aria-labels que quedaban fijos en español en el HTML
+  // (mismo bug que "Ver mi CV" en actualizarBtnVerCV — ver FIX C6).
+  if (nr) nr.setAttribute('aria-label', LANG === 'en' ? 'Restart the chat' : 'Reiniciar el chat');
+  const _naAria = document.getElementById('navAyuda');
+  if (_naAria) _naAria.setAttribute('aria-label', LANG === 'en' ? 'FAQ and help' : 'Preguntas frecuentes y ayuda');
+  const _nrAria = document.getElementById('navRecuperar');
+  if (_nrAria) _nrAria.setAttribute('aria-label', LANG === 'en' ? 'Recover resume with code' : 'Recuperar CV con código');
+  const _sbAria = document.getElementById('soporteBtn');
+  if (_sbAria) _sbAria.setAttribute('aria-label', LANG === 'en' ? 'Open support chat' : 'Abrir chat de soporte');
   const ns = document.getElementById('navStep');
   if (ns) {
     // FIX C2: "Pregunta X de 14" siempre — el total nunca cambia ni supera
@@ -2014,6 +2101,21 @@ async function mostrarGenerando() {
     catch(ep) { console.error('Parser falló:', ep); cvData = {nombre: datos.nombre||'', puesto: datos.puesto||'', resumen:'', experiencia:[], educacion:[], habilidades:[], idiomas:[]}; }
     sessionStorage.setItem('cvData', JSON.stringify(cvData));
     sessionStorage.setItem('cvTexto', cv);
+
+    // RONDA D — D6: evento de calidad para poder medir esta ronda con datos
+    // reales (no solo con auditorías manuales).
+    if (typeof ev === 'function') {
+      try {
+        const _viñetasTotal = (cvData.experiencia || []).reduce((acc, e) => acc + ((e.bullets || []).length), 0);
+        const _puestosSinFunciones = (datos.logros1_sin_funciones ? 1 : 0) + (datos.logros2_sin_funciones ? 1 : 0);
+        ev('cv_generado_resumen', {
+          viñetas_total: _viñetasTotal,
+          habilidades_total: (cvData.habilidades || []).length,
+          puestos_sin_funciones: _puestosSinFunciones,
+          veracidad_eliminados: _ultimoRecorteVeracidad
+        });
+      } catch(eResumen) {}
+    }
     await guardarCVConCodigo(cv);   // crea el código único (crypto) en sessionStorage
     await guardarEnSupabase();      // reutiliza ese mismo código, no genera otro
     mostrarResultado(cv);
@@ -2148,9 +2250,9 @@ CANDIDATO: ${datos.nombre} | ${datos.puesto} | ${datos.pais}
 CONTACTO: ${email}${telefono?' | '+telefono:''}${linkedin?' | '+linkedin:''} | Empresa objetivo: ${datos.tipo_empresa||'sector profesional'}
 
 PERFIL (transformar): "${limpiar(resumenFinal)}"
-EXPERIENCIA: ${limpiar(datos.exp1)}
-LOGROS (transformar y cuantificar): ${limpiar(logros1Final)}
-${exp2valida?`EXP ANTERIOR: ${limpiar(datos.exp2)} | LOGROS: ${limpiar(logros2Final)}`:''}
+EXPERIENCIA: ${limpiar(datos.exp1)}${datos.logros1_sin_funciones?' [SIN FUNCIONES DECLARADAS]':''}
+LOGROS (transformar y cuantificar): ${datos.logros1_sin_funciones?'(ninguno — el candidato no describió funciones para este puesto)':limpiar(logros1Final)}
+${exp2valida?`EXP ANTERIOR: ${limpiar(datos.exp2)}${datos.logros2_sin_funciones?' [SIN FUNCIONES DECLARADAS]':''} | LOGROS: ${datos.logros2_sin_funciones?'(ninguno — el candidato no describió funciones para este puesto)':limpiar(logros2Final)}`:''}
 ESTUDIOS: ${limpiar(datos.estudios)}
 CERTIFICACIONES: ${limpiar(datos.certificaciones)}
 HABILIDADES TÉCNICAS: ${limpiar(habsFinal)}
@@ -2166,6 +2268,7 @@ REGLAS (estándar de reclutador ejecutivo élite):
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
 5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
+5z. ${enIngles?'PUESTO MARCADO "[NO FUNCTIONS DECLARED]": write ONLY the job title, company and dates for that position — no bullets, no description. Never deduce duties from the job title alone; if you were not told what the candidate did there, you don\'t know it.':'PUESTO MARCADO "[SIN FUNCIONES DECLARADAS]": escribe ÚNICAMENTE cargo, empresa y fechas para ese puesto — sin viñetas ni descripción. Nunca deduzcas funciones a partir del cargo: si no te dijeron qué hacía ahí, no lo sabes.'}
 5b. SI EL CANDIDATO TIENE POCA O NINGUNA EXPERIENCIA LABORAL: no dejes secciones vacías ni inventes empleos. Construye el CV alrededor de formación académica, proyectos de estudio, prácticas, voluntariado, cursos, competencias técnicas adquiridas y capacidad demostrada. Encabeza con el perfil y la educación en lugar de la experiencia. Un CV honesto de recién graduado bien redactado supera a uno con experiencia fabricada. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
 5c. PROHIBIDO AMPLIAR EL ALCANCE: no añadas sustantivos técnicos, procesos ni cualificadores que el candidato no haya declarado (ej.: "levantamientos" no se convierte en "levantamientos topográficos"; "compra de materiales" no se convierte en "gestión de inventarios" ni "trazabilidad financiera"). Cada término técnico debe salir de las respuestas del candidato — lo defenderá en la entrevista.
 5d. LOGROS, NO TAREAS (el error nº1 del CV en español): un bullet que solo enumera funciones no diferencia al candidato. Estructura preferida: verbo de acción + qué hizo + qué resultó de ello. Ej.: en vez de "Gestión de redes sociales", escribe "Incrementé el engagement un 35% en 6 meses mediante una estrategia de contenidos" — PERO solo si esa cifra la dio el candidato. Si no hay cifras, expresa el resultado de forma cualitativa y concreta (alcance, tipo de proyecto, equipos coordinados). JAMÁS inventes un porcentaje ni un "dato típico del sector".
@@ -2232,7 +2335,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt, ..._iaExtra()})
+      body: JSON.stringify({prompt, ..._iaExtra(), temperature: 0.3})
     });
 
     if (!res.ok) {
@@ -2267,9 +2370,9 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
       const rr = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
+Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras. Mismo formato y headers exactos. ${enIngles?'If a position has no bullets under it because the candidate declared no functions for it, leave it that way — title, company and dates only. Never add bullets deduced from the job title.':'Si un puesto no tiene viñetas porque el candidato no declaró funciones, déjalo así — solo cargo, empresa y fechas. Nunca agregues viñetas deducidas del cargo.'} Devuelve SOLO el CV final completo.
 CV:
-${cvTexto.substring(0,12000)}`, ..._iaExtra()})
+${cvTexto.substring(0,12000)}`, ..._iaExtra(), temperature: 0.3})
       });
       const dr = await rr.json();
       if (dr.cv && limpiarPreambuloIA(dr.cv).length > cvTexto.length * 0.7) {
@@ -2296,7 +2399,7 @@ ${cvTexto.substring(0,12000)}`, ..._iaExtra()})
       const res2 = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method: 'POST',
         headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-        body: JSON.stringify({prompt, ..._iaExtra()})
+        body: JSON.stringify({prompt, ..._iaExtra(), temperature: 0.3})
       });
       if (res2.status === 429) {
         let _ra2 = null;
@@ -2515,8 +2618,148 @@ function D_EMAIL_FALLBACK() {
 }
 
 
+// RONDA D — D6: último % de texto que pasadaVeracidad() tuvo que recortar
+// por datos sin respaldo, para poder reportarlo en el evento de resumen de
+// calidad del CV (ev('cv_generado_resumen', ...)).
+let _ultimoRecorteVeracidad = 0;
+
 // ══ ADAPTAR CV A VACANTE (killer feature) ══
 let cvOriginalBackup = null;
+
+// RONDA D — D2b: verificación automática en cliente de que "Adaptar a una
+// vacante" no coló habilidades ni bullets nuevos. No confiamos solo en el
+// prompt — se compara el CV adaptado contra el original + las respuestas
+// del candidato y se recorta cualquier ítem que no tenga respaldo.
+
+// minúsculas, sin tildes, sin plural simple, sin puntuación final.
+function _normalizarSkill(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[.,;:]+$/, '')
+    .trim()
+    .replace(/s$/, '');
+}
+
+// Extrae la lista de habilidades (técnicas + blandas) de un texto de CV.
+function _extraerHabilidadesDeTexto(cvTxt) {
+  const cv = String(cvTxt || '');
+  const m = cv.match(/(?:HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES)[^\n]*\n(?:[─\-═_]{3,}[ \t]*\n)?([\s\S]{0,900}?)(?=\n[A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚ\s]{4,}\n|\n══|$)/i);
+  if (!m) return [];
+  return m[1].split(/[,;\n]|\s\/\s/)
+    .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').replace(/^(T[ée]cnicas?|Technical|Blandas?|Soft(?:\s*skills?)?|Idiomas?|Languages?)\s*:/i, '').trim())
+    .filter(s => s && s.length > 1 && s.length < 45 && !/^(Idiomas?|Languages?)\b/i.test(s));
+}
+
+// Divide la sección EXPERIENCIA en bloques {header, bullets[]} por puesto,
+// en el orden en que aparecen (misma lógica que construirCVData()).
+function _parsearBloquesExperiencia(cvTxt) {
+  const cv = String(cvTxt || '').replace(/\*\*/g, '');
+  const m = cv.match(/(?:EXPERIENCIA PROFESIONAL|EXPERIENCIA|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)[^\n]*\n(?:[─\-═_]{3,}[ \t]*\n)?([\s\S]*?)(?=\n[A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚ\s]{4,}\n|\n══|$)/i);
+  if (!m) return [];
+  const lineas = m[1].split('\n');
+  const bloques = [];
+  let actual = null;
+  lineas.forEach(linea => {
+    const l = linea.trim();
+    if (!l) return;
+    const esBulletL = /^[\s]*[•·▸▪\-\*]/.test(linea) && l.length > 2;
+    const esHeaderL = !esBulletL && (l.includes('|') || (l === l.toUpperCase() && l.length > 5) || /^[A-ZÁÉÍÓÚ][a-záéíóúñ\s]+[A-ZÁÉÍÓÚ]/.test(l));
+    if (esHeaderL) {
+      if (actual) bloques.push(actual);
+      actual = { header: l, bullets: [] };
+    } else if (esBulletL && actual) {
+      actual.bullets.push(l.replace(/^[\s•·▸▪\-\*]+/, '').trim());
+    }
+  });
+  if (actual) bloques.push(actual);
+  return bloques;
+}
+
+// Recorta, POR POSICIÓN (no por contenido — los bullets se reformulan y ya
+// no coinciden textualmente), cualquier bullet que exceda el límite que
+// tenía ese mismo puesto en el CV original. Devuelve el texto recortado y
+// cuántas líneas se quitaron.
+function _recortarBulletsSobrantes(cvTxt, limitesPorBloque) {
+  const cv = String(cvTxt || '');
+  const cab = cv.match(/(?:EXPERIENCIA PROFESIONAL|EXPERIENCIA|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE)[^\n]*\n(?:[─\-═_]{3,}[ \t]*\n)?/i);
+  if (!cab) return { cv, recortes: 0 };
+  const inicioCuerpo = cab.index + cab[0].length;
+  const resto = cv.slice(inicioCuerpo);
+  const finM = resto.match(/\n[A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚ\s]{4,}\n|\n══/);
+  const finIdx = finM ? finM.index : resto.length;
+  const cuerpo = resto.slice(0, finIdx);
+  const cola = resto.slice(finIdx);
+  const lineas = cuerpo.split('\n');
+  let bloqueIdx = -1, contador = 0, recortes = 0;
+  const salida = [];
+  lineas.forEach(linea => {
+    const l = linea.trim();
+    const esBulletL = /^[\s]*[•·▸▪\-\*]/.test(linea) && l.length > 2;
+    const esHeaderL = l && !esBulletL && (l.includes('|') || (l === l.toUpperCase() && l.length > 5) || /^[A-ZÁÉÍÓÚ][a-záéíóúñ\s]+[A-ZÁÉÍÓÚ]/.test(l));
+    if (esHeaderL) { bloqueIdx++; contador = 0; salida.push(linea); return; }
+    if (esBulletL && bloqueIdx >= 0) {
+      contador++;
+      const limite = limitesPorBloque[bloqueIdx];
+      if (limite != null && contador > limite) { recortes++; return; }
+    }
+    salida.push(linea);
+  });
+  return { cv: cv.slice(0, inicioCuerpo) + salida.join('\n') + cola, recortes };
+}
+
+// Filtra el CV adaptado: elimina toda habilidad sin respaldo en el original
+// o en las respuestas del candidato, y recorta bullets sobrantes por puesto.
+// Devuelve {cv, huboCambios} — huboCambios sirve para no mostrar el mensaje
+// de "adaptado" si al final el filtro dejó el CV igual al original.
+function _filtrarAdaptacionSinInvencion(cvAdaptado, cvOriginal, fuenteRespuestas) {
+  let cv = String(cvAdaptado || '');
+  let huboCambios = false;
+
+  const habsOriginalSet = new Set(_extraerHabilidadesDeTexto(cvOriginal).map(_normalizarSkill));
+  const fuenteNorm = _normalizarSkill(`${fuenteRespuestas || ''} ${cvOriginal || ''}`);
+
+  // OJO: el nombre de una skill rechazada ("conflict resolution") puede
+  // aparecer TAMBIÉN dentro de un bullet de EXPERIENCIA con esas mismas
+  // palabras. Si se reemplaza sobre el CV completo, `String.replace` (sin
+  // /g/) borra la PRIMERA aparición — que puede estar en un bullet, no en
+  // HABILIDADES. Por eso la eliminación se acota SOLO al texto de la
+  // sección de habilidades.
+  const secM = cv.match(/((?:HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES)[^\n]*\n(?:[─\-═_]{3,}[ \t]*\n)?)([\s\S]{0,900}?)(?=\n[A-ZÁÉÍÓÚ][A-ZÁÉÍÓÚ\s]{4,}\n|\n══|$)/i);
+  if (secM) {
+    let seccion = secM[2];
+    const habsAdaptadas = _extraerHabilidadesDeTexto(cv);
+    habsAdaptadas.forEach(h => {
+      const hn = _normalizarSkill(h);
+      if (!hn) return;
+      const respaldada = habsOriginalSet.has(hn) || (fuenteNorm.length > 0 && fuenteNorm.includes(hn));
+      if (!respaldada) {
+        const esc = h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp('(,\\s*)?\\b' + esc + '\\b\\s*(,)?', 'i');
+        if (re.test(seccion)) {
+          seccion = seccion.replace(re, (mm, antes, despues) => (antes && despues) ? ',' : '');
+          huboCambios = true;
+          if (typeof ev === 'function') ev('adaptacion_skill_rechazada', { skill: h });
+        }
+      }
+    });
+    seccion = seccion.replace(/[ \t]*,[ \t]*,/g, ',').replace(/:[ \t]*,/g, ':').replace(/,[ \t]*\n/g, '\n').replace(/,\s*$/gm, '');
+    cv = cv.slice(0, secM.index) + secM[1] + seccion + cv.slice(secM.index + secM[1].length + secM[2].length);
+  }
+
+  const bloquesOriginal = _parsearBloquesExperiencia(cvOriginal);
+  const limites = bloquesOriginal.map(b => b.bullets.length);
+  if (limites.length) {
+    const rec = _recortarBulletsSobrantes(cv, limites);
+    if (rec.recortes > 0) {
+      cv = rec.cv;
+      huboCambios = true;
+      if (typeof ev === 'function') ev('adaptacion_bullet_rechazado', { cantidad: rec.recortes });
+    }
+  }
+
+  return { cv, huboCambios };
+}
 
 async function abrirModalVacante() {
   ev('adapt_job_clicked');
@@ -2590,6 +2833,8 @@ ${sanitizarEntrada(texto).substring(0, 2000)}
 MISIÓN: Reescribe el CV adaptándolo a esta vacante específica con profundidad de Executive Recruiter: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras con contexto, alcance y resultado.
 REGLAS ESTRICTAS:
 1. NO INVENTES experiencia, títulos, certificaciones NI CIFRAS que no estén en el CV original. Reordenar y reformular sí; añadir hechos nuevos jamás.
+1b. HABILIDADES — LA SECCIÓN NO PUEDE GANAR ÍTEMS NUEVOS: solo puedes reordenar la lista y, si corresponde, renombrar un ítem YA EXISTENTE con la terminología de la vacante cuando sea EXACTAMENTE el mismo hecho (ej.: "atención al cliente" → "customer support"). Prohibido agregar cualquier habilidad que no estuviera ya en el CV original, aunque la vacante la pida.
+1c. NINGÚN BULLET NUEVO: solo puedes reescribir/reformular los bullets que ya existen. Prohibido añadir un bullet adicional a los que ya tenía cada puesto.
 2. REORDENA y REFORMULA los bullets para destacar lo más relevante a la vacante
 3. USA las palabras clave exactas de la vacante donde el candidato realmente tenga esa experiencia (ATS matching)
 4. ADAPTA el resumen profesional para responder directamente al perfil buscado
@@ -2603,7 +2848,7 @@ GENERA EL CV ADAPTADO AHORA:`;
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt, ..._iaExtra()})
+      body: JSON.stringify({prompt, ..._iaExtra(), temperature: 0.3})
     });
     // Un 429/500 del servidor parseado a ciegas se disfrazaba de 'respuesta
     // corta' y el usuario veía siempre el mismo mensaje sin causa. Ahora el
@@ -2629,9 +2874,9 @@ GENERA EL CV ADAPTADO AHORA:`;
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${_enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres Executive Recruiter élite revisando un CV adaptado a una vacante. CRITICA y MEJORA: elimina bullets débiles, refuerza los que respondan a la oferta, asegura que el perfil venda en 5 segundos. VERIFICA que ninguna cifra sea inventada.
-RONDA C — FIX C3: puedes reordenar secciones y bullets, priorizar lo más relevante para la vacante y usar la terminología EXACTA de la vacante, SIEMPRE que el hecho subyacente esté respaldado por las respuestas originales del candidato (lista blanca) — es decir, puedes reformular con las palabras de la oferta un hecho que el candidato ya declaró, pero no puedes añadir un hecho, herramienta, cifra o alcance que no esté en sus respuestas. NO agregues hechos nuevos. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
+RONDA C — FIX C3: puedes reordenar secciones y bullets, priorizar lo más relevante para la vacante y usar la terminología EXACTA de la vacante, SIEMPRE que el hecho subyacente esté respaldado por las respuestas originales del candidato (lista blanca) — es decir, puedes reformular con las palabras de la oferta un hecho que el candidato ya declaró, pero no puedes añadir un hecho, herramienta, cifra o alcance que no esté en sus respuestas. NO agregues hechos nuevos. RONDA D — D2: la sección HABILIDADES no puede ganar ítems nuevos (solo reordenar/renombrar un ítem existente con las palabras de la vacante si es el MISMO hecho); ningún puesto puede tener más bullets que en el CV recibido, solo reescritura de los que ya existen. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
 CV:
-${cvAd.substring(0,12000)}`, ..._iaExtra()})
+${cvAd.substring(0,12000)}`, ..._iaExtra(), temperature: 0.3})
       });
       const dr = await rr.json();
       if (dr.cv) { const _l = limpiarPreambuloIA(dr.cv); if (_l.length > cvAd.length * 0.7) cvAd = _l; }
@@ -2652,6 +2897,18 @@ ${cvAd.substring(0,12000)}`, ..._iaExtra()})
     // reordenamiento/terminología de la vacante que sí está respaldada por
     // la lista blanca (ver pasadaVeracidad).
     cvAd = await generarConValidacion(async () => await pasadaVeracidad(cvAd, fuenteVeracidad, _enIng, true), fuenteVeracidad, _enIng);
+
+    // RONDA D — D2b: red de seguridad en CLIENTE (no depende de que la IA
+    // haya obedecido el prompt). Elimina cualquier habilidad sin respaldo
+    // en el CV original o en las respuestas del candidato, y recorta
+    // bullets que excedan los que tenía cada puesto antes de adaptar.
+    const _filtro = _filtrarAdaptacionSinInvencion(cvAd, cvOriginalBackup || cvGenerado, fuenteVeracidad);
+    cvAd = _filtro.cv;
+    // Si tras el filtro el CV adaptado quedó igual al original, no hay
+    // nada que "adaptar" honestamente: se lo decimos al usuario en vez de
+    // fingir un cambio que no ocurrió.
+    const _quedoIgual = cvAd.trim() === (cvOriginalBackup || cvGenerado || '').trim();
+
     cvGenerado = cvAd;
     sessionStorage.setItem('cvTexto', cvGenerado);
     const cvData = construirCVData();
@@ -2668,7 +2925,10 @@ ${cvAd.substring(0,12000)}`, ..._iaExtra()})
         const b = document.createElement('div');
         b.id = 'bannerAdaptado';
         b.style.cssText = 'background:#e1f5ee;color:#085041;border-radius:12px;padding:10px 16px;margin-bottom:14px;font-size:0.8rem;font-family:Inter,sans-serif;display:flex;justify-content:space-between;align-items:center';
-        b.innerHTML = `<span>${LANG==='en'?'✅ Resume adapted to the job posting — keywords aligned for ATS':'✅ CV adaptado a la vacante — palabras clave alineadas para ATS'}</span>
+        const _txtBanner = _quedoIgual
+          ? (LANG==='en'?'ℹ️ Your resume already covers this posting with what you declared — we reordered priorities':'ℹ️ Tu CV ya cubre esta vacante con lo que declaraste; reordenamos las prioridades')
+          : (LANG==='en'?'✅ Resume adapted to the job posting — keywords aligned for ATS':'✅ CV adaptado a la vacante — palabras clave alineadas para ATS');
+        b.innerHTML = `<span>${_txtBanner}</span>
           <button onclick="revertirAdaptacion()" style="background:none;border:1px solid #085041;color:#085041;border-radius:50px;padding:5px 12px;font-size:0.72rem;cursor:pointer;font-family:Inter,sans-serif">${LANG==='en'?'↩ Original version':'↩ Versión original'}</button>`;
         hdr.parentElement.insertBefore(b, hdr);
       }
@@ -3076,7 +3336,7 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
     // Solo esta llamada es obligatoria. Si falla, no hay CV.
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt, ..._iaExtra()})
+      body: JSON.stringify({prompt, ..._iaExtra(), temperature: 0.3})
     }, 90);
     if (res.status === 429) {
       let _raOpt = null;
@@ -3125,7 +3385,7 @@ INFORMACIÓN ORIGINAL DEL CANDIDATO (única fuente de verdad):
 ${sanitizarEntrada(texto, 7000).substring(0,7000)}
 
 CV A REVISAR:
-${cvV1.substring(0,9000)}`, ..._iaExtra()})
+${cvV1.substring(0,9000)}`, ..._iaExtra(0)})
       }, 90);
       const d2 = await res2.json();
       const _limpio2 = d2.cv ? limpiarPreambuloIA(d2.cv) : '';
@@ -3360,7 +3620,7 @@ ${cvParaVerificar}`;
 
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt: _promptVeracidad, ..._iaExtra()})
+      body: JSON.stringify({prompt: _promptVeracidad, ..._iaExtra(0)})
     });
     if (!res.ok) { console.error('❌ Verificación de veracidad falló:', res.status, await res.text()); return cvTxt; }
     const d = await res.json();
@@ -3373,6 +3633,7 @@ ${cvParaVerificar}`;
       const recorte = Math.round((1 - limpio.length / cvTxt.length) * 100);
       if (recorte > 20) console.warn(`🛡️ Veracidad eliminó ~${recorte}% del texto (datos no respaldados)`);
       if (typeof ev === 'function') ev('truth_check_applied', {recorte});
+      _ultimoRecorteVeracidad = recorte;
       return limpio;
     }
     console.error('🛡️ Verificación descartada: reducción excesiva', limpio.length, 'vs', cvTxt.length);
@@ -3402,7 +3663,7 @@ VERIFICA Y CORRIGE:
 NO agregues información nueva. Mantén EXACTAMENTE el mismo formato y headers.
 Devuelve SOLO el CV final auditado y completo.
 CV:
-${cvTxt.substring(0,9000)}`, ..._iaExtra()})
+${cvTxt.substring(0,9000)}`, ..._iaExtra(), temperature: 0})
     });
     const d = await res.json();
     if (d.cv && d.cv.trim().length > cvTxt.length * 0.75) return d.cv.trim();
@@ -3550,7 +3811,7 @@ Este CV es demasiado pobre para un candidato profesional. Problemas: ${graves.jo
 EXPANDE cada bullet a 22-35 palabras con contexto, alcance y resultado. El perfil debe tener 4-5 líneas densas. CV final de 900-1200 palabras.
 NO inventes hechos ni cifras nuevas — desarrolla lo que ya está. Mismo formato y headers exactos. Devuelve SOLO el CV completo.
 CV:
-${String(cv).substring(0,6000)}`, ..._iaExtra()})
+${String(cv).substring(0,6000)}`, ..._iaExtra(), temperature: 0.3})
       });
       const d = await res.json();
       if (d.cv && d.cv.trim().length > String(cv).length) cv = d.cv.trim();
@@ -3995,21 +4256,20 @@ function habilidadesDeRespaldo() {
     datos.puesto || ''
   ].join(', ');
 
-  // FIX C4: separador de "/" solo cuando va RODEADO de espacios ("Excel /
-  // Word" sí se separa) — nunca pegado a texto ("A/B testing", "TCP/IP")
-  // porque eso partía "A/B testing" en "A" (descartado por corto) + "B
-  // testing", perdiendo la "A/" del CV final.
-  let items = fuentes.split(/[,;\n]|\s\/\s/)
-    .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').trim())
-    .filter(s => s.length > 0 && s.length < 40 && !esRuido(s) && !/^(no|ninguna|n\/a|none|sin )/i.test(s));
+  // FIX C4 + RONDA D — D4: separador de "/" o "-" solo cuando va RODEADO
+  // de espacios ("Excel / Word" sí se separa) — nunca pegado a texto
+  // ("A/B testing", "TCP/IP"). Y si la primera parte de esa división es
+  // ruido, se descarta la cadena entera (ver _dividirConDescarteEncadenado)
+  // en vez de dejar un fragmento huérfano como "B testing".
+  let items = _dividirConDescarteEncadenado(fuentes)
+    .filter(s => s.length > 0 && s.length < 40 && !/^(no|ninguna|n\/a|none|sin )/i.test(s));
 
   // Si el chat no dio nada, intentamos rescatar de las secciones del CV generado
   if (!items.length) {
     const m = (cvGenerado || '').match(/(?:HABILIDADES|COMPETENCIAS|SKILLS|COMPETENCIES)[^\n]*\n[─\-═]*\s*\n([\s\S]{5,400}?)(?=\n[A-ZÁÉÍÓÚ]{4,}|$)/i);
     if (m) {
-      items = m[1].split(/[,;\n]|\s\/\s/)
-        .map(s => s.replace(/^[\s•·▸▪\-\*]+/, '').replace(/^(Técnicas?|Technical|Blandas?|Soft)\s*:/i, '').trim())
-        .filter(s => s.length > 0 && s.length < 40 && !esRuido(s));
+      items = _dividirConDescarteEncadenado(m[1].replace(/^(Técnicas?|Technical|Blandas?|Soft)\s*:/im, ''))
+        .filter(s => s.length > 0 && s.length < 40);
     }
   }
 
@@ -4031,6 +4291,14 @@ const ES_HEADER = new RegExp('^(?:' + _HEADERS_CV + ')\\b', 'i');
 // quedaban fuera de cualquier habilidad aunque el candidato los escribiera.
 const _TOKENS_CORTOS_VALIDOS = /^(c|r|go|ai|ml|ui|ux|it|qa|ci|cd|db|os|bi|hr|pr|3d|2d|c#|f#|r&d)$/i;
 
+// RONDA D — D4: palabras genéricas SUELTAS (sin contexto) que no significan
+// nada como "habilidad" por sí solas — restos de frases cortadas por un
+// split mal hecho ("proven track record" → "track") o adjetivos vacíos
+// ("strong", "good") que un CV honesto no debería listar como competencia.
+// Si el token trae más contexto ("Track and Field") no cae aquí porque ya
+// no es una sola palabra.
+const _PALABRAS_GENERICAS_SUELTAS = /^(track|record|proven|strong|good|great|excellent|solid|level|skill|skills|ability|abilities|experience|knowledge|various|basic|advanced|extensive|demonstrated|effective|efficient|results?|oriented|driven|focused|related|general|numerous|multiple|competent|capable|familiar|working)$/i;
+
 // Descarta encabezados, separadores y basura que el parser confunde con datos.
 // Sin esto, títulos como "INVESTIGACIÓN" o líneas de guiones acababan
 // impresos como si fueran una habilidad o un estudio del candidato.
@@ -4050,7 +4318,34 @@ const palabras = s.split(/\s+/).filter(Boolean);
 if (/^[A-ZÁÉÍÓÚÑ\s]{6,30}$/.test(s) && palabras.length >= 2 && palabras.length <= 3 && !/\d/.test(s)) {
   return true;
 }
+// D4: una sola palabra genérica sin contexto ("track", "proven", "skills")
+// no es una habilidad — salvo que esté en la lista corta de tokens
+// técnicos válidos (p. ej. "AI", "QA").
+if (palabras.length === 1 && _PALABRAS_GENERICAS_SUELTAS.test(s) && !_TOKENS_CORTOS_VALIDOS.test(s)) {
+  return true;
+}
 return false;
+}
+
+// D4: divide un texto de habilidades por comas/;/salto de línea y, dentro
+// de cada elemento, por " / " o " - " rodeados de espacios. Si un
+// fragmento de esa sub-división es ruido (esRuido), se descarta TODO lo
+// que sigue en la misma cadena — así "A / B testing" no deja suelto un
+// "B testing" huérfano cuando "A" ya fue descartado por corto.
+function _dividirConDescarteEncadenado(texto) {
+  const items = String(texto || '').split(/[,;\n]/);
+  const out = [];
+  items.forEach(item => {
+    const subpartes = item.split(/\s\/\s|\s-\s/);
+    let cadenaRota = false;
+    subpartes.forEach(p => {
+      if (cadenaRota) return;
+      const t = p.replace(/^[\s•·▸▪\-\*]+/, '').trim();
+      if (!t || esRuido(t)) { cadenaRota = true; return; }
+      out.push(t);
+    });
+  });
+  return out;
 }
 
 // Quita duplicados conservando el orden y el primer formato encontrado.
@@ -4340,6 +4635,19 @@ function construirCVData() {
     }
   }
 
+  // RONDA D — D1c: si el puesto fue marcado SIN FUNCIONES declaradas
+  // (ver evaluarFuncionesPuesto), cualquier viñeta que la IA haya devuelto
+  // para ese puesto se elimina aquí, en cliente — no confiamos solo en el
+  // prompt. Asume que el orden de `experiencia` sigue exp1 (índice 0) y
+  // exp2 (índice 1), que es el orden en que se construye el prompt.
+  [['logros1_sin_funciones', 0], ['logros2_sin_funciones', 1]].forEach(([flag, idx]) => {
+    if (datos[flag] && experiencia[idx] && experiencia[idx].bullets && experiencia[idx].bullets.length) {
+      const cantidad = experiencia[idx].bullets.length;
+      experiencia[idx].bullets = [];
+      if (typeof ev === 'function') ev('bullets_sin_fuente_eliminados', {puesto: idx, cantidad});
+    }
+  });
+
   // ── EDUCACIÓN ──
   let educacion = [];
   // El lookahead solo se detenía en 4 encabezados, así que IDIOMAS,
@@ -4459,14 +4767,16 @@ function construirCVData() {
   // de "A/B testing" o "TCP/IP"); el filtro ya no exige length>2 — eso
   // descartaba tokens cortos reales ("C", "R", "Go", "SQL"), esRuido() es
   // quien decide qué es basura.
-  const habsTec = habsTexto.split(/[,;\n]|\s\/\s/)
-    .map((h, i) => ({ nombre: h.trim().replace(/^[\-•·▸▪\s]+/, '').replace(/[.,;]$/,'').trim(), nivel: Math.max(65, 92 - i * 6) }))
-    .filter(h => h.nombre && h.nombre.length > 0 && h.nombre.length < 40 && !esRuido(h.nombre))
+  // D4: split con descarte encadenado — evita fragmentos huérfanos tipo
+  // "B testing" o "track" sueltos (ver _dividirConDescarteEncadenado).
+  const habsTec = _dividirConDescarteEncadenado(habsTexto)
+    .map((h, i) => ({ nombre: h.replace(/[.,;]$/,'').trim(), nivel: Math.max(65, 92 - i * 6) }))
+    .filter(h => h.nombre && h.nombre.length > 0 && h.nombre.length < 40)
     .slice(0, 8);
 
-  const habsBlan = habsBTexto.split(/[,;\n]|\s\/\s/)
-    .map((h, i) => ({ nombre: h.trim().replace(/^[\-•·▸▪\s]+/, '').replace(/[.,;]$/,'').trim(), nivel: Math.max(60, 85 - i * 5) }))
-    .filter(h => h.nombre && h.nombre.length > 0 && h.nombre.length < 35 && !esRuido(h.nombre))
+  const habsBlan = _dividirConDescarteEncadenado(habsBTexto)
+    .map((h, i) => ({ nombre: h.replace(/[.,;]$/,'').trim(), nivel: Math.max(60, 85 - i * 5) }))
+    .filter(h => h.nombre && h.nombre.length > 0 && h.nombre.length < 35)
     .slice(0, 4);
 
   let todasHabs = sinDuplicados([...habsTec, ...habsBlan], 'nombre').slice(0, 12);

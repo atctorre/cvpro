@@ -18,7 +18,7 @@
 <meta name="description" content="Crea tu CV profesional con IA en minutos. Solo responde 14 preguntas y descarga tu CV listo para conseguir entrevistas.">
 <link rel="canonical" href="https://getcvpro.com/chat-cv.html">
 <meta property="og:title" content="Crear CV con IA | CVPro">
-<meta property="og:description" content="14 preguntas guiadas. IA corrige y mejora tu CV. 10 plantillas profesionales. Descarga en PDF.">
+<meta property="og:description" content="14 preguntas guiadas. IA corrige y mejora tu CV. 20 plantillas profesionales. Descarga en PDF.">
 <meta property="og:image" content="https://getcvpro.com/og-image.png">
 <meta name="robots" content="noindex">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -507,7 +507,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
   <div class="nav-progress-wrap" id="navProgressWrap"><div class="nav-progress-fill" id="navProgressFill"></div></div>
     <div class="nav-info">
     <div class="tiempo-wrap">⏱ ~<span id="tiempoRestante">10</span> min</div>
-    <span class="nav-step" id="navStep">Pregunta <strong id="stepNum">1</strong> de <span id="totalSteps">14</span></span>
+    <span class="nav-step" id="navStep">Pregunta <strong id="stepNum">1</strong> · quedan ~13</span>
     <span class="nav-reset nav-ayuda" onclick="toggleSoporte()" role="button" tabindex="0" aria-label="Preguntas frecuentes y ayuda" id="navAyuda" style="margin-right:14px">💬</span><span class="nav-reset" onclick="mostrarRecuperarHeader()" role="button" tabindex="0" aria-label="Recuperar CV con código" id="navRecuperar" style="margin-right:14px">🔑</span><span class="nav-reset" onclick="reiniciar()" id="navReset" aria-label="Reiniciar el chat" title="Reiniciar">Reiniciar</span>
     <script>
     // En pantallas angostas "Reiniciar" ocupa ~50px que congestionan el
@@ -582,6 +582,110 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
 <script>
 const SUPABASE_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+// ══ RONDA A — LÍMITE DE IA POR SESIÓN ══
+// Identificador anónimo por navegador (no por IP) para que el límite de
+// generaciones sea justo en redes compartidas (oficinas, universidades,
+// CGNAT). Se genera una vez y se conserva en localStorage.
+function obtenerSesionCVPro() {
+  try {
+    let s = localStorage.getItem('cvpro_sesion');
+    if (!s || typeof s !== 'string' || s.length < 8) {
+      s = (window.crypto && window.crypto.randomUUID) ? window.crypto.randomUUID()
+        : 'sx-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+      localStorage.setItem('cvpro_sesion', s);
+    }
+    return s;
+  } catch (e) { return ''; }
+}
+
+// Código tester real (no el booleano esTester) para que el servidor pueda
+// validarlo contra config_app.codigo_tester y eximir del límite.
+function obtenerTesterParaIA() {
+  try { return localStorage.getItem('cvpro_tester_cod') || ''; } catch (e) { return ''; }
+}
+
+// Campos extra que viajan en TODO body hacia super-service.
+function _iaExtra() {
+  return { sesion: obtenerSesionCVPro(), tester: obtenerTesterParaIA() };
+}
+
+// Mensaje ES/EN cuando el servidor devuelve 429 con retry_after_seconds.
+function _textoLimiteIA(retryAfterSeconds) {
+  const mins = (retryAfterSeconds != null && isFinite(retryAfterSeconds) && retryAfterSeconds > 0)
+    ? Math.max(1, Math.ceil(retryAfterSeconds / 60))
+    : null;
+  const cuando = mins != null
+    ? (LANG==='en' ? `in ${mins} min` : `en ${mins} min`)
+    : (LANG==='en' ? 'in a few minutes' : 'en unos minutos');
+  return LANG==='en'
+    ? `⏳ You've reached the temporary generation limit. You can continue ${cuando}. Your answers are saved.`
+    : `⏳ Has alcanzado el límite temporal de generaciones. Podrás continuar ${cuando}. Tus respuestas están guardadas.`;
+}
+
+// Muestra el mensaje de límite con un botón Reintentar (sin ofrecer Reiniciar).
+// retryFnName: nombre de una función global (window[retryFnName]) sin argumentos.
+function renderMsgLimiteIA(retryAfterSeconds, retryFnName) {
+  renderMsgAI(_textoLimiteIA(retryAfterSeconds));
+  try {
+    const msgs = document.getElementById('chatMessages');
+    const last = msgs && msgs.lastElementChild;
+    const cont = last && last.querySelector('div');
+    if (cont && retryFnName) {
+      const wrap = document.createElement('div');
+      wrap.className = 'quick-opts';
+      wrap.style.marginTop = '6px';
+      wrap.innerHTML = `<button class="qopt" onclick="(typeof window['${retryFnName}']==='function')&&window['${retryFnName}']()">${LANG==='en'?'🔄 Retry':'🔄 Reintentar'}</button>`;
+      cont.appendChild(wrap);
+    }
+  } catch (e) { console.warn('renderMsgLimiteIA UI falló:', e); }
+}
+
+// Auditoría Ronda A #5: código de recuperación de 8 caracteres. Antes se
+// sacaban 2 nibbles (4 bits) del mismo Uint32 para cada posición — el 8.º
+// carácter usaba buf[1]>>>28, solo 4 bits de entropía real por carácter en
+// vez de los ~5 que da el alfabeto de 32 símbolos. Ahora cada carácter sale
+// de un byte propio (8 bytes para 8 caracteres).
+const ALF_CODIGO = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+function generarCodigoCV() {
+  const buf = new Uint8Array(8);
+  (window.crypto || window.msCrypto).getRandomValues(buf);
+  return Array.from(buf, b => ALF_CODIGO[b % ALF_CODIGO.length]).join('');
+}
+
+// Auditoría Ronda A #1: prueba de posesión para poder ACTUALIZAR un CV
+// guardado. El servidor (guardar-cv) emite un token_edicion opaco al crear
+// el registro; este helper lo guarda/recupera por código.
+function _tokenEdicionKey(codigo) { return 'cvpro_cv_token_' + codigo; }
+function _tokenEdicionGuardado(codigo) {
+  try { return localStorage.getItem(_tokenEdicionKey(codigo)) || ''; } catch (e) { return ''; }
+}
+function _guardarTokenEdicion(codigo, token) {
+  if (!codigo || !token) return;
+  try { localStorage.setItem(_tokenEdicionKey(codigo), token); } catch (e) {}
+}
+
+// El CV recuperado por código en OTRO dispositivo no trae token (nunca se
+// emitió ahí) ni email en memoria (recuperar_cv no lo devuelve, por
+// privacidad). Para poder guardar cambios tras recuperar, el servidor
+// acepta el email original como prueba de posesión la primera vez — así
+// que hay que pedirlo. Se cachea en sessionStorage para no preguntar en
+// cada guardado dentro de la misma sesión.
+function _emailParaGuardarCV() {
+  const ct = datos.email_tel || '';
+  const m = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+  if (m) return m[0];
+  try {
+    const cache = sessionStorage.getItem('cvpro_email_recuperacion');
+    if (cache) return cache;
+  } catch (e) {}
+  const pedido = prompt(LANG==='en'
+    ? 'To save changes to a resume recovered on another device, enter the email you used when you first created it:'
+    : 'Para guardar los cambios de un CV recuperado en otro dispositivo, ingresa el email con el que lo creaste originalmente:');
+  const limpio = (pedido || '').trim();
+  if (limpio) { try { sessionStorage.setItem('cvpro_email_recuperacion', limpio); } catch (e) {} }
+  return limpio;
+}
 
 let datos = {};
 let paso = 0;
@@ -915,7 +1019,7 @@ async function enriquecerYActualizarPreview(key, texto) {
       logros1: `Transforma esto en 4 bullets de CV profesional élite con verbos de acción y números. Devuelve SOLO los bullets empezando con •`,
       logros2: `Transforma esto en 3 bullets de CV profesional con verbos de acción. Devuelve SOLO los bullets empezando con •`,
       resumen_personal: `Transforma esto en un resumen profesional de CV de 3 líneas, tercera persona, sin "yo" ni "soy". Devuelve SOLO el resumen`,
-      habilidades_tecnicas: `Lista las habilidades técnicas específicas para ${datos.puesto}, separadas por comas, máximo 8 habilidades cortas (2-4 palabras cada una). Incluye las mencionadas más las más relevantes del sector. Devuelve SOLO la lista separada por comas, sin bullets ni explicaciones`
+      habilidades_tecnicas: `Lista las habilidades técnicas específicas para ${datos.puesto}, separadas por comas, máximo 8 habilidades cortas (2-4 palabras cada una). Incluye SOLO las que el candidato mencionó. Devuelve SOLO la lista separada por comas, sin bullets ni explicaciones`
     };
 
     const instruccion = mapaPrompt[key] || `Transforma esto en bullets profesionales de CV. Devuelve SOLO los bullets empezando con •`;
@@ -936,7 +1040,7 @@ IDIOMA: ${LANG==='en' ? 'Respond ENTIRELY in English.' : 'Responde en español.'
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt})
+      body: JSON.stringify({prompt, ..._iaExtra()})
     });
     const data = await res.json();
     if (data.cv && data.cv.trim().length > 10) {
@@ -1018,7 +1122,7 @@ IDIOMA: ${LANG==='en' ? 'Responde COMPLETAMENTE en inglés.' : 'Responde en espa
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt: systemPrompt})
+      body: JSON.stringify({prompt: systemPrompt, ..._iaExtra()})
     });
     const data = await res.json();
     if (data.cv && limpiarPreambuloIA(data.cv).length > 20) return limpiarPreambuloIA(data.cv);
@@ -1784,6 +1888,26 @@ async function enviar() {
   if (ci) ci.focus();
 }
 
+// Estima cuántas preguntas quedan: base restantes tras la actual + los
+// seguimientos que aún podrían dispararse en preguntas no respondidas
+// (usa MAX_SEGUIMIENTOS y cuántos ya se dieron). Es una ESTIMACIÓN: el
+// seguimiento solo se activa si la IA decide que la respuesta fue pobre.
+function _estimarPreguntasRestantes() {
+  try {
+    const p = Math.min(paso, PASOS.length);
+    let restantes = Math.max(0, PASOS.length - (p + 1));
+    for (let i = p; i < PASOS.length; i++) {
+      const k = PASOS[i] && PASOS[i].key;
+      if (k && KEYS_SEGUIMIENTO.has(k)) {
+        const max = MAX_SEGUIMIENTOS[k] || 0;
+        const dado = seguimientosDados[k] || 0;
+        restantes += Math.max(0, max - dado);
+      }
+    }
+    return restantes;
+  } catch(e) { return null; }
+}
+
 // ── UI ──
 function actualizarUI() {
   const p = Math.min(paso, PASOS.length);
@@ -1791,7 +1915,8 @@ function actualizarUI() {
   document.getElementById('progressFill').style.width = pct + '%';
   const _pp = document.getElementById('progressPct');
   if (_pp) { _pp.textContent = pct + '%'; _pp.style.opacity = pct > 0 ? '1' : '0'; }
-  document.getElementById('stepNum').textContent = Math.min(p + 1, PASOS.length);
+  const _stepActual = Math.min(p + 1, PASOS.length);
+  document.getElementById('stepNum').textContent = _stepActual;
   const ts = document.getElementById('totalSteps');
   if (ts) ts.textContent = PASOS.length;
   const nr = document.getElementById('navReset');
@@ -1799,7 +1924,16 @@ function actualizarUI() {
   if (typeof window._ajustarNavReset === 'function') window._ajustarNavReset();
   else if (nr && LANG === 'en') nr.textContent = 'Restart';
   const ns = document.getElementById('navStep');
-  if (ns && LANG === 'en') ns.innerHTML = 'Question <strong id="stepNum">' + Math.min(p + 1, PASOS.length) + '</strong> of ' + PASOS.length;
+  if (ns) {
+    const _restantes = _estimarPreguntasRestantes();
+    ns.innerHTML = (_restantes === null)
+      ? (LANG === 'en'
+          ? `Question <strong id="stepNum">${_stepActual}</strong> of ${PASOS.length} (+ follow-ups)`
+          : `Pregunta <strong id="stepNum">${_stepActual}</strong> de ${PASOS.length} (+ seguimientos)`)
+      : (LANG === 'en'
+          ? `Question <strong id="stepNum">${_stepActual}</strong> · ~${_restantes} left`
+          : `Pregunta <strong id="stepNum">${_stepActual}</strong> · quedan ~${_restantes}`);
+  }
   // Barra de progreso: avance real sobre el total de preguntas
   const _pf = document.getElementById('navProgressFill');
   if (_pf) _pf.style.width = Math.round((Math.min(p, PASOS.length) / PASOS.length) * 100) + '%';
@@ -1816,7 +1950,16 @@ function actualizarUI() {
 }
 
 // ── GENERAR CV ──
+// Recuerda cuál fue el último punto de entrada a generarConIA(), para que el
+// botón "Reintentar" del mensaje de límite de IA pueda relanzar exactamente
+// ese flujo (sin borrar nada) en vez de un genérico.
+let _ultimaAccionGeneracion = null;
+function _reintentarGeneracion() {
+  if (typeof _ultimaAccionGeneracion === 'function') _ultimaAccionGeneracion();
+}
+
 async function mostrarGenerando() {
+  _ultimaAccionGeneracion = mostrarGenerando;
   const sb = document.getElementById('sendBtn');
   const ci = document.getElementById('chatInput');
   if (ci) { ci.disabled = true; ci.placeholder = LANG==='en' ? 'Generating your resume...' : 'Generando tu CV...'; }
@@ -1850,19 +1993,32 @@ async function mostrarGenerando() {
   }
 }
 
-function _limiteIA() {
+// Auditoría Ronda A #4: solo COMPRUEBA cupo, nunca lo consume. Antes se
+// incrementaba el contador local ANTES de llamar a super-service, así que
+// un 429 o un error de red gastaba cupo diario sin haber generado nada.
+function _limiteIAPermitido() {
   if (typeof esTester === 'function' && esTester()) return true;   // tester sin tope
   const hoy = new Date().toDateString();
   const d = _jsonSeguro(localStorage.getItem('cvpro_gen'), '{}');
-  if (d.dia !== hoy) { localStorage.setItem('cvpro_gen', JSON.stringify({dia:hoy,n:1})); return true; }
-  if (d.n >= 8) return false;
-  d.n++; localStorage.setItem('cvpro_gen', JSON.stringify(d)); return true;
+  if (d.dia !== hoy) return true;   // día nuevo — cupo completo disponible
+  return (d.n || 0) < 8;
+}
+
+// Consume UNA unidad de cupo. Llamar solo tras una respuesta 200 real de
+// super-service — nunca antes de la llamada ni en un 429/error.
+function _limiteIARegistrar() {
+  if (typeof esTester === 'function' && esTester()) return;
+  const hoy = new Date().toDateString();
+  const d = _jsonSeguro(localStorage.getItem('cvpro_gen'), '{}');
+  if (d.dia !== hoy) { localStorage.setItem('cvpro_gen', JSON.stringify({dia:hoy, n:1})); return; }
+  d.n = (d.n || 0) + 1;
+  localStorage.setItem('cvpro_gen', JSON.stringify(d));
 }
 
 async function generarConIA() {
   ev('ai_started');
   iniciarProgreso(); marcarPaso(1);
-  if (!_limiteIA()) throw new Error(LANG==='en' ? 'Daily limit reached (8 generations). Try again tomorrow.' : 'Límite diario alcanzado (8 generaciones). Vuelve mañana.');
+  if (!_limiteIAPermitido()) throw new Error(LANG==='en' ? 'Daily limit reached (8 generations). Try again tomorrow.' : 'Límite diario alcanzado (8 generaciones). Vuelve mañana.');
   // Parsear contacto
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
@@ -1871,7 +2027,7 @@ async function generarConIA() {
   const liM = ct.match(/(?:https?:\/\/)?(?:www\.)?((?:linkedin\.com|lnkd\.in)\/[^\s,;|]+)/i);
   const linkedin = liM ? liM[1].replace(/[),.;]+$/, '') : '';
   const ctSinLi = liM ? ct.replace(liM[0], ' ') : ct;
-  const telM = ctSinLi.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
+  const telM = ctSinLi.match(/[\+\(\d][\d\s\-\(\)\.]{6,}/);
   const email = emailM ? emailM[0] : '';
   const telefono = telM ? telM[0].trim() : '';
 
@@ -1914,26 +2070,26 @@ US RESUME STANDARDS (this is a US resume, not a translated Latin American CV):
   // FIX 3 — Seleccionar ejemplo del sector dinámicamente
   const p = (datos.puesto||'').toLowerCase();
   const ejemplo = (() => {
-    if (p.match(/piloto|aviaci|vuelo|helicoptero|helic/)) return 'Oficial Aviador con 8 años en la Fuerza Aérea. Especializado en helicóptero VFR/IFR con 500+ horas y misiones OACI internacionales. Historial impecable de seguridad operacional y liderazgo en entornos de alta exigencia.';
-    if (p.match(/medic|doctor|ciruj|clinico/)) return 'Médico con 10 años en urgencias hospitalarias. Especializado en diagnóstico diferencial con 200+ pacientes mensuales, coordinación de equipos y participación en publicaciones científicas.';
-    if (p.match(/desarrollad|programad|software|frontend|backend|fullstack|dev/)) return 'Desarrollador Full Stack con 5 años construyendo plataformas para 50K+ usuarios. Especializado en React/Node.js liderando equipos ágiles de 8 personas con entrega del 100% de proyectos en tiempo.';
-    if (p.match(/vend|comerci|sales|ejecutivo comercial/)) return 'Ejecutivo Comercial con 7 años superando cuotas. Responsable de cartera de $2M anuales con 80+ cuentas, logrando 120% de la meta durante 5 años consecutivos.';
-    if (p.match(/contad|contabilid|cpa|audit/)) return 'Contador Público con 6 años en contabilidad corporativa NIIF. Gestor de portafolios de $10M+ con cero observaciones en auditorías y reducción del 30% en tiempo de cierre.';
-    if (p.match(/enfermer/)) return 'Enfermero/a con 6 años en UCI y Urgencias. Especializado en cuidados críticos supervisando 12+ auxiliares con cero eventos adversos en 3 años consecutivos.';
-    if (p.match(/maestro|profesor|docente|educacion/)) return 'Docente con 12 años formando profesionales. Diseñador de currículas adoptadas por 3 instituciones con tasa de aprobación del 94% mediante metodologías activas.';
-    if (p.match(/ingeniero|ingenieria/)) return 'Ingeniero con 9 años dirigiendo proyectos de $15M+. 100% de proyectos entregados en plazo y presupuesto mediante gestión lean y control riguroso de calidad.';
-    if (p.match(/chef|cocin|gastronom/)) return 'Chef Ejecutivo con 11 años en gastronomía de autor. Director de cocinas de 80 cubiertos con food cost al 27% y menús reconocidos en rankings gastronómicos nacionales.';
-    if (p.match(/abogad|derecho|juridic/)) return 'Abogado Corporativo con 8 años en contratos y M&A. Asesor de transacciones por $30M+ con reducción de contingencias del 40% y negociación de 150+ contratos estratégicos.';
-    if (p.match(/market|publicid|digital/)) return 'Especialista en Marketing Digital con 5 años escalando marcas en LATAM. Campañas con ROI del 380% e incremento de base de clientes del 200% en 18 meses.';
-    if (p.match(/rrhh|recursos humanos|talento|hr /)) return 'Especialista RRHH con 8 años en empresas de 500+ empleados. Redujo rotación del 40% al 18% implementando programas de desarrollo con impacto de $1.2M en productividad.';
-    if (p.match(/psicolog|terapeu/)) return 'Psicólogo Clínico con 7 años en TCC. Especializado en ansiedad y depresión con 200+ pacientes y tasa de mejora documentada del 85%.';
-    if (p.match(/nutricion|dietista/)) return 'Nutricionista con 6 años en práctica clínica y deportiva. 300+ pacientes con resultados documentados en pérdida de peso y mejora de indicadores metabólicos.';
-    if (p.match(/fisioterapeu|kinesio/)) return 'Fisioterapeuta con 7 años en rehabilitación deportiva y neurológica. 500+ pacientes con tasa de retorno a actividad del 92% en tiempo inferior al promedio.';
-    if (p.match(/diseñad|grafico|ux|ui/)) return 'Diseñador con 6 años creando experiencias visuales de alto impacto. Rediseños que incrementaron conversión en 180% y redujeron abandono de usuario en 45%.';
-    if (p.match(/logistic|supply|almacen|distribuci/)) return 'Especialista en Logística con 8 años optimizando cadenas de suministro. 500+ pedidos diarios con puntualidad del 98% y reducción de costos logísticos del 22%.';
-    if (p.match(/contador|finanzas|financiero|tesorero/)) return 'Profesional Financiero con 8 años en análisis y gestión de capital. Responsable de portafolios de $20M con optimización de costo financiero del 15%.';
-    if (p.match(/arquitecto|arquitectura/)) return 'Arquitecto con 9 años diseñando proyectos residenciales y comerciales de $8M+. 15+ proyectos con certificación y reconocimiento en premios de diseño nacional.';
-    if (p.match(/farmac/)) return 'Químico Farmacéutico con 7 años en dispensación y control de calidad. Gestor de 500+ reportes de farmacovigilancia y reducción de errores de medicación al 0%.';
+    if (p.match(/piloto|aviaci|vuelo|helicoptero|helic/)) return 'Oficial Aviador con [N] años en la Fuerza Aérea. Especializado en helicóptero VFR/IFR con [N]+ horas y misiones OACI internacionales. Historial impecable de seguridad operacional y liderazgo en entornos de alta exigencia.';
+    if (p.match(/medic|doctor|ciruj|clinico/)) return 'Médico con [N] años en urgencias hospitalarias. Especializado en diagnóstico diferencial con [N]+ pacientes mensuales, coordinación de equipos y participación en publicaciones científicas.';
+    if (p.match(/desarrollad|programad|software|frontend|backend|fullstack|dev/)) return 'Desarrollador Full Stack con [N] años construyendo plataformas para [N]+ usuarios. Especializado en React/Node.js liderando equipos ágiles de [N] personas con entrega del [X%] de proyectos en tiempo.';
+    if (p.match(/vend|comerci|sales|ejecutivo comercial/)) return 'Ejecutivo Comercial con [N] años superando cuotas. Responsable de cartera de [monto] anuales con [N]+ cuentas, logrando [X%] de la meta durante [N] años consecutivos.';
+    if (p.match(/contad|contabilid|cpa|audit/)) return 'Contador Público con [N] años en contabilidad corporativa NIIF. Gestor de portafolios de [monto] con cero observaciones en auditorías y reducción del [X%] en tiempo de cierre.';
+    if (p.match(/enfermer/)) return 'Enfermero/a con [N] años en UCI y Urgencias. Especializado en cuidados críticos supervisando [N]+ auxiliares con cero eventos adversos en [N] años consecutivos.';
+    if (p.match(/maestro|profesor|docente|educacion/)) return 'Docente con [N] años formando profesionales. Diseñador de currículas adoptadas por [N] instituciones con tasa de aprobación del [X%] mediante metodologías activas.';
+    if (p.match(/ingeniero|ingenieria/)) return 'Ingeniero con [N] años dirigiendo proyectos de [monto]. [X%] de proyectos entregados en plazo y presupuesto mediante gestión lean y control riguroso de calidad.';
+    if (p.match(/chef|cocin|gastronom/)) return 'Chef Ejecutivo con [N] años en gastronomía de autor. Director de cocinas de [N] cubiertos con food cost al [X%] y menús reconocidos en rankings gastronómicos nacionales.';
+    if (p.match(/abogad|derecho|juridic/)) return 'Abogado Corporativo con [N] años en contratos y M&A. Asesor de transacciones por [monto] con reducción de contingencias del [X%] y negociación de [N]+ contratos estratégicos.';
+    if (p.match(/market|publicid|digital/)) return 'Especialista en Marketing Digital con [N] años escalando marcas en LATAM. Campañas con ROI del [X%] e incremento de base de clientes del [X%] en [N] meses.';
+    if (p.match(/rrhh|recursos humanos|talento|hr /)) return 'Especialista RRHH con [N] años en empresas de [N]+ empleados. Redujo rotación del [X%] al [X%] implementando programas de desarrollo con impacto de [monto] en productividad.';
+    if (p.match(/psicolog|terapeu/)) return 'Psicólogo Clínico con [N] años en TCC. Especializado en ansiedad y depresión con [N]+ pacientes y tasa de mejora documentada del [X%].';
+    if (p.match(/nutricion|dietista/)) return 'Nutricionista con [N] años en práctica clínica y deportiva. [N]+ pacientes con resultados documentados en pérdida de peso y mejora de indicadores metabólicos.';
+    if (p.match(/fisioterapeu|kinesio/)) return 'Fisioterapeuta con [N] años en rehabilitación deportiva y neurológica. [N]+ pacientes con tasa de retorno a actividad del [X%] en tiempo inferior al promedio.';
+    if (p.match(/diseñad|grafico|ux|ui/)) return 'Diseñador con [N] años creando experiencias visuales de alto impacto. Rediseños que incrementaron conversión en [X%] y redujeron abandono de usuario en [X%].';
+    if (p.match(/logistic|supply|almacen|distribuci/)) return 'Especialista en Logística con [N] años optimizando cadenas de suministro. [N]+ pedidos diarios con puntualidad del [X%] y reducción de costos logísticos del [X%].';
+    if (p.match(/contador|finanzas|financiero|tesorero/)) return 'Profesional Financiero con [N] años en análisis y gestión de capital. Responsable de portafolios de [monto] con optimización de costo financiero del [X%].';
+    if (p.match(/arquitecto|arquitectura/)) return 'Arquitecto con [N] años diseñando proyectos residenciales y comerciales de [monto]. [N]+ proyectos con certificación y reconocimiento en premios de diseño nacional.';
+    if (p.match(/farmac/)) return 'Químico Farmacéutico con [N] años en dispensación y control de calidad. Gestor de [N]+ reportes de farmacovigilancia y reducción de errores de medicación al [X%].';
     if (p.match(/estudiante|reci[eé]n graduad|pasante|trainee|becari|primer empleo|sin experiencia/)) return 'Recién graduado en ${datos.puesto} con formación académica sólida y proyectos aplicados. Combina fundamentos técnicos actualizados con capacidad de aprendizaje acelerado y disposición para asumir responsabilidad desde el primer día.';
     if (p.match(/cambio de carrera|transici[oó]n|reconversi/)) return 'Profesional en transición hacia ${datos.puesto}, aportando competencias transferibles consolidadas en su trayectoria previa. Combina experiencia real en entornos exigentes con formación específica orientada al nuevo sector.';
     if (p.match(/redactor|copywriter|editor|periodis|content|creativ|audiovisual|fot[oó]graf|dise[ñn]ador de/)) return 'Profesional creativo con trayectoria produciendo contenido y piezas para marcas y medios. Combina criterio editorial, dominio técnico de herramientas de producción y orientación a resultados medibles de audiencia y engagement.';
@@ -1946,6 +2102,10 @@ US RESUME STANDARDS (this is a US resume, not a translated Latin American CV):
     .replace(/\*\*/g,'').replace(/\*/g,'')
     .replace(/^(Más de \d+ años|\d+-\d+ años|Recién graduado|Trabajo bajo presión|Trabajo independiente)$/gm,'')
     .trim();
+
+  // Fecha actual (YYYY-MM) para que la IA nunca proyecte una fecha futura.
+  const _hoyISO = new Date();
+  const fechaHoyYYYYMM = `${_hoyISO.getFullYear()}-${String(_hoyISO.getMonth()+1).padStart(2,'0')}`;
 
   const prompt = `${BLINDAJE}${idiomaInstruccion}
 
@@ -1968,6 +2128,7 @@ INFO EXTRA: ${datos.info_extra||''}
 
 REGLAS (estándar de reclutador ejecutivo élite):
 1. RESUMEN: MÁXIMO 5 líneas / 90 palabras. Quién es + años + especialización + logro diferenciador. NUNCA excedas 90 palabras — un perfil largo pierde al reclutador. Sin "yo/soy/tengo". Modelo: "${ejemplo}"
+1b. ${enIngles?'The example above shows STYLE ONLY. Never add skills, tools, standards (e.g. NEC, ISO), certifications, figures, institutions, or responsibilities the candidate didn\'t write. If it\'s not in their answers, it doesn\'t exist.':'El ejemplo anterior muestra solo ESTILO. Prohibido añadir habilidades, herramientas, normas (p. ej. NEC, ISO), certificaciones, cifras, instituciones o responsabilidades que el candidato no haya escrito. Si un dato no está en las respuestas, no existe.'}
 2. EXPERIENCIA: 5-7 bullets RICOS por trabajo (22-35 palabras c/u), desarrollados con contexto, alcance y escala del sector. CV final: mínimo 1½-2 páginas A4 (900-1200 palabras) con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. Bullets cortos o planos = trabajo rechazado.
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
 4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
@@ -1977,6 +2138,7 @@ REGLAS (estándar de reclutador ejecutivo élite):
 5d. LOGROS, NO TAREAS (el error nº1 del CV en español): un bullet que solo enumera funciones no diferencia al candidato. Estructura preferida: verbo de acción + qué hizo + qué resultó de ello. Ej.: en vez de "Gestión de redes sociales", escribe "Incrementé el engagement un 35% en 6 meses mediante una estrategia de contenidos" — PERO solo si esa cifra la dio el candidato. Si no hay cifras, expresa el resultado de forma cualitativa y concreta (alcance, tipo de proyecto, equipos coordinados). JAMÁS inventes un porcentaje ni un "dato típico del sector".
 5e. FORMACIÓN, convención hispana en tres niveles cuando aplique: estudios oficiales (titulación reglada), formación complementaria (cursos, certificaciones) y competencias en informática e idiomas. Formato: "Titulación — Institución, Ciudad — Año". No listes el bachillerato si el candidato tiene título universitario, salvo que sea su credencial más alta.
 5f. FECHAS coherentes en todo el documento: usa el mismo formato en todas las entradas ("Ene 2020 – Dic 2023" o "2020 – 2023", pero no mezcles). Si el candidato dio mes y año, consérvalos: aportan precisión.
+5f2. FECHA ACTUAL: ${fechaHoyYYYYMM}. Ninguna fecha del CV puede ser posterior a hoy. Si el puesto es el actual del candidato, la fecha de fin debe ser "${enIngles?'Present':'Actualidad'}", nunca una fecha futura inventada.
 5g. HABILIDADES equilibradas: primero las competencias técnicas concretas del oficio (herramientas, software, técnicas) — son las que pesca el ATS —, después las transversales que sus respuestas respalden. Nunca abras la lista con "Trabajo en equipo" ni "Comunicación".
 5h. SIN MAYÚSCULAS SOSTENIDAS en el cuerpo del texto ni en el nombre (María López, no MARÍA LÓPEZ): dificultan la lectura. Los encabezados cortos de sección sí pueden ir en mayúsculas.
 5i. EL CV TIENE UN SOLO TRABAJO: conseguir la entrevista. Incluye lo relevante para el puesto objetivo y descarta lo que no aporta. Deja material para que el candidato tenga algo que contar en la entrevista.
@@ -2037,10 +2199,18 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt})
+      body: JSON.stringify({prompt, ..._iaExtra()})
     });
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      let _ra = null;
+      try { const _ej = await res.clone().json(); _ra = _ej && _ej.retry_after_seconds; } catch(_e) {}
+      const _errHttp = new Error(`HTTP ${res.status}`);
+      _errHttp.isLimite = (res.status === 429);
+      _errHttp.retryAfter = _ra;
+      throw _errHttp;
+    }
+    _limiteIARegistrar();   // Auditoría #4: recién ahora, con 200 confirmado
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
@@ -2066,17 +2236,25 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
 CV:
-${cvTexto.substring(0,12000)}`})
+${cvTexto.substring(0,12000)}`, ..._iaExtra()})
       });
       const dr = await rr.json();
       if (dr.cv && limpiarPreambuloIA(dr.cv).length > cvTexto.length * 0.7) {
-        return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(limpiarPreambuloIA(dr.cv), enIngles), _fuenteRespuestas(), enIngles), _fuenteRespuestas(), enIngles);
+        return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(limpiarPreambuloIA(dr.cv), enIngles), _fuenteRespuestasUsuario(), enIngles), _fuenteRespuestasUsuario(), enIngles);
       }
     } catch(e2) {}
-    return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(cvTexto, enIngles), _fuenteRespuestas(), enIngles), _fuenteRespuestas(), enIngles);
+    return await generarConValidacion(async () => await pasadaVeracidad(await pasadaATS(cvTexto, enIngles), _fuenteRespuestasUsuario(), enIngles), _fuenteRespuestasUsuario(), enIngles);
 
   } catch(e) {
     console.error('❌ Error en generarConIA:', e.message);
+
+    // RONDA A: límite de IA (429) — sin reintento automático ni "Reiniciar",
+    // solo el botón Reintentar que relanza exactamente el mismo flujo.
+    if (e.isLimite) {
+      terminarProgreso(false);
+      renderMsgLimiteIA(e.retryAfter, '_reintentarGeneracion');
+      throw e;
+    }
 
     // Reintentar UNA vez
     try {
@@ -2085,14 +2263,22 @@ ${cvTexto.substring(0,12000)}`})
       const res2 = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method: 'POST',
         headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-        body: JSON.stringify({prompt})
+        body: JSON.stringify({prompt, ..._iaExtra()})
       });
+      if (res2.status === 429) {
+        let _ra2 = null;
+        try { const _ej2 = await res2.clone().json(); _ra2 = _ej2 && _ej2.retry_after_seconds; } catch(_e) {}
+        terminarProgreso(false);
+        renderMsgLimiteIA(_ra2, '_reintentarGeneracion');
+        throw Object.assign(new Error('HTTP 429'), {isLimite:true, retryAfter:_ra2});
+      }
       const data2 = await res2.json();
       if (data2.cv && limpiarPreambuloIA(data2.cv).length > 200) {
         console.log('✅ Reintento exitoso');
         return data2.cv;
       }
     } catch(e2) {
+      if (e2 && e2.isLimite) throw e2;
       console.error('❌ Reintento también falló:', e2.message);
     }
 
@@ -2101,7 +2287,7 @@ ${cvTexto.substring(0,12000)}`})
       ? `❌ We could not generate your resume right now.
 
 *What you can do:*
-• Wait 30 seconds and click "Restart"
+• Wait a moment and click "Restart"
 • Check your internet connection
 • If it persists, contact us
 
@@ -2109,7 +2295,7 @@ Your answers are saved — you will not lose anything.`
       : `❌ No pudimos generar tu CV en este momento.
 
 *¿Qué puedes hacer?*
-• Espera 30 segundos y haz clic en "Reiniciar"
+• Espera un momento y haz clic en "Reiniciar"
 • Verifica tu conexión a internet
 • Si el problema persiste, escríbenos
 
@@ -2188,68 +2374,42 @@ async function recuperarCVPorCodigo(codigo) {
 }
 
 async function guardarCVConCodigo(cv) {
-  let _rlsSinUpdate = false;   // la fila existe pero la RLS no permite actualizarla
   try {
     let codigo = sessionStorage.getItem('cvpro_codigo');
     if (!codigo) {
       // Código criptográficamente seguro de 8 caracteres (no predecible)
-      const buf = new Uint32Array(2);
-      (window.crypto || window.msCrypto).getRandomValues(buf);
-      const ALF = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-      codigo = Array.from({length:8}, (_,i) => ALF[(buf[i%2] >>> (i*4)) % ALF.length]).join('');
+      codigo = generarCodigoCV();
       sessionStorage.setItem('cvpro_codigo', codigo);
     }
     const cvData = construirCVData();
-    const _resGuardado = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados?on_conflict=codigo`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'resolution=merge-duplicates'},
-      body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:LANG, plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
-    });
-    // Solo avisamos del código si REALMENTE quedó guardado.
-    // Antes se mostraba siempre, incluso cuando el guardado fallaba.
-    let _guardadoOk = _resGuardado.ok;
-    if (!_guardadoOk) {
-      const _err = await _resGuardado.text();
-      console.warn('Upsert falló (' + _resGuardado.status + '), reintentando como insert simple:', _err);
-      // Plan B: si no existe el índice único sobre 'codigo', el upsert falla.
-      // Un insert normal sí funciona y evita perder el CV del usuario.
-      const _r2 = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados`, {
-        method:'POST',
-        headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'},
-        body: JSON.stringify({codigo, nombre:datos.nombre||'', email:(datos.email_tel||'').split(',')[0].trim(), cv_texto:cv, cv_data:cvData, lang:LANG, plan:(localStorage.getItem('cvpro_plan')||'basico'), expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString()})
+    // RONDA A: una sola llamada a la Edge Function guardar-cv (service role),
+    // que decide INSERT vs UPDATE en el servidor. Reemplaza el upsert previo
+    // (Prefer de fusión que siempre fallaba por RLS) + insert + PATCH.
+    // Auditoría #1: se manda el token_edicion (si existe) como prueba de
+    // posesión para poder actualizar; si no hay token (CV recuperado en
+    // otro dispositivo), se manda el email original en su lugar.
+    const _tokenPrevio = _tokenEdicionGuardado(codigo);
+    let _guardadoOk = false;
+    try {
+      const _resGuardado = await fetch(`${SUPABASE_URL}/functions/v1/guardar-cv`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+        body: JSON.stringify({
+          accion: 'cv',
+          codigo, nombre: datos.nombre||'',
+          email: _tokenPrevio ? '' : _emailParaGuardarCV(),
+          cv_texto: cv, cv_data: cvData, lang: LANG,
+          plan: (localStorage.getItem('cvpro_plan')||'basico'),
+          expira_en: new Date(Date.now() + ({basico:30, estandar:90, premium:180}[localStorage.getItem('cvpro_plan')||'basico'] || 30)*86400000).toISOString(),
+          ...(_tokenPrevio ? {token: _tokenPrevio} : {})
+        })
       });
-      _guardadoOk = _r2.ok;
-      if (!_guardadoOk) {
-        const _err2 = await _r2.text();
-        // Plan C — EL CASO REAL AL REGENERAR/ADAPTAR: el código ya existe
-        // (409 duplicate key). No es un fallo: el CV está guardado, solo hay
-        // que ACTUALIZAR esa fila con la versión nueva. El upsert previo
-        // falla con 401 cuando la RLS no permite UPDATE vía merge-duplicates,
-        // así que aquí se hace un PATCH explícito sobre el código.
-        if (_r2.status === 409 || /duplicate key/i.test(_err2)) {
-          console.log('El código ya existe — actualizando el CV guardado en vez de insertarlo');
-          const _r3 = await fetch(`${SUPABASE_URL}/rest/v1/cvs_guardados?codigo=eq.${encodeURIComponent(codigo)}`, {
-            method: 'PATCH',
-            headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'},
-            body: JSON.stringify({cv_texto:cv, cv_data:cvData, lang:LANG})
-          });
-          _guardadoOk = _r3.ok;
-          if (!_guardadoOk) {
-            const _err3 = await _r3.text();
-            console.error('❌ No se pudo actualizar el CV guardado:', _r3.status, _err3);
-            // La fila EXISTE aunque no podamos actualizarla: el código sigue
-            // sirviendo para recuperar (traerá la versión anterior). Es mejor
-            // que declarar el código inválido y alarmar al usuario.
-            if (_r3.status === 401 || _r3.status === 403) {
-              console.warn('RLS impide UPDATE en cvs_guardados — el código recupera la versión anterior del CV');
-              _guardadoOk = true;
-              _rlsSinUpdate = true;
-            }
-          }
-        } else {
-          console.error('❌ El CV no se guardó:', _r2.status, _err2);
-        }
-      }
+      const _dataGuardado = await _resGuardado.json().catch(() => ({}));
+      _guardadoOk = _resGuardado.ok && _dataGuardado && _dataGuardado.ok === true;
+      if (_guardadoOk && _dataGuardado.token) _guardarTokenEdicion(codigo, _dataGuardado.token);
+      if (!_guardadoOk) console.error('❌ El CV no se guardó:', _resGuardado.status, _dataGuardado && _dataGuardado.error);
+    } catch (eG) {
+      console.error('❌ guardar-cv falló:', eG.message);
     }
     if (!_guardadoOk) {
       // El código quedó en sessionStorage pero NO recupera nada: marcarlo
@@ -2257,8 +2417,8 @@ async function guardarCVConCodigo(cv) {
       // entreguen un código huérfano.
       sessionStorage.removeItem('cvpro_codigo_guardado');
       renderMsgAI(LANG==='en'
-        ? '⚠️ Your resume was generated but we could not save it. Download it now — the recovery code is not available.'
-        : '⚠️ Tu CV se generó pero no pudimos guardarlo. Descárgalo ahora — el código de recuperación no está disponible.');
+        ? "⚠️ We couldn't save your recovery code. Download or copy your resume now."
+        : '⚠️ No pudimos guardar tu código de recuperación; descarga o copia tu CV ahora.');
       return;
     }
     sessionStorage.setItem('cvpro_codigo_guardado', codigo);   // guardado confirmado
@@ -2410,14 +2570,19 @@ GENERA EL CV ADAPTADO AHORA:`;
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt})
+      body: JSON.stringify({prompt, ..._iaExtra()})
     });
     // Un 429/500 del servidor parseado a ciegas se disfrazaba de 'respuesta
     // corta' y el usuario veía siempre el mismo mensaje sin causa. Ahora el
     // estado HTTP viaja en el error y el alert dice qué pasó de verdad.
     if (!res.ok) {
+      let _raAd = null;
+      try { const _ejAd = await res.clone().json(); _raAd = _ejAd && _ejAd.retry_after_seconds; } catch(_e) {}
       const cuerpo = await res.text().catch(() => '');
-      throw new Error('HTTP ' + res.status + (cuerpo ? ' — ' + cuerpo.substring(0, 100) : ''));
+      const _errAd = new Error('HTTP ' + res.status + (cuerpo ? ' — ' + cuerpo.substring(0, 100) : ''));
+      _errAd.isLimite = (res.status === 429);
+      _errAd.retryAfter = _raAd;
+      throw _errAd;
     }
     const data = await res.json();
     if (!data.cv || data.cv.trim().length < 300) throw new Error('respuesta corta del servidor');
@@ -2432,7 +2597,7 @@ GENERA EL CV ADAPTADO AHORA:`;
         body: JSON.stringify({prompt: `${_enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres Executive Recruiter élite revisando un CV adaptado a una vacante. CRITICA y MEJORA: elimina bullets débiles, refuerza los que respondan a la oferta, asegura que el perfil venda en 5 segundos. VERIFICA que ninguna cifra sea inventada. NO agregues hechos nuevos. Mismo formato y headers exactos. Devuelve SOLO el CV final completo.
 CV:
-${cvAd.substring(0,12000)}`})
+${cvAd.substring(0,12000)}`, ..._iaExtra()})
       });
       const dr = await rr.json();
       if (dr.cv) { const _l = limpiarPreambuloIA(dr.cv); if (_l.length > cvAd.length * 0.7) cvAd = _l; }
@@ -2464,20 +2629,27 @@ ${cvAd.substring(0,12000)}`})
   } catch(e) {
     console.error('Adaptación a vacante falló:', e);
     if (typeof ev === 'function') ev('adapt_job_failed', {detalle: String((e && e.message) || e).substring(0, 80)});
+    btn.disabled = false;
+    btn.textContent = LANG==='en' ? '⚡ Adapt my resume' : '⚡ Adaptar mi CV';
+
+    // RONDA A: límite de IA (429) — mensaje dedicado con botón Reintentar,
+    // sin ofrecer Reiniciar (aquí no hay reinicio del chat que ofrecer).
+    if (e && e.isLimite) {
+      document.getElementById('vacanteOverlay')?.remove();
+      window._retryAdaptarVacante = () => adaptarAVacante();
+      renderMsgLimiteIA(e.retryAfter, '_retryAdaptarVacante');
+      return;
+    }
+
     const esTimeout = e && e.name === 'AbortError';
-    const esLimite = /HTTP 429/.test(String(e && e.message));
     const causa = esTimeout
       ? (LANG==='en' ? 'The connection took too long (slow network). ' : 'La conexión tardó demasiado (red lenta). ')
-      : esLimite
-      ? (LANG==='en' ? 'Too many requests right now. ' : 'Hay mucho tráfico en este momento. ')
       : '';
     const detalle = (!causa && e && e.message) ? '\n(' + String(e.message).substring(0, 90) + ')' : '';
     alert((LANG==='en' ? 'Could not adapt your resume. ' : 'No se pudo adaptar tu CV. ')
       + causa
-      + (LANG==='en' ? 'Try again in 30 seconds.' : 'Intenta de nuevo en 30 segundos.')
+      + (LANG==='en' ? 'Try again in a moment.' : 'Intenta de nuevo en un momento.')
       + detalle);
-    btn.disabled = false;
-    btn.textContent = LANG==='en' ? '⚡ Adapt my resume' : '⚡ Adaptar mi CV';
   }
 }
 
@@ -2493,7 +2665,7 @@ function revertirAdaptacion() {
 
 // ══════════ PANEL DE PROGRESO DE LA GENERACIÓN ══════════
 // Los mensajes de etapa se acumulaban como burbujas de chat y entre una y
-// otra la pantalla quedaba muerta 20-30 segundos. Sin señal de avance el
+// otra la pantalla quedaba muerta unos 20-30s. Sin señal de avance el
 // usuario cree que se colgó y abandona justo antes de ver su CV.
 let _prog = {timer: null, pct: 0, objetivo: 0, paso: 0, inicio: 0, tipsTimer: null, watchdog: null};
 
@@ -2857,8 +3029,13 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
     // Solo esta llamada es obligatoria. Si falla, no hay CV.
     const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
       method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt})
+      body: JSON.stringify({prompt, ..._iaExtra()})
     }, 90);
+    if (res.status === 429) {
+      let _raOpt = null;
+      try { const _ejOpt = await res.clone().json(); _raOpt = _ejOpt && _ejOpt.retry_after_seconds; } catch(_e) {}
+      throw Object.assign(new Error('HTTP 429'), {isLimite:true, retryAfter:_raOpt});
+    }
     const data = await res.json();
     if (!data.cv || data.cv.length < 300) throw new Error('short');
     let cvV1 = data.cv.trim();
@@ -2901,7 +3078,7 @@ INFORMACIÓN ORIGINAL DEL CANDIDATO (única fuente de verdad):
 ${sanitizarEntrada(texto, 7000).substring(0,7000)}
 
 CV A REVISAR:
-${cvV1.substring(0,9000)}`})
+${cvV1.substring(0,9000)}`, ..._iaExtra()})
       }, 90);
       const d2 = await res2.json();
       const _limpio2 = d2.cv ? limpiarPreambuloIA(d2.cv) : '';
@@ -3031,19 +3208,41 @@ ${cvV1.substring(0,9000)}`})
       error: String(e && e.message ? e.message : e).substring(0, 120)
     });
     console.error('Optimización fallida:', e);
+
+    // RONDA A: límite de IA (429) — sin reintento automático ni sugerir
+    // recargar la página; botón Reintentar que relanza con el mismo texto.
+    if (e && e.isLimite) {
+      window._retryOptimizarCVSubido = () => optimizarCVSubido(texto);
+      renderMsgLimiteIA(e.retryAfter, '_retryOptimizarCVSubido');
+      return;
+    }
+
     renderMsgAI(LANG==='en'
-      ? '❌ We could not generate your resume. The AI service did not respond in time.\n\n*What to do:* wait 30 seconds and reload the page. Your uploaded resume is saved.'
-      : '❌ No pudimos generar tu CV. El servicio de IA no respondió a tiempo.\n\n*Qué hacer:* espera 30 segundos y recarga la página. Tu CV subido está guardado.');
+      ? '❌ We could not generate your resume. The AI service did not respond in time.\n\n*What to do:* wait a moment and reload the page. Your uploaded resume is saved.'
+      : '❌ No pudimos generar tu CV. El servicio de IA no respondió a tiempo.\n\n*Qué hacer:* espera un momento y recarga la página. Tu CV subido está guardado.');
   }
 }
 
 
 
 
-function _fuenteRespuestas() {
+// MAX_PROMPT_CHARS: presupuesto máximo de caracteres para cualquier prompt
+// que combine instrucciones + LISTA BLANCA + CV, para no exceder límites del
+// modelo ni inflar coste/latencia.
+const MAX_PROMPT_CHARS = 20000;
+
+// LISTA BLANCA de respuestas del candidato: SOLO texto escrito por el
+// usuario — las 14 claves base. `datos[k]` es el crudo tal como el usuario
+// lo tecleó; cuando hubo pregunta de seguimiento, `paso--` reutiliza el
+// mismo campo, así que `datos[k]` YA contiene la respuesta ampliada por el
+// candidato. Nunca se incluye `datos[k+'_enriquecido']` aquí: ese campo lo
+// redacta la IA (enriquecerYActualizarPreview) y mezclarlo en la lista
+// blanca contaminaría la auditoría de veracidad con texto no escrito por
+// el candidato.
+function _fuenteRespuestasUsuario() {
   const d = datos || {};
   return ['nombre','puesto','pais','email_tel','tipo_empresa','resumen_personal','exp1','logros1','exp2','logros2','estudios','habilidades_tecnicas','idiomas_nivel','info_extra']
-    .map(k => d[k] ? `${k}: ${d[k+'_enriquecido'] || d[k]}` : '')
+    .map(k => d[k] ? `${k}: ${d[k]}` : '')
     .filter(Boolean).join('\n');
 }
 
@@ -3051,31 +3250,57 @@ async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng) {
   if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
   try {
     if (typeof marcarPaso === 'function') marcarPaso(4);
-    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-      body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres auditor de integridad de CVs. Compara el CV FINAL contra la INFORMACIÓN ORIGINAL del candidato y corrige toda afirmación no respaldada.
+    const cvParaVerificar = cvTxt.substring(0,9000);
+    // LISTA BLANCA: única fuente de verdad contra la que se audita el CV
+    // (respuestas base + seguimientos). Si lista+CV supera el presupuesto,
+    // recortamos la lista por el final y registramos el evento para poder
+    // auditar cuántas veces el candidato dio más texto del que cabe.
+    const LIMITE_LISTA_MAS_CV = 16000;
+    let listaBlanca = sanitizarEntrada(fuenteOriginal, 16000);
+    if ((listaBlanca.length + cvParaVerificar.length) > LIMITE_LISTA_MAS_CV) {
+      const antes = listaBlanca.length;
+      const espacio = Math.max(0, LIMITE_LISTA_MAS_CV - cvParaVerificar.length);
+      listaBlanca = listaBlanca.substring(0, espacio);
+      if (typeof ev === 'function') ev('truth_whitelist_truncated', {antes, despues: listaBlanca.length});
+    }
+    // Construye el prompt con la lista blanca dada; se usa dos veces si el
+    // primer intento supera MAX_PROMPT_CHARS (tope final de seguridad).
+    const _construirPromptVeracidad = (lb) => `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
+Eres auditor de integridad de CVs. Compara el CV FINAL contra la LISTA BLANCA (texto íntegro de las respuestas del candidato, base + seguimientos) y corrige toda afirmación no respaldada.
 ELIMINA O SUSTITUYE:
-- Cifras, porcentajes, montos, cantidades de personas u horas que NO aparezcan en la información original.
+${enIng?"- If a term in the resume is just a more professional phrasing of the SAME fact the candidate stated, keep it. Only remove what adds an object, standard, tool, certification, institution, figure or scope that is absent from the whitelist. When in doubt, keep it.":"- Si un término del CV es una formulación más profesional del MISMO hecho declarado por el candidato, consérvalo. Elimina solo lo que añada un objeto, norma, herramienta, certificación, institución, cifra o alcance ausente en la lista. Ante la duda, conserva."}
+- Cifras, porcentajes, montos, cantidades de personas u horas que NO aparezcan en la LISTA BLANCA.
 - Empresas, cargos, títulos, certificaciones, idiomas, herramientas o clientes no mencionados por el candidato.
 - Premios, reconocimientos o resultados no declarados.
-- INFLACIÓN DE ALCANCE: cualificadores técnicos, procesos o responsabilidades que amplíen lo que la fuente dice. Ejemplos: la fuente dice "levantamientos" y el CV dice "levantamientos topográficos"; la fuente dice "compra de materiales" y el CV dice "control de inventarios" o "trazabilidad financiera"; la fuente no menciona "licitación" y el CV sí. Reduce cada afirmación al alcance EXACTO de la fuente, conservando la buena redacción.
-- PLACEHOLDERS: elimina por completo todo segmento tipo "Período no especificado", "Not specified", "N/A" o similar. Si la fuente no da fechas, el encabezado del puesto queda "Cargo | Empresa" — la ausencia de un dato se omite, nunca se anuncia.
-- CIUDAD DE RESIDENCIA: si el CV declara una ciudad que la fuente no da como residencia del candidato (p. ej. tomada de su universidad o empresa), elimínala y deja solo el país.
+- INFLACIÓN DE ALCANCE: cualificadores técnicos, procesos o responsabilidades que amplíen lo que la LISTA BLANCA dice. Ejemplos: la lista dice "levantamientos" y el CV dice "levantamientos topográficos"; la lista dice "compra de materiales" y el CV dice "control de inventarios" o "trazabilidad financiera"; la lista no menciona "licitación" y el CV sí. Reduce cada afirmación al alcance EXACTO de la lista, conservando la buena redacción.
+- PLACEHOLDERS: elimina por completo todo segmento tipo "Período no especificado", "Not specified", "N/A" o similar. Si la lista no da fechas, el encabezado del puesto queda "Cargo | Empresa" — la ausencia de un dato se omite, nunca se anuncia.
+- CIUDAD DE RESIDENCIA: si el CV declara una ciudad que la lista no da como residencia del candidato (p. ej. tomada de su universidad o empresa), elimínala y deja solo el país.
 Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes.
 VERIFICA ADEMÁS LAS FECHAS:
 - Ninguna fecha de inicio puede ser posterior a la de fin.
 - Ningún periodo puede empezar después del año en curso (${new Date().getFullYear()}).
-- Si dos puestos se solapan y la información original no lo indica, corrige al periodo declarado por el candidato.
+- Si dos puestos se solapan y la lista no lo indica, corrige al periodo declarado por el candidato.
 - No inventes meses ni años que el candidato no haya dado: si solo dio el año, deja solo el año.
-CONSERVA intactas las cifras y hechos que SÍ están en la información original.
+CONSERVA intactas las cifras y hechos que SÍ están en la LISTA BLANCA.
 Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV corregido completo.
 
-INFORMACIÓN ORIGINAL DEL CANDIDATO:
-${sanitizarEntrada(fuenteOriginal, 7000).substring(0,7000)}
+LISTA BLANCA — RESPUESTAS ÍNTEGRAS DEL CANDIDATO (única fuente de verdad, incluye seguimientos):
+${lb}
 
 CV FINAL A VERIFICAR:
-${cvTxt.substring(0,9000)}`})
+${cvParaVerificar}`;
+
+    let _promptVeracidad = _construirPromptVeracidad(listaBlanca);
+    if (_promptVeracidad.length > MAX_PROMPT_CHARS) {
+      const _exceso = _promptVeracidad.length - MAX_PROMPT_CHARS;
+      listaBlanca = listaBlanca.substring(0, Math.max(0, listaBlanca.length - _exceso));
+      if (typeof ev === 'function') ev('truth_whitelist_truncated', {antes: _promptVeracidad.length, despues: MAX_PROMPT_CHARS, motivo: 'max_prompt_chars'});
+      _promptVeracidad = _construirPromptVeracidad(listaBlanca);
+    }
+
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt: _promptVeracidad, ..._iaExtra()})
     });
     if (!res.ok) { console.error('❌ Verificación de veracidad falló:', res.status, await res.text()); return cvTxt; }
     const d = await res.json();
@@ -3117,7 +3342,7 @@ VERIFICA Y CORRIGE:
 NO agregues información nueva. Mantén EXACTAMENTE el mismo formato y headers.
 Devuelve SOLO el CV final auditado y completo.
 CV:
-${cvTxt.substring(0,9000)}`})
+${cvTxt.substring(0,9000)}`, ..._iaExtra()})
     });
     const d = await res.json();
     if (d.cv && d.cv.trim().length > cvTxt.length * 0.75) return d.cv.trim();
@@ -3158,6 +3383,10 @@ function validarCV(cv) {
 
   // 3. CLICHÉS que sobrevivieron
   if (/\b(responsable de|encargado de|me encargu[eé]|fui responsable|proactivo|me considero|ganas de aprender)\b/i.test(t)) problemas.push('cliches');
+  // 3b. CLICHÉS EN INGLÉS (CVs generados con idioma_cv en inglés). "detail-oriented"
+  // solo cuenta si aparece aislado (no como parte de una frase más específica
+  // que el candidato sí respaldó), igual que el resto de la lista.
+  if (/\b(results-driven|proven track record|dynamic|leveraging|synergy|go-getter|think outside the box|team player|hard worker|detail-oriented|passionate|self-starter|guru|ninja|rockstar)\b/i.test(t)) problemas.push('cliche_en');
 
   // 4. FECHAS imposibles
   const anioActual = new Date().getFullYear();
@@ -3261,7 +3490,7 @@ Este CV es demasiado pobre para un candidato profesional. Problemas: ${graves.jo
 EXPANDE cada bullet a 22-35 palabras con contexto, alcance y resultado. El perfil debe tener 4-5 líneas densas. CV final de 900-1200 palabras.
 NO inventes hechos ni cifras nuevas — desarrolla lo que ya está. Mismo formato y headers exactos. Devuelve SOLO el CV completo.
 CV:
-${String(cv).substring(0,6000)}`})
+${String(cv).substring(0,6000)}`, ..._iaExtra()})
       });
       const d = await res.json();
       if (d.cv && d.cv.trim().length > String(cv).length) cv = d.cv.trim();
@@ -3649,6 +3878,7 @@ function agregarEducacion() {}
 
 async function regenerarCV() {
   if (!confirm((LANG==='en' ? 'Regenerate with AI? Manual edits will be lost.' : '¿Regenerar el CV con IA? Se perderán los cambios manuales.'))) return;
+  _ultimaAccionGeneracion = regenerarCV;
   // Si el contenedor no existe, avisar en vez de reventar en silencio
   const _ml = document.querySelector('.main-layout');
   if (!_ml) { console.error('No se encontró .main-layout: el resultado no puede mostrarse'); alert(LANG==='en'?'Could not display the result. Please reload the page.':'No se pudo mostrar el resultado. Recarga la página.'); return; }
@@ -3793,7 +4023,7 @@ REGLAS:
 Ejemplo de salida: ["Medicina Interna","Hospitalización","POCUS","Liderazgo clínico"]
 
 CV:
-${sanitizarEntrada(fuente, 8000).substring(0, 8000)}`})
+${sanitizarEntrada(fuente, 8000).substring(0, 8000)}`, ..._iaExtra()})
     }, 30);
     if (!res.ok) { console.warn('Extracción de habilidades falló:', res.status); return []; }
     const data = await res.json();
@@ -3874,7 +4104,7 @@ function construirCVData() {
   const liM = ct.match(/(?:https?:\/\/)?(?:www\.)?((?:linkedin\.com|lnkd\.in)\/[^\s,;|]+)/i);
   const linkedin = liM ? liM[1].replace(/[),.;]+$/, '') : '';
   const ctSinLi = liM ? ct.replace(liM[0], ' ') : ct;
-  const telM = ctSinLi.match(/[\+\d][\d\s\-\(\)\.]{6,}/);
+  const telM = ctSinLi.match(/[\+\(\d][\d\s\-\(\)\.]{6,}/);
   const email = emailM ? emailM[0] : '';
   const telefono = telM ? telM[0].trim() : '';
 
@@ -4019,7 +4249,7 @@ function construirCVData() {
   // Fallback inteligente si no se parseó
   if (!experiencia.length) {
     const exp1parts = (datos.exp1 || '').split(/[—|\-]/).map(s => s.trim());
-    const bullets1 = (datos.logros1 || '').split('\n').map(l => limpiarBullet(l)).filter(l => l.length > 3);
+    const bullets1 = (datos.logros1_enriquecido || datos.logros1 || '').split('\n').map(l => limpiarBullet(l)).filter(l => l.length > 3);
     experiencia.push({
       titulo: exp1parts[0] || datos.puesto || '',
       empresa: exp1parts[1] || '',
@@ -4029,7 +4259,7 @@ function construirCVData() {
     const exp2valida = datos.exp2 && !datos.exp2.toLowerCase().match(/^no$|solo|ninguno/);
     if (exp2valida) {
       const exp2parts = datos.exp2.split(/[—|\-]/).map(s => s.trim());
-      const bullets2 = (datos.logros2 || '').split('\n').map(l => limpiarBullet(l)).filter(l => l.length > 3);
+      const bullets2 = (datos.logros2_enriquecido || datos.logros2 || '').split('\n').map(l => limpiarBullet(l)).filter(l => l.length > 3);
       experiencia.push({
         titulo: exp2parts[0] || '',
         empresa: exp2parts[1] || '',
@@ -4310,18 +4540,17 @@ function construirCVData() {
 }
 
 async function guardarEnSupabase() {
-  // ⚠️ La tabla 'clientes' NO tiene columnas codigo / cv_texto / cv_data.
-  // El insert anterior las enviaba, PostgREST rechazaba la fila completa (400)
-  // y el error moría en un catch vacío — pero igual se le mostraba un código
-  // al usuario que nunca existió. Ahora esta tabla se usa solo como registro
-  // de leads, con las columnas que realmente existen.
+  // RONDA A: la tabla 'clientes' tiene RLS activo sin políticas (INSERT
+  // anónimo directo devuelve 42501). El registro de leads pasa ahora por la
+  // Edge Function guardar-cv (service role), que también deduplica por email.
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/clientes`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/guardar-cv`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'return=minimal'},
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
       body: JSON.stringify({
+        accion: 'lead',
         nombre: datos.nombre || '',
         email:  emailM ? emailM[0] : 'sin-email',
         pais:   datos.pais || '',
@@ -4329,7 +4558,7 @@ async function guardarEnSupabase() {
         plan:   localStorage.getItem('cvpro_plan') || 'basico'
       })
     });
-    if (!res.ok) console.warn('Registro de lead falló:', res.status, await res.text());
+    if (!res.ok) console.warn('Registro de lead falló:', res.status, await res.text().catch(()=>''));
   } catch(e) {
     console.warn('Registro de lead falló:', e.message);
   }
@@ -4441,7 +4670,7 @@ async function ejecutarRecuperacion() {
 // ── ONBOARDING ──
 const ONB_PASOS_ES = [
   { icon:'👋', titulo:'¡Bienvenido a <em>CVPro</em>!', desc:'Vamos a crear tu CV profesional en minutos. La IA te guiará paso a paso con preguntas simples.',
-    lista:[{ic:'🤖',txt:'Chat inteligente de 14 preguntas'},{ic:'✍️',txt:'IA transforma tu redacción en nivel profesional'},{ic:'🎨',txt:'10 plantillas profesionales con foto'}], btn:'¡Empezamos!' },
+    lista:[{ic:'🤖',txt:'Chat inteligente de 14 preguntas'},{ic:'✍️',txt:'IA transforma tu redacción en nivel profesional'},{ic:'🎨',txt:'20 plantillas profesionales con foto'}], btn:'¡Empezamos!' },
   { icon:'💬', titulo:'Solo <em>escribe</em> — la IA hace el resto', desc:'No necesitas saber redactar un CV. Cuéntame tu experiencia con tus palabras y yo la transformo.',
     lista:[{ic:'📝',txt:'Responde con naturalidad'},{ic:'🔄',txt:'Puedes editar todo al final'},{ic:'⚡',txt:'En ~8 minutos tendrás tu CV listo'}], btn:'Entendido →' },
   { icon:'✅', titulo:'Revisa antes de <em>descargar</em>', desc:'Después de generar tu CV podrás editar cualquier campo directamente antes de elegir plantilla.',
@@ -4449,7 +4678,7 @@ const ONB_PASOS_ES = [
 ];
 const ONB_PASOS_EN = [
   { icon:'👋', titulo:'Welcome to <em>CVPro</em>!', desc:'We will build your professional resume in minutes. The AI guides you step by step with simple questions.',
-    lista:[{ic:'🤖',txt:'Smart chat with 14 questions'},{ic:'✍️',txt:'AI turns your words into professional writing'},{ic:'🎨',txt:'10 professional templates with photo'}], btn:'Let\'s start!' },
+    lista:[{ic:'🤖',txt:'Smart chat with 14 questions'},{ic:'✍️',txt:'AI turns your words into professional writing'},{ic:'🎨',txt:'20 professional templates with photo'}], btn:'Let\'s start!' },
   { icon:'💬', titulo:'Just <em>type</em> — the AI does the rest', desc:'No resume-writing skills needed. Tell me your experience in your own words and I will transform it.',
     lista:[{ic:'📝',txt:'Answer naturally'},{ic:'🔄',txt:'You can edit everything at the end'},{ic:'⚡',txt:'Your resume ready in ~8 minutes'}], btn:'Got it →' },
   { icon:'✅', titulo:'Review before <em>downloading</em>', desc:'After generating your resume you can edit any field directly before choosing a template.',
@@ -4856,7 +5085,7 @@ INFORMACIÓN CLAVE DE CVPRO:
 - Precios: Básico $4.99, Estándar $9.99, Premium $14.99 — pago único, sin suscripción
 - Proceso: Chat de 14 preguntas guiadas → IA genera CV → pantalla de revisión → elegir plantilla → descargar PDF
 - La IA corrige ortografía, mejora redacción y optimiza para filtros ATS
-- 10 plantillas profesionales (5 hombre, 5 mujer) con opción de subir foto
+- 20 plantillas profesionales (10 hombre, 10 mujer) con opción de subir foto
 - Pago con tarjeta Visa o Mastercard
 - Funciona en toda Latinoamérica
 - El cliente puede editar todos los datos antes de generar la plantilla final
@@ -4875,7 +5104,8 @@ REGLAS:
       method: 'POST',
       headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY_S}`},
       body: JSON.stringify({
-        prompt: `${systemPrompt}\n\nHistorial de conversación:\n${soporteHistorial.slice(-6).map(m=>`${m.role==='user'?'Cliente':'Asistente'}: ${m.content}`).join('\n')}\n\nCliente: ${pregunta}\nAsistente:`
+        prompt: `${systemPrompt}\n\nHistorial de conversación:\n${soporteHistorial.slice(-6).map(m=>`${m.role==='user'?'Cliente':'Asistente'}: ${m.content}`).join('\n')}\n\nCliente: ${pregunta}\nAsistente:`,
+        ..._iaExtra()
       })
     });
     const data = await res.json();
@@ -4893,7 +5123,7 @@ window.addEventListener('load', () => {
   const on = q('#soportePanel .soporte-info p'); if (on) on.innerHTML = '<span class="online-dot"></span> Online now';
   const sb = q('#soporteBtn'); if (sb) sb.title = 'Need help?';
   document.querySelectorAll('.sqopt').forEach(b => {
-    const map = {'¿Cómo funciona?':'How does it work?','¿Cuánto cuesta?':'How much is it?','¿Es seguro?':'Is it safe?','¿Cómo descargo?':'How do I download?'};
+    const map = {'¿Cómo funciona?':'How does it work?','¿Cuánto cuesta?':'How much is it?','¿Es seguro?':'Is it safe?','¿Cómo descargo?':'How do I download?','¿Puedo editar?':'Can I edit?','Plantillas':'Templates','¿Cómo pago?':'How do I pay?'};
     if (map[b.textContent.trim()]) {
       const en = map[b.textContent.trim()];
       b.textContent = en;
@@ -5251,25 +5481,29 @@ async function asegurarCodigoCV() {
   let cod = sessionStorage.getItem('cvpro_codigo');
   if (cod && cod.length >= 6) return cod;
   // No hay código: generar uno y guardar el CV ahora mismo
-  const buf = new Uint32Array(2);
-  (window.crypto || window.msCrypto).getRandomValues(buf);
-  const ALF = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-  cod = Array.from({length:8}, (_,i) => ALF[(buf[i%2] >>> (i*4)) % ALF.length]).join('');
+  cod = generarCodigoCV();
   try {
     const SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
     const SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-    const _r = await fetch(`${SB_U}/rest/v1/cvs_guardados`, {
+    // RONDA A: usa guardar-cv (service role) en vez de INSERT directo, para
+    // no duplicar la lógica de columnas permitidas fuera de la Edge Function.
+    const _r = await fetch(`${SB_U}/functions/v1/guardar-cv`, {
       method:'POST',
-      headers:{'Content-Type':'application/json','apikey':SB_K,'Authorization':`Bearer ${SB_K}`,'Prefer':'return=minimal'},
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${SB_K}`},
       body: JSON.stringify({
+        accion: 'cv',
         codigo: cod, nombre: (datos && datos.nombre) || '', email: ((datos && datos.email_tel) || '').split(',')[0].trim(),
         cv_texto: sessionStorage.getItem('cvTexto') || '',
         cv_data: (function(){ try { return JSON.parse(sessionStorage.getItem('cvData')||'{}'); } catch(e){ return {}; } })(), lang: LANG,
         expira_en: new Date(Date.now() + 90*86400000).toISOString()
       })
     });
-    if (_r.ok) sessionStorage.setItem('cvpro_codigo_guardado', cod);
-    else { sessionStorage.removeItem('cvpro_codigo_guardado'); console.error('⚠️ CV no guardado antes del pago:', _r.status, await _r.text()); }
+    const _dr = await _r.json().catch(() => ({}));
+    if (_r.ok && _dr && _dr.ok === true) {
+      sessionStorage.setItem('cvpro_codigo_guardado', cod);
+      if (_dr.token) _guardarTokenEdicion(cod, _dr.token);   // Auditoría #1
+    }
+    else { sessionStorage.removeItem('cvpro_codigo_guardado'); console.error('⚠️ CV no guardado antes del pago:', _r.status, _dr && _dr.error); }
   } catch(e) { sessionStorage.removeItem('cvpro_codigo_guardado'); console.warn('No se pudo guardar el CV antes del pago:', e.message); }
   sessionStorage.setItem('cvpro_codigo', cod);
   return cod;

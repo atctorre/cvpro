@@ -1448,7 +1448,7 @@ REGLAS:
   try {
     const SB_URL = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
-    const res = await fetch(`${SB_URL}/rest/v1/resenas?select=nombre,texto,estrellas,rol&order=created_at.desc&limit=6`, {
+    const res = await fetch(`${SB_URL}/rest/v1/resenas?select=nombre,pais,puesto,estrellas,comentario&aprobada=eq.true&order=created_at.desc&limit=6`, {
       headers: {'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`}
     });
     if (!res.ok) { console.warn('Reseñas no disponibles:', res.status); return; }
@@ -1468,7 +1468,7 @@ REGLAS:
       starsWrap.textContent = stars;
       const textP = document.createElement('p');
       textP.className = 'testi-text';
-      textP.textContent = (r.texto||'').substring(0,220);
+      textP.textContent = (r.comentario||'').substring(0,220);
       const authorWrap = document.createElement('div');
       authorWrap.className = 'testi-author';
       const avatar = document.createElement('div');
@@ -1480,7 +1480,9 @@ REGLAS:
       nameDiv.textContent = r.nombre || 'Cliente CVPro';
       const roleDiv = document.createElement('div');
       roleDiv.className = 'testi-role';
-      roleDiv.textContent = r.rol || 'Cliente verificado';
+      roleDiv.textContent = r.puesto
+        ? (r.pais ? `${r.puesto} · ${r.pais}` : r.puesto)
+        : (r.pais || 'Cliente verificado');
       infoWrap.appendChild(nameDiv);
       infoWrap.appendChild(roleDiv);
       authorWrap.appendChild(avatar);

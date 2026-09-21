@@ -1371,6 +1371,12 @@ async function arrancarChat() {
   // de inmediato: no hay nada que "pensar" todavía, es el saludo.
   // La animación de escribiendo se conserva para las preguntas siguientes,
   // donde sí tiene sentido (la IA está procesando su respuesta).
+  // arrancarChat() tiene varios puntos de entrada (flujo normal, fallback
+  // de error y watchdog de 3s): se dispara UNA sola vez con esta bandera.
+  if (typeof ev === 'function' && !window._cvproChatStartEnviado) {
+    window._cvproChatStartEnviado = true;
+    ev('chat_start');
+  }
   const p = PASOS[0];
   renderMsgAI(typeof p.preg === 'function' ? p.preg(datos) : p.preg, resolver(p.opts)||[], true, 0, p.chips||null);
   setHint(resolver(p.hint));

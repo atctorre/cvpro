@@ -752,7 +752,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
       <div class="reveal" style="background:#141414;border:1px solid #222;border-radius:14px;padding:20px">
         <div style="font-size:1.5rem;margin-bottom:8px">🚀</div>
         <div style="color:#fff;font-weight:700;font-size:0.9rem" data-es="Redacción élite" data-en="Elite writing">Elite writing</div>
-        <div style="color:#999;font-size:0.78rem;line-height:1.5;margin-top:5px" data-es="Un reclutador ejecutivo con 20 años de experiencia reescribe tu trayectoria" data-en="An executive recruiter with 20 years of experience rewrites your career">An executive recruiter with 20 years of experience rewrites your career</div>
+        <div style="color:#999;font-size:0.78rem;line-height:1.5;margin-top:5px" data-es="La IA redacta tu trayectoria con criterios de reclutador: verbos de acción, logros concretos y lenguaje profesional" data-en="The AI writes your career story with recruiter criteria: action verbs, concrete achievements and professional language">The AI writes your career story with recruiter criteria: action verbs, concrete achievements and professional language</div>
       </div>
       <div class="reveal" style="background:#141414;border:1px solid #222;border-radius:14px;padding:20px">
         <div style="font-size:1.5rem;margin-bottom:8px">🔍</div>
@@ -1790,6 +1790,11 @@ function ev(nombre, extra) {
     console.debug('📊', nombre, extra || '');
   } catch(e) {}
 }
+document.addEventListener('click', function(e) {
+  var t = (e.target && e.target.closest) ? e.target.closest('#heroCta,#heroCtaFree,#navCta,.mob-cta,#finalCta') : null;
+  if (!t) return;
+  ev('cta_click', {location: (t.id === 'heroCta' ? 'hero' : t.id === 'heroCtaFree' ? 'hero_free' : t.id === 'navCta' ? 'nav' : t.id === 'finalCta' ? 'final' : 'mobile_menu'), href: t.getAttribute('href')});
+});
 </script>
 </body>
 </html>

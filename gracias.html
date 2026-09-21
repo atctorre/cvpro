@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KW9MFX9K5E"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KW9MFX9K5E');
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Pago confirmado · CVPro</title>
@@ -91,6 +100,24 @@
 
   var SB_U = 'https://lljmqyejwkgcbuwkgjkh.supabase.co';
   var SB_K = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxsam1xeWVqd2tnY2J1d2tnamtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNzc5MzEsImV4cCI6MjEwMjc1MzkzMX0.5zyP9cb9wnkjlPeafe8zBOBPU-joameF0UzxUXDgq60';
+
+  // ══ ANALYTICS: eventos del funnel (se envían a Supabase, sin cookies de terceros) ══
+  function ev(nombre, extra) {
+    try {
+      var d = {evento: nombre, pagina: location.pathname, lang: LANG, ts: new Date().toISOString(), extra: extra || null};
+      var cola = JSON.parse(localStorage.getItem('cvpro_eventos') || '[]');
+      cola.push(d);
+      if (cola.length > 40) cola.shift();
+      localStorage.setItem('cvpro_eventos', JSON.stringify(cola));
+      if (window.gtag) window.gtag('event', nombre, extra || {});
+      try {
+        fetch(SB_U + '/rest/v1/eventos', {method: 'POST', keepalive: true,
+          headers: {'Content-Type': 'application/json', 'apikey': SB_K, 'Authorization': 'Bearer ' + SB_K, 'Prefer': 'return=minimal'},
+          body: JSON.stringify({evento: nombre, pagina: d.pagina, lang: d.lang, extra: extra || null})
+        }).catch(function () {});
+      } catch (e) {}
+    } catch (e) {}
+  }
 
   var LANG = (localStorage.getItem('cvpro_lang_cv') === 'en') ? 'en' : 'es';
   var T = {
@@ -191,6 +218,25 @@
   }
 
   function pintarExito(datos) {
+    var _orderCode = datos && datos.orderCode || '';
+    if (_orderCode) {
+      try {
+        if (!localStorage.getItem('cvpro_purchase_' + _orderCode)) {
+          var _nombresPlan = { basico: 'Básico', estandar: 'Estándar', premium: 'Premium' };
+          var _planId = (datos && datos.plan) || 'basico';
+          var _nombrePlanEs = _nombresPlan[_planId] || _nombresPlan.basico;
+          var _monto = Number((datos && datos.monto) || 0);
+          ev('purchase', {
+            transaction_id: _orderCode,
+            value: _monto,
+            currency: 'USD',
+            plan: _planId,
+            items: [{ item_id: _planId, item_name: _nombrePlanEs, price: _monto, quantity: 1 }]
+          });
+          localStorage.setItem('cvpro_purchase_' + _orderCode, '1');
+        }
+      } catch (e) {}
+    }
     var nombres = {
       basico: { es: 'Básico', en: 'Basic' },
       estandar: { es: 'Estándar', en: 'Standard' },
@@ -241,6 +287,7 @@
   }
 
   function pintarPendiente() {
+    ev('payment_pending');
     pintarEstado('⏳', T.pendiente, T.pendienteSub,
       '<button class="btn" type="button" id="btnReintentar">' + esc(T.reintentar) + '</button>' +
       '<a class="btn-sec" href="' + destinoVuelta() + '">' + esc(T.volver) + '</a>');
@@ -249,6 +296,7 @@
   }
 
   function pintarError(titulo, sub) {
+    ev('payment_confirm_error');
     pintarEstado('⚠️', titulo, sub,
       '<a class="btn" href="' + destinoVuelta() + '">' + esc(T.volver) + '</a>' +
       '<a class="btn-sec" href="mailto:hola@getcvpro.com">' + esc(T.contacto) + '</a>',
@@ -300,6 +348,7 @@
   var intentos = 0;
 
   function verificar() {
+    if (intentos === 0) { ev('payment_confirmed_page_view'); }
     var orderCode = obtenerOrderCode();
 
     if (!orderCode) {

@@ -1113,6 +1113,7 @@ img, svg, canvas, video { max-width: 100%; height: auto; }
     <button class="btn-editar" onclick="toggleEdicion()" id="btnEditar" style="background:#fff;border:2px solid #FFD000;color:#0d1b2a;padding:12px;border-radius:50px;font-weight:800;cursor:pointer;width:100%;margin-bottom:8px;font-family:inherit;font-size:0.9rem">✏️ Editar textos del CV</button>
     <button class="btn-pdf" onclick="descargarPDF()" id="btnPdf">📄 Descargar PDF</button>
     <p id="avisoPdfDiseno" style="width:100%;margin:2px 0 0;font-size:0.78rem;line-height:1.4;color:#8a8a8a">Este PDF es de diseño (imagen). Para postulaciones en línea y sistemas ATS, descarga la versión ATS (texto) de abajo.</p>
+    <p id="avisoRevisionLinea" style="width:100%;margin:4px 0 0;font-size:0.78rem;line-height:1.4;color:#8a8a8a">Revísalo línea por línea antes de enviarlo.</p>
     <button class="btn-pdf" style="background:#1baf7a;color:#fff;margin-top:8px" onclick="descargarATS()" id="btnATS">📋 Versión ATS (texto seleccionable)</button>
     <button class="btn-carta" id="btnCarta" onclick="generarCarta()">✉️ Carta de presentación</button>
     <button class="btn-carta" id="btnCartaOtro" style="background:#6b4fa8" onclick="generarCarta((_idiomaActual||LANG)==='en'?'es':'en')">✉️ Carta en el otro idioma</button>
@@ -1328,7 +1329,7 @@ function limpiarCarta(t) {
   return corregirFechaCarta(_r);
 }
 
-function descargarCartaWord() {
+async function descargarCartaWord() {
   // Leía #cartaFinal, pero mostrarCarta() pinta la carta en #cartaBody.
   // Encontraba el elemento vacío y hacía return en silencio: el botón
   // parecía roto porque no pasaba absolutamente nada.
@@ -1338,6 +1339,7 @@ function descargarCartaWord() {
     alert(LANG==='en' ? 'Generate the cover letter first.' : 'Genera primero la carta de presentación.');
     return;
   }
+  if (!(await revisarAntesDeDescargar())) return;
   ev('cover_letter_word_downloaded');
   const nombre = (D.nombre||'Carta').replace(/\s+/g,'_');
   const parrafos = texto.split(/\n{1,}/).map(l => l.trim())
@@ -1427,6 +1429,7 @@ if (LANG === 'en') {
       '✉️ Generar carta de presentación (IA)': '✉️ Generate cover letter (AI)',
       '📋 Versión ATS (texto seleccionable)': '📋 ATS version (selectable text)',
       'Este PDF es de diseño (imagen). Para postulaciones en línea y sistemas ATS, descarga la versión ATS (texto) de abajo.': 'This PDF is a design (image) file. For online applications and ATS systems, download the ATS (text) version below.',
+      'Revísalo línea por línea antes de enviarlo.': 'Review it line by line before sending it.',
       'Zoom': 'Zoom',
       'Selecciona el estilo que mejor refleje tu personalidad profesional': 'Pick the style that best reflects your professional personality',
       '✋ Arrastra la foto para moverla · 🖱️ Rueda del mouse para zoom': '✋ Drag the photo to move it · 🖱️ Scroll to zoom',
@@ -2363,7 +2366,7 @@ function mostrarCarta(texto) {
   document.body.appendChild(overlay);
 }
 
-function descargarCartaPDF() {
+async function descargarCartaPDF() {
   // Antes se generaba con html2canvas: el PDF salía como IMAGEN, sin texto
   // seleccionable. El reclutador no podía copiar nada y ningún ATS podía
   // leerla. Ahora usamos pdfMake, igual que la versión ATS del CV.
@@ -2371,6 +2374,7 @@ function descargarCartaPDF() {
   if (!body) return;
   const texto = normalizarTipografia(limpiarCarta(body.textContent || ''));
   if (!texto.trim()) { alert(LANG==='en' ? 'The letter is empty.' : 'La carta está vacía.'); return; }
+  if (!(await revisarAntesDeDescargar())) return;
 
   const parrafos = texto.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
 
@@ -2508,6 +2512,90 @@ function sinLigaduras(s) {
 }
 
 
+// ══════════ AVISO DE REVISIÓN ANTES DE DESCARGAR ══════════
+// El CV/carta puede contener texto generado o reformulado por IA. Antes de
+// la primera descarga de la sesión (PDF diseño, ATS o carta) mostramos un
+// aviso obligatorio para que el usuario confirme que solo dice lo que él
+// declaró. Se recuerda por sesión (sessionStorage) para no repetirlo.
+function revisarAntesDeDescargar() {
+  return new Promise((resolve) => {
+    let yaRevisado = false;
+    try { yaRevisado = sessionStorage.getItem('cvpro_revisado') === '1'; } catch(e) {}
+    if (yaRevisado) { resolve(true); return; }
+
+    const t = LANG === 'en' ? {
+      titulo: 'Review your resume before downloading',
+      texto: "Your resume should only say what you told us. Read every line: if you see a fact, tool, figure or responsibility you didn't provide, edit or remove it before sending it to an employer.",
+      check: "I reviewed it: it only says what I stated",
+      editar: 'Edit my resume',
+      descargar: 'Download'
+    } : {
+      titulo: 'Revisa tu CV antes de descargar',
+      texto: 'Tu CV solo debe decir lo que tú declaraste. Lee cada línea: si ves un dato, herramienta, cifra o responsabilidad que no diste, edítalo o bórralo antes de enviarlo a una empresa.',
+      check: 'Lo revisé: solo dice lo que yo declaré',
+      editar: 'Editar mi CV',
+      descargar: 'Descargar'
+    };
+
+    const overlay = document.createElement('div');
+    overlay.id = 'revisionOverlay';
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'revisionTitulo');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px';
+    overlay.innerHTML = `
+      <div id="revisionModalBox" tabindex="-1" style="background:#fff;border-radius:16px;max-width:92vw;width:440px;padding:24px;font-family:Montserrat,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.35)">
+        <h3 id="revisionTitulo" style="margin:0 0 10px;font-size:1.1rem;color:#0d1b2a">${t.titulo}</h3>
+        <p style="margin:0 0 16px;font-size:0.88rem;line-height:1.5;color:#444">${t.texto}</p>
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:0.86rem;color:#222;cursor:pointer;margin-bottom:18px">
+          <input type="checkbox" id="revisionCheck" style="margin-top:3px;flex-shrink:0">
+          <span>${t.check}</span>
+        </label>
+        <div style="display:flex;gap:10px">
+          <button id="revisionEditarBtn" type="button" style="flex:1;background:#eee;border:none;padding:12px;border-radius:50px;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;font-size:0.85rem">${t.editar}</button>
+          <button id="revisionDescargarBtn" type="button" disabled style="flex:1;background:#FFD000;border:none;padding:12px;border-radius:50px;font-weight:800;cursor:not-allowed;font-family:Montserrat,sans-serif;font-size:0.85rem;opacity:0.5">${t.descargar}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const box = overlay.querySelector('#revisionModalBox');
+    const chk = overlay.querySelector('#revisionCheck');
+    const btnDescargar = overlay.querySelector('#revisionDescargarBtn');
+    const btnEditar = overlay.querySelector('#revisionEditarBtn');
+    box.focus();
+
+    function cerrar() {
+      overlay.remove();
+      document.removeEventListener('keydown', onKeyDown);
+    }
+    function onKeyDown(e) {
+      if (e.key === 'Escape') { cerrar(); resolve(false); }
+    }
+    document.addEventListener('keydown', onKeyDown);
+
+    chk.addEventListener('change', () => {
+      btnDescargar.disabled = !chk.checked;
+      btnDescargar.style.opacity = chk.checked ? '1' : '0.5';
+      btnDescargar.style.cursor = chk.checked ? 'pointer' : 'not-allowed';
+    });
+
+    btnEditar.addEventListener('click', () => {
+      if (typeof ev === 'function') ev('revision_editar');
+      cerrar();
+      if (typeof toggleEdicion === 'function' && !_modoEdicion) toggleEdicion();
+      resolve(false);
+    });
+
+    btnDescargar.addEventListener('click', () => {
+      if (!chk.checked) return;
+      if (typeof ev === 'function') ev('revision_confirmada');
+      try { sessionStorage.setItem('cvpro_revisado', '1'); } catch(e) {}
+      cerrar();
+      resolve(true);
+    });
+  });
+}
+
 async function descargarATS() {
   if (typeof _modoEdicion !== 'undefined' && _modoEdicion && document.activeElement) {
     document.activeElement.blur();
@@ -2516,6 +2604,7 @@ async function descargarATS() {
   if (!_lock('ats')) return;
   ev('ats_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('ats'); abrirMuroPago(null, () => descargarATS()); return; }
+  if (!(await revisarAntesDeDescargar())) { _unlock('ats'); return; }
   const d = normalizarCVData(D);
   // Usaba LANG (fijo al cargar la página), así que tras convertir a resume
   // los encabezados seguían en español: "EXPERIENCIA PROFESIONAL" dentro de
@@ -2591,6 +2680,7 @@ async function descargarPDF() {
   if (!_lock('pdf')) return;
   ev('pdf_download_clicked');
   if (!(await accesoVerificado('basico'))) { _unlock('pdf'); abrirMuroPago(null, () => descargarPDF()); return; }
+  if (!(await revisarAntesDeDescargar())) { _unlock('pdf'); return; }
   const el = document.getElementById('cvFinal').firstElementChild;
   if (!el) { _unlock('pdf'); return; }
   const nombre = (D.nombre||'CV').replace(/\s+/g,'_');

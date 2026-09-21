@@ -20,6 +20,7 @@
 ## Páginas principales
 
 - [Inicio](https://getcvpro.com/): qué es CVPro, precios y cómo funciona.
+- [Home (English)](https://getcvpro.com/en/): what CVPro is, pricing and how it works, in English.
 - [Crear mi CV](https://getcvpro.com/chat-cv.html): el chat guiado que genera el currículum.
 - [Analizar un CV existente](https://getcvpro.com/analizar-cv.html): revisión de un CV ya redactado.
 - [Ejemplos de CV por profesión (español)](https://getcvpro.com/ejemplos/): 60 ejemplos reales generados con CVPro, uno por profesión, visibles en las 20 plantillas.

@@ -1082,11 +1082,26 @@ function _contarPalabras(t) {
   return String(t || '').trim().split(/\s+/).filter(Boolean).length;
 }
 
-// ¿La respuesta a logros1/logros2 no aporta funciones reales del puesto?
+// RONDA D7 — FIX #3 [MAYOR]: respuestas breves y telegráficas tipo "atender
+// clientes, arreglar la tienda, cobrar" (6 palabras, 3 tareas reales) caían
+// bajo el umbral de 8 palabras y se marcaban SIN FUNCIONES — podando después
+// TODAS las viñetas del puesto (ver bullets_sin_fuente_eliminados). Ahora
+// se considera "con funciones" si trae ≥3 ítems separados por coma/;/y/and
+// (cada ítem cuenta como una tarea, no se exige que sea una frase larga) o
+// si el texto contiene ≥2 verbos/tareas reconocidos por _RE_FUENTE_CRUZADA_TAREAS.
 function _respuestaSinFunciones(texto) {
   const t = String(texto || '').trim().toLowerCase();
   if (!t) return true;
-  if (/^(no|ninguno|ninguna|no recuerdo|no tengo|nada|n\/a|na|none|nothing|i don'?t remember|i don'?t have any)$/i.test(t)) return true;
+  if (/^(no|ninguno|ninguna|no recuerdo|no tengo|nada|n\/a|na|none|nothing|i don'?t remember|i don't have any)$/i.test(t)) return true;
+  const _items = t.split(/[,;]|\by\b|\band\b/).map(s => s.trim()).filter(Boolean);
+  if (_items.length >= 3) return false;
+  // _RE_FUENTE_CRUZADA_TAREAS se define más abajo en el archivo, pero esta
+  // función solo se EJECUTA (no se parsea) en tiempo de uso, cuando el
+  // script ya cargó por completo — referenciarla aquí dentro del cuerpo es
+  // seguro.
+  const _reTareasGlobal = new RegExp(_RE_FUENTE_CRUZADA_TAREAS.source, 'gi');
+  const _tareas = t.match(_reTareasGlobal) || [];
+  if (_tareas.length >= 2) return false;
   if (_contarPalabras(t) < 8) return true;
   return false;
 }
@@ -3905,6 +3920,47 @@ function _filtrarAlcance(texto, fuente) {
 // 2ª pasada de adaptación sí había aplicado con respaldo en la lista
 // blanca, porque el prompt no distinguía "hecho nuevo" de "misma cosa
 // dicha con las palabras de la oferta". Ver _construirPromptVeracidad.
+// RONDA D7 — FIX #1 [CRÍTICO]: fuga de razonamiento del modelo al CV final
+// ("\"Spanish conversational\" Candidate said \"basic some.\" Narrow to
+// \"basic.\"" apareciendo tal cual en IDIOMAS). El prompt ya lo prohíbe
+// explícitamente, pero esta es la red de seguridad determinista: se aplica
+// SIEMPRE después de cada pasada de IA (veracidad/ATS), nunca se confía
+// solo en que el modelo obedezca la instrucción.
+function _idiomasDesdeDeclarado(raw) {
+  return String(raw || '').split(/[,;\n]+/).map(s => s.trim()).filter(Boolean).map(it => {
+    const partes = it.split(/\s+/);
+    const idioma = partes[0] || it;
+    const nivel = partes.slice(1).join(' ').replace(/^[-–—:]\s*/, '').trim();
+    return { idioma, nivel };
+  }).filter(x => x.idioma);
+}
+const _RE_NOTA_MODELO = /\b(?:Candidate said|Narrow to|The candidate|El candidato dijo|Nota:|Note:|\(removed[^)]*\)?|\(eliminado[^)]*\)?|per whitelist|seg[uú]n la lista)\b[^.\n]*\.?/gi;
+function _limpiarNotasModelo(texto, idiomasNivelRaw) {
+  const idiomasDeclarados = _idiomasDesdeDeclarado(idiomasNivelRaw);
+  let huboNota = false;
+  const lineas = String(texto || '').split('\n').map(linea => {
+    // Si la línea menciona un idioma declarado y trae más de 6 palabras por
+    // idioma mencionado, es una fuga (nivel narrado en vez de "Idioma –
+    // nivel"): se reconstruye ENTERA desde lo que el usuario declaró, sin
+    // fiarnos de nada que el modelo haya escrito en esa línea.
+    const idiomasEnLinea = idiomasDeclarados.filter(id => new RegExp('\\b' + id.idioma.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(linea));
+    if (idiomasEnLinea.length && _contarPalabras(linea) > idiomasEnLinea.length * 6) {
+      if (typeof ev === 'function') ev('nota_modelo_eliminada', { seccion: 'idiomas' });
+      return idiomasEnLinea.map(id => id.nivel ? `${id.idioma} – ${id.nivel}` : id.idioma).join(', ');
+    }
+    const antes = linea.trim();
+    _RE_NOTA_MODELO.lastIndex = 0;
+    let l = linea.replace(_RE_NOTA_MODELO, ' ')
+      .replace(/["“”]([^"“”]{1,60})["“”]/g, '$1')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim();
+    if (l !== antes) huboNota = true;
+    return l;
+  });
+  if (huboNota && typeof ev === 'function') ev('nota_modelo_eliminada', { seccion: 'general' });
+  return lineas.join('\n');
+}
+
 async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng, esAdaptacion) {
   if (!fuenteOriginal || fuenteOriginal.length < 50) return cvTxt;
   try {
@@ -3948,7 +4004,7 @@ VERIFICA ADEMÁS LAS FECHAS:
 - Si dos puestos se solapan y la lista no lo indica, corrige al periodo declarado por el candidato.
 - No inventes meses ni años que el candidato no haya dado: si solo dio el año, deja solo el año.
 CONSERVA intactas las cifras y hechos que SÍ están en la LISTA BLANCA.
-Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV corregido completo.
+Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV corregido completo. ${enIng?"Return ONLY the final resume. No comments, notes, justifications, explanatory quotes or phrases like 'Candidate said', 'Narrow to', 'The candidate said'. Any text that is not resume content is an error.":"Devuelve ÚNICAMENTE el CV final. Sin comentarios, notas, justificaciones, comillas explicativas ni frases como 'Candidate said', 'Narrow to', 'El candidato dijo'. Cualquier texto que no sea contenido del CV se considera error."}
 
 LISTA BLANCA — RESPUESTAS ÍNTEGRAS DEL CANDIDATO (única fuente de verdad, incluye seguimientos):
 ${lb}
@@ -3980,7 +4036,7 @@ ${cvParaVerificar}`;
       if (recorte > 20) console.warn(`🛡️ Veracidad eliminó ~${recorte}% del texto (datos no respaldados)`);
       if (typeof ev === 'function') ev('truth_check_applied', {recorte});
       _ultimoRecorteVeracidad = recorte;
-      return limpio;
+      return _limpiarNotasModelo(limpio, datos.idiomas_nivel);
     }
     console.error('🛡️ Verificación descartada: reducción excesiva', limpio.length, 'vs', cvTxt.length);
     if (typeof ev === 'function') ev('truth_check_discarded', {antes: cvTxt.length, despues: limpio.length});
@@ -4007,12 +4063,12 @@ VERIFICA Y CORRIGE:
 6. ORTOGRAFÍA y consistencia de tiempos verbales.
 7. CONTRADICCIONES: si la misma empresa, cargo o período aparece con datos distintos en el CV, unifica usando la versión más completa y coherente. Si un mismo empleo tiene dos fechas de inicio incompatibles, conserva la más antigua y elimina la duplicada. Nunca dejes dos versiones contradictorias del mismo hecho.
 NO agregues información nueva. Mantén EXACTAMENTE el mismo formato y headers.
-Devuelve SOLO el CV final auditado y completo.
+Devuelve SOLO el CV final auditado y completo. ${enIng?"Return ONLY the final resume. No comments, notes, justifications, explanatory quotes or phrases like 'Candidate said', 'Narrow to', 'The candidate said'. Any text that is not resume content is an error.":"Devuelve ÚNICAMENTE el CV final. Sin comentarios, notas, justificaciones, comillas explicativas ni frases como 'Candidate said', 'Narrow to', 'El candidato dijo'. Cualquier texto que no sea contenido del CV se considera error."}
 CV:
 ${cvTxt.substring(0,9000)}`, ..._iaExtra(), temperature: 0})
     });
     const d = await res.json();
-    if (d.cv && d.cv.trim().length > cvTxt.length * 0.75) return d.cv.trim();
+    if (d.cv && d.cv.trim().length > cvTxt.length * 0.75) return _limpiarNotasModelo(d.cv.trim(), datos.idiomas_nivel);
   } catch(e) { console.warn('Pasada ATS omitida:', e.message); }
   return cvTxt;
 }
@@ -4958,7 +5014,12 @@ function construirCVData() {
       }
       return t;
     };
-    const _habsItems = _colapsarRepeticion(datos.habilidades_tecnicas).split(/[,;\n]+/).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    // RONDA D7 — FIX #2 [MAYOR]: si hubo repregunta, datos.habilidades_tecnicas
+    // trae la respuesta AMPLIADA concatenada con '\n' (ver enviarRespuesta) —
+    // el perfil mínimo debe leer SOLO la respuesta original (primera línea),
+    // igual que ya hace _formacion con datos.estudios arriba.
+    const _habsPrimeraLinea = (datos.habilidades_tecnicas || '').split('\n')[0] || '';
+    const _habsItems = _colapsarRepeticion(_habsPrimeraLinea).split(/[,;\n]+/).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
     const _habsVistos = new Set();
     const _habsUnicos = [];
     _habsItems.forEach(h => {

@@ -615,6 +615,25 @@ function _iaExtra(temp) {
   return { sesion: obtenerSesionCVPro(), tester: obtenerTesterParaIA(), temperature: (typeof temp === 'number' ? temp : 0.3) };
 }
 
+// ══ MOTOR v2 (Edge Function `generar-cv`, JSON estructurado + validador en
+// servidor) — FASE 2, detrás de bandera. Se activa con ?motor=v2 (se
+// recuerda en sessionStorage para toda la sesión) y se apaga con ?motor=v1.
+// Sin bandera, el flujo v1 (super-service, texto libre) sigue intacto.
+function _motorCV() {
+  try {
+    const p = new URLSearchParams(location.search).get('motor');
+    if (p === 'v2' || p === 'v1') sessionStorage.setItem('cvpro_motor', p);
+    return sessionStorage.getItem('cvpro_motor') === 'v2' ? 'v2' : 'v1';
+  } catch (e) { return 'v1'; }
+}
+// JSON del último CV generado por v2: {cv, cv_texto, validacion}. Solo es
+// válido mientras `cvGenerado` sea exactamente ese cv_texto (ver
+// construirCVData): si el texto fue adaptado, traducido o editado, se vuelve
+// al parser de texto, que es el que entiende esos cambios.
+function _cvJsonV2() {
+  try { return _jsonSeguro(sessionStorage.getItem('cvpro_cv_v2'), 'null'); } catch (e) { return null; }
+}
+
 // Mensaje ES/EN cuando el servidor devuelve 429 con retry_after_seconds.
 function _textoLimiteIA(retryAfterSeconds) {
   const mins = (retryAfterSeconds != null && isFinite(retryAfterSeconds) && retryAfterSeconds > 0)
@@ -2236,8 +2255,8 @@ async function mostrarGenerando() {
 
   await mostrarTyping(600);
   renderMsgAI(LANG==='en'
-    ? `Perfect ${datos.nombre?.split(' ')[0]}! 🎉 I have everything.\n\nNow the AI will:\n✅ Transform and polish your writing\n✅ Quantify your achievements with industry metrics\n✅ Optimize for ATS filters\n✅ Generate your complete executive resume\n\nThis takes 10-20 seconds...`
-    : `¡Perfecto ${datos.nombre?.split(' ')[0]}! 🎉 Tengo toda la información.\n\nAhora la IA va a:\n✅ Transformar y profesionalizar tu redacción\n✅ Cuantificar tus logros con métricas del sector\n✅ Optimizar para filtros ATS\n✅ Generar tu CV ejecutivo completo\n\nEsto tomará entre 10-20 segundos...`);
+    ? `Perfect ${datos.nombre?.split(' ')[0]}! 🎉 I have everything.\n\nNow the AI will:\n✅ Transform and polish your writing\n✅ Use only the facts you gave — nothing invented\n✅ Structure it for ATS filters\n✅ Generate your complete resume\n\nThis takes 10-20 seconds...`
+    : `¡Perfecto ${datos.nombre?.split(' ')[0]}! 🎉 Tengo toda la información.\n\nAhora la IA va a:\n✅ Transformar y profesionalizar tu redacción\n✅ Usar solo lo que declaraste — nada inventado\n✅ Estructurarlo para filtros ATS\n✅ Generar tu CV completo\n\nEsto tomará entre 10-20 segundos...`);
 
   await mostrarTyping(2000);
 
@@ -2299,9 +2318,13 @@ function _limiteIARegistrar() {
 }
 
 async function generarConIA() {
-  ev('ai_started');
+  ev('ai_started', { motor: _motorCV() });
   iniciarProgreso(); marcarPaso(1);
   if (!_limiteIAPermitido()) throw new Error(LANG==='en' ? 'Daily limit reached (8 generations). Try again tomorrow.' : 'Límite diario alcanzado (8 generaciones). Vuelve mañana.');
+  // Cualquier generación nueva invalida el JSON v2 anterior (si v2 vuelve a
+  // generar, lo vuelve a escribir).
+  try { sessionStorage.removeItem('cvpro_cv_v2'); } catch (e) {}
+  if (_motorCV() === 'v2') return await generarConMotorV2();
   // Parsear contacto
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
@@ -2578,8 +2601,15 @@ ${cvTexto.substring(0,12000)}`, ..._iaExtra(), temperature: 0.3})
     }
 
     // FIX 1 — Error claro, SIN fallback silencioso
-    renderMsgAI(LANG==='en'
-      ? `❌ We could not generate your resume right now.
+    _renderErrorGeneracion();
+    terminarProgreso(false);
+    throw new Error('Generación fallida — no mostrar fallback');
+  }
+}
+
+function _renderErrorGeneracion() {
+  renderMsgAI(LANG==='en'
+    ? `❌ We could not generate your resume right now.
 
 *What you can do:*
 • Wait a moment and click "Restart"
@@ -2587,7 +2617,7 @@ ${cvTexto.substring(0,12000)}`, ..._iaExtra(), temperature: 0.3})
 • If it persists, contact us
 
 Your answers are saved — you will not lose anything.`
-      : `❌ No pudimos generar tu CV en este momento.
+    : `❌ No pudimos generar tu CV en este momento.
 
 *¿Qué puedes hacer?*
 • Espera un momento y haz clic en "Reiniciar"
@@ -2595,9 +2625,94 @@ Your answers are saved — you will not lose anything.`
 • Si el problema persiste, escríbenos
 
 Tus respuestas están guardadas — no perderás nada al reiniciar.`);
-    terminarProgreso(false);
-    throw new Error('Generación fallida — no mostrar fallback');
+}
+
+// ══ MOTOR v2 — llamada a `generar-cv` ══
+// Envía SOLO las 14 respuestas crudas del candidato (misma lista blanca que
+// _fuenteRespuestasUsuario: nunca los campos *_enriquecido, que redacta la
+// IA) + las 3 banderas de control. El servidor construye el CV en JSON,
+// lo valida contra esas respuestas y devuelve también `cv_texto` con el
+// mismo formato de encabezados que v1, para que guardar-cv, adaptación,
+// traducción, carta y el editor sigan funcionando sin cambios.
+const _CLAVES_DATOS_V2 = ['nombre','puesto','pais','email_tel','tipo_empresa','resumen_personal','exp1','logros1','exp2','logros2','estudios','habilidades_tecnicas','idiomas_nivel','info_extra'];
+const _FLAGS_DATOS_V2 = ['logros1_sin_funciones','logros2_sin_funciones','logros1_fuente_cruzada'];
+
+function _payloadMotorV2() {
+  const payload = {};
+  _CLAVES_DATOS_V2.forEach(k => { if (datos[k]) payload[k] = String(datos[k]); });
+  _FLAGS_DATOS_V2.forEach(f => { if (datos[f] === true) payload[f] = true; });
+  return payload;
+}
+
+async function _llamarMotorV2() {
+  const enIngles = String(datos.idioma_cv || '').toLowerCase().includes('ingl');
+  const extra = _iaExtra(); delete extra.temperature;   // v2 fija su propia temperatura en servidor
+  const res = await fetchIA(`${SUPABASE_URL}/functions/v1/generar-cv`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`},
+    body: JSON.stringify({ datos: _payloadMotorV2(), lang: enIngles ? 'en' : 'es', ...extra })
+  }, 90);   // el servidor puede reintentar internamente (~25 s en el peor caso)
+  if (!res.ok) {
+    let _ra = null;
+    try { const _ej = await res.clone().json(); _ra = _ej && _ej.retry_after_seconds; } catch (_e) {}
+    const _err = new Error(`HTTP ${res.status}`);
+    _err.isLimite = (res.status === 429);
+    _err.retryAfter = _ra;
+    throw _err;
   }
+  const data = await res.json();
+  if (!data || data.ok !== true || !data.cv || typeof data.cv_texto !== 'string' || data.cv_texto.trim().length < 80) {
+    throw new Error((data && data.error) || 'respuesta inválida del motor v2');
+  }
+  return data;
+}
+
+async function generarConMotorV2() {
+  let data;
+  try {
+    marcarPaso(2);
+    try {
+      data = await _llamarMotorV2();
+    } catch (e1) {
+      if (e1 && e1.isLimite) throw e1;
+      // Un reintento, igual que v1
+      console.warn('motor v2: primer intento falló, reintentando:', e1 && e1.message);
+      await sleep(1500);
+      data = await _llamarMotorV2();
+    }
+  } catch (e) {
+    console.error('❌ Error en generarConMotorV2:', e && e.message);
+    terminarProgreso(false);
+    if (e && e.isLimite) { renderMsgLimiteIA(e.retryAfter, '_reintentarGeneracion'); throw e; }
+    _renderErrorGeneracion();
+    throw new Error('Generación fallida (motor v2) — no mostrar fallback');
+  }
+  _limiteIARegistrar();   // solo con 200 confirmado, como v1
+  marcarPaso(3);
+  try {
+    sessionStorage.setItem('cvpro_cv_v2', JSON.stringify({ cv: data.cv, cv_texto: data.cv_texto, validacion: data.validacion || null }));
+  } catch (e) { console.warn('No se pudo guardar el JSON v2:', e && e.message); }
+  const _val = data.validacion || {};
+  const _vinetas = (Array.isArray(data.cv.experiencia) ? data.cv.experiencia : [])
+    .reduce((acc, p) => acc + ((p && Array.isArray(p.vinetas)) ? p.vinetas.length : 0), 0);
+  ev('ai_completed', {
+    segundos: window._t0IA ? Math.round((Date.now() - window._t0IA) / 1000) : null,
+    modo: 'chat_v2',
+    chars: data.cv_texto.length
+  });
+  ev('cv_generado_v2', {
+    vinetas_total: _vinetas,
+    puestos: Array.isArray(data.cv.experiencia) ? data.cv.experiencia.length : 0,
+    correcciones: Array.isArray(_val.correcciones) ? _val.correcciones.length : null,
+    degradadas: Array.isArray(_val.correcciones) ? _val.correcciones.filter(c => /degradada/.test(c)).length : null,
+    errores: Array.isArray(_val.errores) ? _val.errores.length : null,
+    reintento: _val.reintento === true,
+    ms_servidor: data.ms || null,
+    lang: data.cv.lang || null
+  });
+  console.log('✅ CV generado (motor v2):', data.cv_texto.substring(0, 150), _val);
+  marcarPaso(4);
+  return data.cv_texto;
 }
 
 
@@ -4873,7 +4988,66 @@ function ordenarExperiencia(exp) {
   });
 }
 
+// MOTOR v2 → cv_data con la MISMA forma que produce construirCVData()
+// (plantillas-cv.html la lee de sessionStorage.cvData): experiencia
+// [{titulo, empresa, periodo, bullets}], educacion [{titulo, institucion,
+// año}], habilidades [{nombre, nivel}], idiomas [{nombre, nivel}], logros [].
+function construirCVDataDesdeJSON(cv) {
+  cv = cv || {};
+  const en = cv.lang === 'en';
+  const c = cv.contacto || {};
+  const periodo = (p) => {
+    const fin = p.actual ? (en ? 'Present' : 'Actualidad') : (p.fin || '');
+    if (!p.inicio && !fin) return '';
+    if (!p.inicio) return fin;
+    if (!fin) return p.inicio;
+    return `${p.inicio} – ${fin}`;
+  };
+  const experiencia = (Array.isArray(cv.experiencia) ? cv.experiencia : [])
+    .filter(p => p && (p.cargo || p.empresa))
+    .map(p => ({
+      titulo: p.cargo || '',
+      empresa: p.empresa || '',
+      periodo: periodo(p),
+      bullets: (Array.isArray(p.vinetas) ? p.vinetas : [])
+        .map(v => typeof v === 'string' ? v : ((v && v.texto) || ''))
+        .filter(Boolean)
+    }));
+  const educacion = (Array.isArray(cv.educacion) ? cv.educacion : [])
+    .filter(e => e && e.titulo)
+    .map(e => ({ titulo: e.titulo || '', institucion: e.institucion || '', 'año': e.en_curso ? (en ? 'In progress' : 'En curso') : (e.anio || '') }));
+  const _tec = ((cv.habilidades && cv.habilidades.tecnicas) || []).map((h, i) => ({ nombre: String(h), nivel: Math.max(65, 92 - i * 6) }));
+  const _bl  = ((cv.habilidades && cv.habilidades.blandas)  || []).map((h, i) => ({ nombre: String(h), nivel: Math.max(60, 85 - i * 5) }));
+  const idiomas = (Array.isArray(cv.idiomas) ? cv.idiomas : [])
+    .filter(i => i && i.idioma)
+    .map(i => ({ nombre: String(i.idioma), nivel: i.nivel ? String(i.nivel) : '' }));
+  return validarContacto({
+    nombre: cv.nombre || datos.nombre || '',
+    email: c.email || '',
+    telefono: c.telefono || '',
+    pais: c.ubicacion || datos.pais || '',
+    linkedin: c.linkedin || '',
+    puesto: cv.titulo_objetivo || datos.puesto || '',
+    resumen: cv.perfil || '',
+    experiencia: ordenarExperiencia(experiencia),
+    educacion,
+    habilidades: [..._tec, ..._bl].slice(0, 12),
+    idiomas: idiomas.length ? idiomas : [{ nombre: en ? 'Spanish' : 'Español', nivel: '' }],
+    logros: [],
+    extra: Array.isArray(cv.extra) ? cv.extra : []
+  });
+}
+
 function construirCVData() {
+  // MOTOR v2: si el CV vigente es exactamente el que devolvió `generar-cv`,
+  // se construye desde su JSON (sin heurísticas de parseo de texto). Si el
+  // texto cambió (adaptación, traducción, edición, CV recuperado), se sigue
+  // con el parser de texto de siempre.
+  const _v2 = _cvJsonV2();
+  if (_v2 && _v2.cv && typeof _v2.cv_texto === 'string'
+      && String(cvGenerado || '').trim() === _v2.cv_texto.trim()) {
+    return construirCVDataDesdeJSON(_v2.cv);
+  }
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
   // LinkedIn se extrae PRIMERO y se retira del texto: una URL con dígitos

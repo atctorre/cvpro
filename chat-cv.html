@@ -1096,22 +1096,58 @@ function _esSoloCargo(texto) {
   return /^(solo cargo|s[oó]lo el cargo|only title|only the title)$/.test(t);
 }
 
+// RONDA D2 — FIX C: si el candidato ya describió tareas del puesto 1 dentro
+// de resumen_personal o exp1 (respuesta libre "trabajo en X haciendo Y"),
+// no hay que repreguntar/marcar logros1 como sin funciones — la fuente ya
+// existe, solo está en otro campo. Se usa también para no podar bullets
+// generados con esa fuente cruzada.
+const _RE_FUENTE_CRUZADA_TAREAS = new RegExp("haciendo|realizando|encargad|tareas|reparac|atenc|supervis|gestion|manejo|instal|vent|cobr|atend|doing|handling|responsible|repair|install|manag|sales|support", 'i');
+function _tieneFuenteCruzadaTareas(datosRef) {
+  const texto = `${datosRef.resumen_personal || ''} ${datosRef.exp1 || ''}`.trim();
+  if (_contarPalabras(texto) < 12) return false;
+  return _RE_FUENTE_CRUZADA_TAREAS.test(texto);
+}
+
 // Repregunta obligatoria (texto fijo, no depende de la IA) para logros1/logros2.
 // Devuelve true si disparó la repregunta (y por tanto hay que detener el
 // avance del flujo, igual que evaluarRespuesta()).
 async function evaluarFuncionesPuesto(key, texto, datosRef) {
   if (key !== 'logros1' && key !== 'logros2') return false;
 
+  // RONDA D2-AUDIT — FIX #1 [CRÍTICO]: la fuente cruzada (tareas del
+  // puesto 1 descritas en resumen_personal/exp1) NUNCA debe omitir la
+  // repregunta obligatoria — solo sirve para GENERAR el CV y para NO
+  // PODAR bullets, nunca para saltar la pregunta fija.
+  const _marcarSegunFuente = (t) => {
+    if (key === 'logros1' && _tieneFuenteCruzadaTareas(datosRef)) {
+      datosRef.logros1_fuente_cruzada = true;
+    } else {
+      datosRef[`${key}_sin_funciones`] = true;
+    }
+  };
+
   if (FUNCIONES_PREGUNTADO[key]) {
     // Ya se hizo la repregunta obligatoria una vez: esto es la respuesta a
     // ella. Si sigue sin haber funciones reales, se respeta la decisión del
-    // candidato y se deja el puesto solo con cargo/empresa/fechas.
-    if (_esSoloCargo(texto) || _respuestaSinFunciones(texto)) {
+    // candidato y se deja el puesto solo con cargo/empresa/fechas — salvo
+    // que exista fuente cruzada, en cuyo caso se usa esa fuente en vez de
+    // dejarlo vacío.
+    if (_esSoloCargo(texto)) {
+      _marcarSegunFuente(texto);
+    } else if (_respuestaSinFunciones(texto)) {
       datosRef[`${key}_sin_funciones`] = true;
     }
     return false;
   }
 
+  if (_esSoloCargo(texto)) {
+    _marcarSegunFuente(texto);
+    FUNCIONES_PREGUNTADO[key] = true;
+    return false;
+  }
+
+  // La fuente cruzada NUNCA salta la repregunta: si la respuesta está
+  // vacía/es muy corta, se repregunta siempre, exista o no fuente cruzada.
   if (!_respuestaSinFunciones(texto)) return false;
 
   FUNCIONES_PREGUNTADO[key] = true;
@@ -1129,8 +1165,31 @@ async function evaluarFuncionesPuesto(key, texto, datosRef) {
   return true;
 }
 
+// RONDA D2 — FIX B1: cuenta ítems separados (coma/;/salto/pipe) para
+// listas (habilidades técnicas, estudios, idiomas) — antes solo miraba
+// cantidad de palabras y presencia de números, así que una lista corta
+// de ítems válidos ("HTML, CSS, JavaScript...") se marcaba como pobre.
+const LISTA_KEYS = new Set(['habilidades_tecnicas', 'estudios']); // idiomas_nivel no está en KEYS_SEGUIMIENTO: nunca llega a tieneDetallesRicos
+const _RE_ESTUDIO_COMPLETO = /bachiller|licenciat|ingenier|t[eé]cnico|grado|diploma|degree|bachelor|master|high school|certificad/i;
+function tieneDetallesRicos(texto, key) {
+  const t = String(texto || '');
+  const palabras = t.trim().split(/\s+/).filter(Boolean).length;
+  const tieneNumeros = /\d/.test(t);
+  const items = t.split(/[,;\n|]/).filter(x => x.trim().length > 1).length;
+  if (LISTA_KEYS.has(key)) {
+    if (items >= 3) return true;
+    if (key === 'estudios' && _RE_ESTUDIO_COMPLETO.test(t)) return true;
+  }
+  return palabras > 20 || (tieneNumeros && palabras > 8);
+}
+
 async function evaluarRespuesta(key, texto, datos) {
   if (!KEYS_SEGUIMIENTO.has(key)) return false;
+
+  // RONDA D2-AUDIT — FIX #1: si logros1 ya tiene fuente cruzada de tareas
+  // (resumen_personal/exp1), no repetir la pregunta élite pidiendo cifras
+  // — ya hay material suficiente para redactar ese puesto.
+  if (key === 'logros1' && _tieneFuenteCruzadaTareas(datos)) return false;
 
   // Contar seguimientos dados
   const dado = seguimientosDados[key] || 0;
@@ -1138,16 +1197,26 @@ async function evaluarRespuesta(key, texto, datos) {
   if (dado >= max) return false;
 
   // Evaluar calidad de respuesta
-  const palabras = texto.trim().split(/\s+/).length;
-  const tieneNumeros = /\d/.test(texto);
-  const tieneDetallesRicos = palabras > 20 || (tieneNumeros && palabras > 8);
   const esNegacionClara = texto.toLowerCase().match(/^(no|ninguno|nada|no tengo|n\/a|na|no aplica|sin experiencia|no tuve)$/i);
 
-  if (tieneDetallesRicos || esNegacionClara) return false;
+  if (tieneDetallesRicos(texto, key) || esNegacionClara) return false;
 
   // Generar pregunta élite con Claude
-  const pregunta = await generarPreguntaElite(key, texto, datos);
+  let pregunta = await generarPreguntaElite(key, texto, datos);
   if (!pregunta) return false;
+
+  // RONDA D2 — FIX B2: prefijo con el campo exacto para evitar que el
+  // usuario confunda una repregunta de "estudios" con una de "experiencia"
+  // (enrutamiento cruzado reportado en E4/E5 de la auditoría D3).
+  // Cubre exactamente las claves de KEYS_SEGUIMIENTO que se benefician de
+  // una etiqueta de campo (idiomas_nivel no está en KEYS_SEGUIMIENTO).
+  const _ETIQUETA_CAMPO = {
+    estudios: LANG === 'en' ? '↩️ About your education:' : '↩️ Sobre tus estudios:',
+    habilidades_tecnicas: LANG === 'en' ? '↩️ About your technical skills:' : '↩️ Sobre tus habilidades técnicas:'
+  };
+  if (_ETIQUETA_CAMPO[key]) {
+    pregunta = `${_ETIQUETA_CAMPO[key]}\n\n${pregunta}`;
+  }
 
   seguimientosDados[key] = dado + 1;
   paso--;
@@ -1168,19 +1237,31 @@ async function generarPreguntaElite(key, respuesta, datos) {
     certificaciones: 'certificaciones y licencias'
   }[key] || key;
 
+  // RONDA D2 — FIX B2: para estudios/habilidades_tecnicas/idiomas_nivel NO
+  // se pasa contexto de otros campos (resumen_personal/exp1) — eso hacía
+  // que el modelo mezclara temas y preguntara por experiencia laboral en
+  // una repregunta de estudios (enrutamiento cruzado, auditoría D3 E4/E5).
+  const _CAMPOS_SIN_CONTEXTO_CRUZADO = new Set(['estudios', 'habilidades_tecnicas']); // idiomas_nivel no está en KEYS_SEGUIMIENTO
+  const contextoAdicional = _CAMPOS_SIN_CONTEXTO_CRUZADO.has(key)
+    ? ''
+    : `CONTEXTO ADICIONAL: ${datos.resumen_personal || ''} ${datos.exp1 || ''}`;
+  const restriccionCampo = _CAMPOS_SIN_CONTEXTO_CRUZADO.has(key)
+    ? `\nLa pregunta DEBE ser exclusivamente sobre ${contexto} y nada más. Prohibido preguntar por otro campo.`
+    : '';
+
   const systemPrompt = `Eres el mejor entrevistador de RRHH del mundo, con 25 años formando CVs ejecutivos élite para Latinoamérica. Conoces a fondo más de 200 profesiones y sectores laborales.
 
 SITUACIÓN: El candidato aspira a "${puesto}" y respondió de forma muy breve cuando le preguntamos sobre ${contexto}.
 SU RESPUESTA: "${respuesta}"
 EMPRESA OBJETIVO: ${datos.tipo_empresa || 'empresa profesional'}
-CONTEXTO ADICIONAL: ${datos.resumen_personal || ''} ${datos.exp1 || ''}
+${contextoAdicional}
 
 TU MISIÓN: Hacer UNA pregunta de seguimiento EXPERTA que:
 1. Demuestre que conoces profundamente el sector de "${puesto}"
 2. Pida datos ESPECÍFICOS y CUANTIFICABLES del campo: números, equipos específicos del sector, resultados medibles, metodologías propias del cargo
 3. Dé 3 EJEMPLOS CONCRETOS y REALES del sector para orientar al candidato
 4. Sea empática, motivadora y breve (máx 4 líneas)
-5. NO sea genérica — debe sonar como si un experto en "${puesto}" la hiciera
+5. NO sea genérica — debe sonar como si un experto en "${puesto}" la hiciera${restriccionCampo}
 
 FORMATO: Solo la pregunta + ejemplos. Sin saludos, sin explicaciones extra.
 IDIOMA: ${LANG==='en' ? 'Responde COMPLETAMENTE en inglés.' : 'Responde en español.'}`;
@@ -1380,7 +1461,7 @@ function renderAyuda(key) {
 
 // ── EDITAR RESPUESTA ──
 let modoEdicion = null;
-let _insistio = false;   // ya se pidió más detalle en esta pregunta: no insistir dos veces
+let _insistioKeys = new Set();   // keys donde ya se pidió más detalle una vez: no insistir dos veces por pregunta
 
 function editarRespuesta(pasoIdx) {
   const p = PASOS[pasoIdx];
@@ -1883,8 +1964,15 @@ async function enviar() {
   if (_pActual && !_pActual.opcional && paso < PASOS.length) {
     const _MIN = {resumen_personal: 40, exp1: 30, logros1: 25, exp2: 30, logros2: 25, estudios: 15, habilidades_tecnicas: 15};
     const _min = _MIN[_pActual.key];
-    if (_min && texto.trim().length < _min && !_insistio) {
-      _insistio = true;
+    // RONDA D2 — FIX A1: la compuerta de longitud mínima NO debe aplicarse
+    // cuando el usuario ya está respondiendo "solo cargo" (frase de escape
+    // del sistema) o cuando ya se hizo la repregunta obligatoria de
+    // funciones para esta key (FUNCIONES_PREGUNTADO) — si no, "solo cargo"
+    // quedaba atrapado en un bucle con la propia compuerta de longitud.
+    const _omitirCompuertaLongitud = _esSoloCargo(texto) || FUNCIONES_PREGUNTADO[_pActual.key]
+      || ((_pActual.key === 'logros1' || _pActual.key === 'logros2') && _respuestaSinFunciones(texto));
+    if (_min && texto.trim().length < _min && !_insistioKeys.has(_pActual.key) && !_omitirCompuertaLongitud) {
+      _insistioKeys.add(_pActual.key);
       renderMsgUser(texto, paso);
       input.value = '';
       autoResize(input);
@@ -1895,7 +1983,6 @@ async function enviar() {
       return;
     }
   }
-  _insistio = false;   // se reinicia para la siguiente pregunta
 
   enviando = true;
   input.value = '';
@@ -1951,12 +2038,22 @@ async function enviar() {
     }
 
     // ── SEGUIMIENTO EXPERTO IA ──
-    const necesitaSeguimiento = await evaluarRespuesta(key, texto, datos);
-    if (necesitaSeguimiento) {
-      enviando = false;
-      document.getElementById('sendBtn').disabled = false;
-      document.getElementById('chatInput').focus();
-      return;
+    // RONDA D2 — FIX A3: si el candidato ya optó por "solo cargo" (u otra
+    // respuesta sin funciones) para este puesto, NO se le pide más
+    // seguimiento élite — ya se decidió dejarlo con cargo/empresa/fechas.
+    if (datos[`${key}_sin_funciones`]) {
+      await mostrarTyping(500 + Math.random()*300);
+      renderMsgAI(LANG === 'en'
+        ? `Got it — I'll keep just the title, company and dates.`
+        : `Perfecto, lo dejo con cargo, empresa y fechas.`);
+    } else {
+      const necesitaSeguimiento = await evaluarRespuesta(key, texto, datos);
+      if (necesitaSeguimiento) {
+        enviando = false;
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('chatInput').focus();
+        return;
+      }
     }
 
     const delay = 700 + Math.random() * 500;
@@ -2251,7 +2348,15 @@ CONTACTO: ${email}${telefono?' | '+telefono:''}${linkedin?' | '+linkedin:''} | E
 
 PERFIL (transformar): "${limpiar(resumenFinal)}"
 EXPERIENCIA: ${limpiar(datos.exp1)}${datos.logros1_sin_funciones?' [SIN FUNCIONES DECLARADAS]':''}
-LOGROS (transformar y cuantificar): ${datos.logros1_sin_funciones?'(ninguno — el candidato no describió funciones para este puesto)':limpiar(logros1Final)}
+LOGROS (transformar y cuantificar): ${(() => {
+    const _tieneFuente = _tieneFuenteCruzadaTareas(datos);
+    const _logros1Corto = _tieneFuente && _contarPalabras(datos.logros1 || '') < 12;
+    if (datos.logros1_fuente_cruzada || _logros1Corto) {
+      return `${limpiar(`${datos.resumen_personal||''} ${datos.exp1||''}`)} (descrito por el candidato en su presentación)`;
+    }
+    if (datos.logros1_sin_funciones) return '(ninguno — el candidato no describió funciones para este puesto)';
+    return limpiar(logros1Final);
+  })()}
 ${exp2valida?`EXP ANTERIOR: ${limpiar(datos.exp2)}${datos.logros2_sin_funciones?' [SIN FUNCIONES DECLARADAS]':''} | LOGROS: ${datos.logros2_sin_funciones?'(ninguno — el candidato no describió funciones para este puesto)':limpiar(logros2Final)}`:''}
 ESTUDIOS: ${limpiar(datos.estudios)}
 CERTIFICACIONES: ${limpiar(datos.certificaciones)}
@@ -2264,26 +2369,29 @@ INFO EXTRA: ${datos.info_extra||''}
 REGLAS (estándar de reclutador ejecutivo élite):
 1. RESUMEN: MÁXIMO 5 líneas / 90 palabras. Quién es + años + especialización + logro diferenciador. NUNCA excedas 90 palabras — un perfil largo pierde al reclutador. Sin "yo/soy/tengo". Modelo: "${ejemplo}"
 1b. ${enIngles?'The example above shows STYLE ONLY. Never add skills, tools, standards (e.g. NEC, ISO), certifications, figures, institutions, or responsibilities the candidate didn\'t write. If it\'s not in their answers, it doesn\'t exist.':'El ejemplo anterior muestra solo ESTILO. Prohibido añadir habilidades, herramientas, normas (p. ej. NEC, ISO), certificaciones, cifras, instituciones o responsabilidades que el candidato no haya escrito. Si un dato no está en las respuestas, no existe.'}
-2. EXPERIENCIA: 5-7 bullets RICOS por trabajo (22-35 palabras c/u), desarrollados con contexto, alcance y escala del sector. CV final: mínimo 1½-2 páginas A4 (900-1200 palabras) con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. Bullets cortos o planos = trabajo rechazado.
+2. EXPERIENCIA: bullets RICOS por trabajo (22-35 palabras c/u si hay suficiente fuente), con estructura ACCIÓN + RESPONSABILIDAD + RESULTADO + contexto/escala. ${enIngles?'The number of bullets and the resume length depend ENTIRELY on how much real material the candidate gave — never pad to reach a target length or bullet count, and never write flat, contentless bullets just to fill space.':'La cantidad de viñetas y la extensión del CV dependen ÚNICAMENTE de cuánto material real dio el candidato — nunca rellenes para alcanzar una longitud o cantidad de viñetas objetivo, ni escribas viñetas planas sin contenido solo para ocupar espacio.'}
 3. PROHIBIDO ABSOLUTO: "trabajé","estuve","fui responsable","me encargué","yo","responsable de","me considero","proactivo","dinámico","ganas de aprender","persona responsable","comprometido" y cualquier cliché genérico sin evidencia.
-4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. En su lugar, redacta el logro con ALCANCE Y CONTEXTO verificables: tipo de organización, complejidad del entorno, naturaleza de las funciones, sectores atendidos, procesos dominados. Ejemplo correcto sin cifras: "Gestionó cartera de clientes corporativos del sector farmacéutico liderando el ciclo completo de venta consultiva desde prospección hasta postventa". Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.
+4. CUANTIFICA ÚNICAMENTE con los datos REALES que el candidato entregó (horas, %, montos, personas, equipos). Si un dato no está en la información del candidato, está PROHIBIDO inventarlo, estimarlo o inferirlo del promedio del sector. ${enIngles?'PROHIBITED to compensate for a missing figure with unstated scope/intensity adjectives (\'high volume\', \'complex environment\', \'demanding\', \'multiple\'...). Without a number, describe the task PLAINLY: verb + object + named tool/process — no quantifying and no qualifying. Correct example with no figures: \'Gestionó cartera de clientes corporativos del sector farmacéutico mediante el ciclo completo de venta consultiva, desde prospección hasta postventa.\' A true bullet with no numbers is ALWAYS better than one with fabricated figures: the candidate must be able to defend every claim in an interview.':'PROHIBIDO compensar una cifra ausente con adjetivos de alcance/intensidad no declarados (\'alto volumen\', \'entorno complejo\', \'exigente\', \'múltiples\'...). Sin cifra, describe la tarea de forma LLANA: verbo + objeto + herramienta/proceso nombrado — sin cuantificar ni calificar. Ejemplo correcto sin cifras: \'Gestionó cartera de clientes corporativos del sector farmacéutico mediante el ciclo completo de venta consultiva, desde prospección hasta postventa.\' Un bullet sin números pero verdadero es SIEMPRE mejor que uno con cifras fabricadas: si el reclutador pregunta en la entrevista, el candidato debe poder sostener cada afirmación.'}
 5. NUNCA inventes cargos, empresas, certificaciones, títulos, idiomas, clientes, herramientas ni cifras.
 5z. ${enIngles?'PUESTO MARCADO "[NO FUNCTIONS DECLARED]": write ONLY the job title, company and dates for that position — no bullets, no description. Never deduce duties from the job title alone; if you were not told what the candidate did there, you don\'t know it.':'PUESTO MARCADO "[SIN FUNCIONES DECLARADAS]": escribe ÚNICAMENTE cargo, empresa y fechas para ese puesto — sin viñetas ni descripción. Nunca deduzcas funciones a partir del cargo: si no te dijeron qué hacía ahí, no lo sabes.'}
 5b. SI EL CANDIDATO TIENE POCA O NINGUNA EXPERIENCIA LABORAL: no dejes secciones vacías ni inventes empleos. Construye el CV alrededor de formación académica, proyectos de estudio, prácticas, voluntariado, cursos, competencias técnicas adquiridas y capacidad demostrada. Encabeza con el perfil y la educación en lugar de la experiencia. Un CV honesto de recién graduado bien redactado supera a uno con experiencia fabricada. Mejora la REDACCIÓN, jamás los HECHOS. Enriquecer significa expresar mejor lo que el candidato hizo, no añadir lo que no hizo.
 5c. PROHIBIDO AMPLIAR EL ALCANCE: no añadas sustantivos técnicos, procesos ni cualificadores que el candidato no haya declarado (ej.: "levantamientos" no se convierte en "levantamientos topográficos"; "compra de materiales" no se convierte en "gestión de inventarios" ni "trazabilidad financiera"). Cada término técnico debe salir de las respuestas del candidato — lo defenderá en la entrevista.
 5d. LOGROS, NO TAREAS (el error nº1 del CV en español): un bullet que solo enumera funciones no diferencia al candidato. Estructura preferida: verbo de acción + qué hizo + qué resultó de ello. Ej.: en vez de "Gestión de redes sociales", escribe "Incrementé el engagement un 35% en 6 meses mediante una estrategia de contenidos" — PERO solo si esa cifra la dio el candidato. Si no hay cifras, expresa el resultado de forma cualitativa y concreta (alcance, tipo de proyecto, equipos coordinados). JAMÁS inventes un porcentaje ni un "dato típico del sector".
-5e. FORMACIÓN, convención hispana en tres niveles cuando aplique: estudios oficiales (titulación reglada), formación complementaria (cursos, certificaciones) y competencias en informática e idiomas. Formato: "Titulación — Institución, Ciudad — Año". No listes el bachillerato si el candidato tiene título universitario, salvo que sea su credencial más alta.
+5e. FORMACIÓN, convención hispana en tres niveles cuando aplique: estudios oficiales (titulación reglada), formación complementaria (cursos, certificaciones) y competencias en informática e idiomas. Formato: "Titulación — Institución, Ciudad — Año". ${enIngles?'List secondary school only if it is the highest level the candidate reached, or if the candidate declared it explicitly — see the education rule (5i2): never omit a study the candidate mentioned.':'Lista el bachillerato solo si es el nivel máximo alcanzado o si el candidato lo declaró expresamente — ver regla de educación (5i2): jamás omitas un estudio que el candidato haya mencionado.'}
 5f. FECHAS coherentes en todo el documento: usa el mismo formato en todas las entradas ("Ene 2020 – Dic 2023" o "2020 – 2023", pero no mezcles). Si el candidato dio mes y año, consérvalos: aportan precisión.
 5f2. FECHA ACTUAL: ${fechaHoyYYYYMM}. Ninguna fecha del CV puede ser posterior a hoy. Si el puesto es el actual del candidato, la fecha de fin debe ser "${enIngles?'Present':'Actualidad'}", nunca una fecha futura inventada.
+5f3. ${enIngles?"DATE ATTRIBUTION: a year backs only the entry on whose own line it appears; if a position has no year given, its header stays without a period. TOTAL YEARS: 'X years of experience' only if it derives exactly from the dates given; if it doesn't, don't write it.":"ATRIBUCIÓN DE FECHAS: un año solo respalda la entrada en cuya misma línea aparece; si un puesto no trae año, el encabezado queda sin período. TOTALES DE AÑOS: 'X años de experiencia' solo si se deriva exactamente de las fechas dadas; si no, no lo escribas."}
 5g. HABILIDADES equilibradas: primero las competencias técnicas concretas del oficio (herramientas, software, técnicas) — son las que pesca el ATS —, después las transversales que sus respuestas respalden. Nunca abras la lista con "Trabajo en equipo" ni "Comunicación".
 5h. SIN MAYÚSCULAS SOSTENIDAS en el cuerpo del texto ni en el nombre (María López, no MARÍA LÓPEZ): dificultan la lectura. Los encabezados cortos de sección sí pueden ir en mayúsculas.
 5i. EL CV TIENE UN SOLO TRABAJO: conseguir la entrevista. Incluye lo relevante para el puesto objetivo y descarta lo que no aporta. Deja material para que el candidato tenga algo que contar en la entrevista.
+5i2. ${enIngles?'EXCEPTION: EDUCATION lists ALL degrees the candidate declared, even ones unrelated to the target role. Never omit a degree.':'EXCEPCIÓN: EDUCACIÓN lista TODAS las titulaciones declaradas, incluso las no relacionadas con el puesto. Jamás omitas un estudio.'}
 5j. SECCIONES ADICIONALES cuando aporten valor: Idiomas (con nivel si el candidato lo indicó), Certificaciones, Voluntariado, Proyectos. Inclúyelas solo si el candidato las declaró. NIVELES DE IDIOMA: si el candidato mencionó un idioma SIN indicar su nivel, inclúyelo sin nivel — nunca le asignes "nativo", "fluido", "avanzado" ni ningún otro nivel que no haya dicho, ni siquiera por ser su idioma materno aparente.
 5k. PUESTOS SIMULTÁNEOS EN LA MISMA EMPRESA: si varias responsabilidades ocurren a la vez en el mismo lugar y período, NO las listes como empleos separados — un reclutador lee tres cargos solapados como tres trabajos distintos y desconfía. Agrúpalos bajo el cargo principal y describe las demás funciones en sus bullets (ej.: un médico que además coordina turnos y da docencia es UN puesto con tres responsabilidades, no tres puestos). Solo se listan por separado si son empleadores distintos o períodos distintos.
 5l. FECHAS SIN SOLAPES INJUSTIFICADOS: revisa que los períodos tengan sentido. Dos puestos que se solapan solo se justifican si son empleadores diferentes; en el mismo empleador, unifícalos.
-5m. NO LISTES EL BACHILLERATO ni la educación secundaria si el candidato tiene título universitario o superior: ocupa espacio sin aportar y delata un CV sin criterio. Solo aparece si es su credencial más alta.
+5m. ${enIngles?'SECONDARY SCHOOL / HIGH SCHOOL: list it only if it is the highest level the candidate reached, or if the candidate declared it explicitly — never omit a study the candidate mentioned (see 5i2). Order EDUCATION from highest to lowest level; a secondary-school entry below a degree is fine, omitting it is not.':'BACHILLERATO / EDUCACIÓN SECUNDARIA: lista el bachillerato solo si es el nivel máximo alcanzado o si el candidato lo declaró expresamente — jamás omitas un estudio que el candidato haya mencionado (ver 5i2). Ordena EDUCACIÓN de mayor a menor nivel; que el bachillerato quede debajo de un título está bien, omitirlo no.'}
 5n. TELÉFONO CON PREFIJO INTERNACIONAL siempre, también en el CV en español: "+503 7601-2010", no "7601-2010". Un reclutador de otro país no puede marcar un número sin prefijo. Usa el prefijo del país que el candidato declaró (El Salvador +503, México +52, Colombia +57, Guatemala +502, Honduras +504, Costa Rica +506, Perú +51, Chile +56, Argentina +54, Ecuador +593, R. Dominicana +1809, Panamá +507, Bolivia +591, Paraguay +595, Uruguay +598, Venezuela +58, Nicaragua +505, España +34). Si ya trae prefijo, respétalo.
 5o. PERFIL PROFESIONAL BREVE: de 4 a 6 líneas (60-90 palabras). Un perfil de 180 palabras no se lee: el reclutador salta directo a la experiencia. Condensa lo esencial — quién es, su especialidad, su alcance y su diferencial — y deja el detalle para los bullets.
+5o2. ${enIngles?'PROFESSIONAL SUMMARY — same standard of proof as the bullets. It may only contain: target title, declared degrees, declared employers and periods, named tools and tasks, figures given. FORBIDDEN unstated adjectives/nouns of scope, volume, intensity, recognition or method: high foot traffic, high volume, high demands, demand peaks, dynamic environment, internal controls, multiple, rigorous, sustained, recognized for, proprietary methodology, culture of. If a position is [NO FUNCTIONS DECLARED], the summary does not describe what the candidate did there.':'PERFIL PROFESIONAL — mismo estándar de prueba que las viñetas. Solo puede contener: cargo objetivo, titulaciones declaradas, empleadores y períodos declarados, herramientas y tareas nombradas, cifras dadas. PROHIBIDOS adjetivos/sustantivos de alcance, volumen, intensidad, reconocimiento o método no declarados: alta afluencia, alto volumen, alta exigencia, picos de demanda, entorno dinámico, controles internos, múltiples, riguroso, sostenido, reconocido/a por, metodología propia, cultura de. Si un puesto está [SIN FUNCIONES DECLARADAS], el perfil no describe lo que hacía ahí.'}
 6. ATS: integra keywords naturales del puesto "${datos.puesto}" y su industria, sin keyword stuffing.
 7. SIN corchetes [], sin markdown **, sin placeholders, sin emojis. Si un dato no existe (período, ciudad...), OMÍTELO — jamás escribas "no especificado", "not specified" ni "N/A".
 
@@ -2299,18 +2407,15 @@ ${enIngles?'PROFESSIONAL SUMMARY':'RESUMEN PROFESIONAL'}
 ${enIngles?'PROFESSIONAL EXPERIENCE':'EXPERIENCIA PROFESIONAL'}
 ───────────────────────
 ORDEN OBLIGATORIO: cronológico inverso estricto, del puesto con fecha de inicio MÁS RECIENTE al más antiguo. Si dos puestos se solapan porque son simultáneos, primero el de mayor responsabilidad. Un orden incoherente hace que el reclutador no entienda la trayectoria.
+${enIngles?'The bullets below are an ILLUSTRATIVE pattern, not a fixed quota — use as many as the source supports (see rule 2); a position marked [NO FUNCTIONS DECLARED] gets none at all (rule 5z).':'Las viñetas de abajo son un PATRÓN ilustrativo, no una cuota fija — usa tantas como la fuente sostenga (ver regla 2); un puesto marcado [SIN FUNCIONES DECLARADAS] no lleva ninguna (regla 5z).'}
 [${enIngles?'Full Job Title':'Cargo Completo'}] | [${enIngles?'Company':'Empresa/Institución'}] | [${enIngles?'Period':'Período'}]
 • [${enIngles?'verb + quantified achievement':'verbo + logro cuantificado'}]
 • [${enIngles?'verb + specific responsibility':'verbo + responsabilidad específica'}]
 • [${enIngles?'verb + measurable result':'verbo + resultado con número'}]
-• [${enIngles?'verb + skill or leadership':'verbo + habilidad o liderazgo'}]
-• [${enIngles?'verb + additional contribution':'verbo + contribución adicional'}]
 ${exp2valida?`
 [${enIngles?'Previous Title':'Cargo Anterior'}] | [${enIngles?'Company':'Empresa'}] | [${enIngles?'Period':'Período'}]
 • [${enIngles?'achievement 1':'logro 1'}]
-• [${enIngles?'achievement 2':'logro 2'}]
-• [${enIngles?'achievement 3':'logro 3'}]
-• [${enIngles?'achievement 4':'logro 4'}]`:''}
+• [${enIngles?'achievement 2':'logro 2'}]`:''}
 
 ${enIngles?'EDUCATION':'EDUCACIÓN'}
 ─────────
@@ -2370,7 +2475,7 @@ ${enIngles?'Availability':'Disponibilidad'}: ${datos.disponibilidad}`:''}`;
       const rr = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
-Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, sustitúyela por alcance verificable. NO agregues hechos nuevos pero SÍ expande la redacción: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras. Mismo formato y headers exactos. ${enIngles?'If a position has no bullets under it because the candidate declared no functions for it, leave it that way — title, company and dates only. Never add bullets deduced from the job title.':'Si un puesto no tiene viñetas porque el candidato no declaró funciones, déjalo así — solo cargo, empresa y fechas. Nunca agregues viñetas deducidas del cargo.'} Devuelve SOLO el CV final completo.
+Eres un Executive Recruiter élite revisando el CV de un colega. CRITICA y MEJORA: elimina bullets débiles, enriquece los que falten de contexto/escala/resultado, asegura que el perfil venda en 5 segundos y las keywords ATS. VERIFICA que ninguna cifra sea inventada; si lo es, ELIMÍNALA — describe la tarea sin cuantificar ni calificar, nunca la sustituyas por adjetivos de alcance no declarados. NO agregues hechos nuevos; mejora la redacción de lo que ya existe, sin rellenar para alcanzar una longitud. Mismo formato y headers exactos. ${enIngles?'If a position has no bullets under it because the candidate declared no functions for it, leave it that way — title, company and dates only. Never add bullets deduced from the job title.':'Si un puesto no tiene viñetas porque el candidato no declaró funciones, déjalo así — solo cargo, empresa y fechas. Nunca agregues viñetas deducidas del cargo.'} Devuelve SOLO el CV final completo.
 CV:
 ${cvTexto.substring(0,12000)}`, ..._iaExtra(), temperature: 0.3})
       });
@@ -2830,7 +2935,7 @@ ${cvGenerado}
 VACANTE OBJETIVO:
 ${sanitizarEntrada(texto).substring(0, 2000)}
 
-MISIÓN: Reescribe el CV adaptándolo a esta vacante específica con profundidad de Executive Recruiter: CV final de 1½-2 páginas A4 (900-1200 palabras), bullets de 22-35 palabras con contexto, alcance y resultado.
+MISIÓN: Reescribe el CV adaptándolo a esta vacante específica con profundidad de Executive Recruiter: bullets de 22-35 palabras con contexto, alcance y resultado — tantos como la fuente sostenga, nunca relleno para alcanzar una longitud.
 REGLAS ESTRICTAS:
 1. NO INVENTES experiencia, títulos, certificaciones NI CIFRAS que no estén en el CV original. Reordenar y reformular sí; añadir hechos nuevos jamás.
 1b. HABILIDADES — LA SECCIÓN NO PUEDE GANAR ÍTEMS NUEVOS: solo puedes reordenar la lista y, si corresponde, renombrar un ítem YA EXISTENTE con la terminología de la vacante cuando sea EXACTAMENTE el mismo hecho (ej.: "atención al cliente" → "customer support"). Prohibido agregar cualquier habilidad que no estuviera ya en el CV original, aunque la vacante la pida.
@@ -3264,10 +3369,10 @@ async function optimizarCVSubido(texto) {
   const prompt = `${enIngles?'IMPORTANT: Write the ENTIRE resume in professional English.':'IMPORTANTE: Escribe todo en español profesional.'}
 Actúas como consultor de RRHH, Executive Recruiter y especialista internacional en ATS con 20+ años evaluando candidatos para procesos altamente competitivos. Tu misión: transformar este CV en un documento de nivel ÉLITE que consiga entrevistas.
 PROCESO: 1) ANALIZA profesión, nivel, años, industrias, logros, diferenciadores. 2) REESCRIBE estratégicamente.
-EXTENSIÓN OBLIGATORIA: el CV final debe llenar entre 1½ y 2 páginas A4 (900-1200 palabras). Expande cada experiencia con profundidad de consultor: contexto institucional, alcance, equipos, procesos, impacto. Si el original es corto, DESARROLLA cada función con el conocimiento experto del sector — sin inventar hechos, cargos ni cifras.
+EXTENSIÓN: la determina la fuente, nunca una cuota fija — no rellenes para llegar a una cantidad de páginas o palabras. Mejora la redacción de cada experiencia con profundidad de consultor sobre lo que el candidato ya dio: estructura, claridad, verbos de acción. Si el original es corto, mejora la REDACCIÓN — sin inventar hechos, cargos, cifras ni alcance no declarado.
 REGLAS ESTRICTAS:
 - PERFIL: MÁXIMO 5 líneas / 90 palabras. Denso pero breve: quién es + años + especialización + valor diferenciador. Un perfil largo se lee peor que uno corto y potente. NUNCA excedas 90 palabras. PROHIBIDO: "responsable", "proactivo", "comprometido", "dinámico", primera persona.
-- EXPERIENCIA: CADA puesto con 4-6 bullets de 22-35 palabras, estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Empieza SIEMPRE cada bullet con el carácter "•", nunca con guiones ni asteriscos. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe alcance, complejidad y contexto verificables — está PROHIBIDO estimar o inferir números del promedio del sector. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
+- EXPERIENCIA: bullets de 22-35 palabras, tantos como el original sostenga (nunca una cuota fija ni relleno), estructura ACCIÓN+RESPONSABILIDAD+RESULTADO. Empieza SIEMPRE cada bullet con el carácter "•", nunca con guiones ni asteriscos. Transforma funciones planas en logros con contexto, alcance y escala. Usa ÚNICAMENTE las cifras que ya están en el CV. Si no hay cifras, describe la tarea sin cuantificar ni calificar — PROHIBIDO estimar números del promedio del sector Y prohibido compensar la cifra ausente con adjetivos de alcance/intensidad no declarados. Un bullet verdadero sin números supera siempre a uno con cifras fabricadas.
 - PRESERVA TODAS las secciones del original: certificaciones, membresías, investigación, publicaciones, educación continua, referencias — nada se pierde, todo se profesionaliza.
 - NUNCA inventes cargos, empresas, títulos, certificaciones ni cifras.
 - PROHIBIDO AMPLIAR EL ALCANCE (tan grave como inventar cifras): enriquecer es redactar MEJOR lo que el candidato hizo, no añadir sustantivos técnicos nuevos. No conviertas "levantamientos" en "levantamientos topográficos", ni "compra de materiales" en "control de inventarios" o "trazabilidad financiera", ni añadas procesos que el original no menciona (licitación, auditorías, normativas, metodologías). Cada sustantivo técnico del CV final debe existir en el original — en la entrevista le preguntarán por cada uno y debe poder sostenerlo.
@@ -3281,7 +3386,7 @@ ${enIngles?'- PHONE: prepend the international dialing code of the candidate\'s 
 - SIN MAYÚSCULAS SOSTENIDAS en el nombre ni en el cuerpo (los CVs suelen traer el nombre en mayúsculas: conviértelo a formato normal). Los encabezados cortos de sección sí pueden ir en mayúsculas.
 - EL CV TIENE UN SOLO TRABAJO: conseguir la entrevista. Conserva lo relevante y descarta el relleno.
 - PUESTOS SIMULTÁNEOS EN LA MISMA EMPRESA: si el original lista varias responsabilidades a la vez en el mismo lugar y período, agrúpalas bajo el cargo principal con sus funciones en bullets. Tres cargos solapados en el mismo hospital se leen como tres empleos y generan desconfianza. Solo se separan si son empleadores o períodos distintos.
-- NO LISTES EL BACHILLERATO ni la secundaria si hay título universitario o superior.
+- BACHILLERATO/SECUNDARIA: lista solo si es el nivel máximo alcanzado o si el candidato lo declaró expresamente; nunca omitas un estudio que el original mencione.
 - TELÉFONO CON PREFIJO INTERNACIONAL también en español ("+503 7601-2010"). Si el original no lo trae, añádelo según el país declarado.
 - PERFIL de 4 a 6 líneas (60-90 palabras). Si el original trae un perfil largo, condénsalo: nadie lee 180 palabras al inicio de un CV.
 FORMATO — copia esta estructura EXACTA (headers, líneas ─── y bullets •):
@@ -3376,9 +3481,9 @@ ${sanitizarEntrada(texto, 12000).substring(0,12000)}`;
         body: JSON.stringify({prompt: `${enIngles?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres un Executive Recruiter élite Y auditor ATS revisando el trabajo de un colega. Haz AMBAS cosas en una sola pasada:
 (A) CRITICA y MEJORA: elimina cualquier bullet débil o genérico, enriquece los que carezcan de contexto/escala/resultado, verifica que el perfil venda en 5 segundos.
-(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, reemplázalo por alcance verificable. NO agregues hechos nuevos pero SÍ desarrolla y expande la redacción existente: el CV final debe llenar 1½-2 páginas A4 (900-1200 palabras) con bullets de 22-35 palabras. ⚠️ FORMATO DE SALIDA — REGLA ABSOLUTA: devuelve ÚNICAMENTE el CV corregido, empezando directamente por el nombre del candidato. NO escribas explicaciones, ni listas de problemas detectados, ni "Auditoría", ni "Voy a verificar", ni resúmenes de tus correcciones, ni comentarios de ningún tipo antes o después del CV. Tu razonamiento es interno: el usuario recibe tu respuesta tal cual y cualquier texto extra queda impreso en su documento.
+(B) AUDITORÍA ATS: asegura keywords del sector, headers estándar, coherencia de fechas (sin solapamientos no declarados, sin años futuros) y ausencia de tablas o símbolos raros. VERIFICA que ninguna cifra o hecho del CV sea inventado: si detectas un número que no proviene del candidato, ELIMÍNALO y describe la tarea sin cuantificar ni calificar. NO agregues hechos nuevos; mejora la redacción existente sin rellenar para alcanzar una longitud. ⚠️ FORMATO DE SALIDA — REGLA ABSOLUTA: devuelve ÚNICAMENTE el CV corregido, empezando directamente por el nombre del candidato. NO escribas explicaciones, ni listas de problemas detectados, ni "Auditoría", ni "Voy a verificar", ni resúmenes de tus correcciones, ni comentarios de ningún tipo antes o después del CV. Tu razonamiento es interno: el usuario recibe tu respuesta tal cual y cualquier texto extra queda impreso en su documento.
 
-(C) VERIFICACIÓN DE VERACIDAD contra la información original que aparece abajo: ELIMINA toda cifra, porcentaje, cantidad de personas, empresa, cargo, título, certificación o premio que NO aparezca en esa fuente. Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes. CONSERVA intactos los datos que SÍ están en la fuente.
+(C) VERIFICACIÓN DE VERACIDAD contra la información original que aparece abajo: ELIMINA toda cifra, porcentaje, cantidad de personas, empresa, cargo, título, certificación o premio que NO aparezca en esa fuente. Cuando elimines una cifra inventada, deja la tarea descrita sin cuantificar ni calificar — nunca la sustituyas por adjetivos de alcance/complejidad no declarados, nunca dejes el bullet vacío ni pongas corchetes. CONSERVA intactos los datos que SÍ están en la fuente.
 Mantén EXACTAMENTE el mismo formato y headers. Devuelve SOLO el CV final mejorado completo.
 
 INFORMACIÓN ORIGINAL DEL CANDIDATO (única fuente de verdad):
@@ -3585,7 +3690,11 @@ async function pasadaVeracidad(cvTxt, fuenteOriginal, enIng, esAdaptacion) {
     const _construirPromptVeracidad = (lb) => `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Eres auditor de integridad de CVs. Compara el CV FINAL contra la LISTA BLANCA (texto íntegro de las respuestas del candidato, base + seguimientos) y corrige toda afirmación no respaldada.
 ELIMINA O SUSTITUYE:
-${enIng?"- If a term in the resume is just a more professional phrasing of the SAME fact the candidate stated, keep it. Only remove what adds an object, standard, tool, certification, institution, figure or scope that is absent from the whitelist. When in doubt, keep it.":"- Si un término del CV es una formulación más profesional del MISMO hecho declarado por el candidato, consérvalo. Elimina solo lo que añada un objeto, norma, herramienta, certificación, institución, cifra o alcance ausente en la lista. Ante la duda, conserva."}
+${enIng?"- If a term in the resume is just a more professional phrasing of the SAME fact the candidate stated, keep it. Only remove what adds an object, standard, tool, certification, institution, figure or scope that is absent from the whitelist. When in doubt, narrow the claim to the whitelist's exact scope.":"- Si un término del CV es una formulación más profesional del MISMO hecho declarado por el candidato, consérvalo. Elimina solo lo que añada un objeto, norma, herramienta, certificación, institución, cifra o alcance ausente en la lista. Ante la duda, reduce la afirmación al alcance exacto de la lista."}
+${enIng?"- SCOPE: a fact backs ONLY claims in the field (key 'k:') where it appears. A tool listed under skills does NOT back a claim that it was used at a specific job, unless the candidate said so for that job.":"- ÁMBITO: un hecho respalda ÚNICAMENTE afirmaciones del campo (clave 'k:') donde aparece. Una herramienta listada en habilidades NO respalda afirmar que se usó en un empleo concreto, salvo que el candidato lo dijera en ese empleo."}
+${enIng?"- BINDING NEGATIONS: if the candidate said 'I don't know', 'I don't remember', 'I don't track that', 'I don't have that figure', it is FORBIDDEN to describe that fact as measurable, quantified, significant or proven.":"- NEGACIONES VINCULANTES: si el candidato dijo 'no sé', 'no recuerdo', 'no llevo la cuenta', 'no tengo esa cifra', está PROHIBIDO calificar ese hecho como medible, cuantificable, significativo o comprobado."}
+${enIng?"- DATE ATTRIBUTION: a year backs only the entry on whose own line it appears; if a position has no year given, its header stays without a period.":"- ATRIBUCIÓN DE FECHAS: un año solo respalda la entrada en cuya misma línea aparece; si un puesto no trae año, el encabezado queda sin período."}
+${enIng?"- TOTAL YEARS: 'X years of experience' only if it derives exactly from the dates given; if it doesn't, remove it.":"- TOTALES DE AÑOS: 'X años de experiencia' solo si se deriva exactamente de las fechas dadas; si no, elimínalo."}
 - Cifras, porcentajes, montos, cantidades de personas u horas que NO aparezcan en la LISTA BLANCA.
 - Empresas, cargos, títulos, certificaciones, idiomas, herramientas o clientes no mencionados por el candidato.
 - Premios, reconocimientos o resultados no declarados.
@@ -3595,7 +3704,7 @@ ${enIng?"- If a term in the resume is just a more professional phrasing of the S
 ${esAdaptacion ? (enIng
   ? '- ADAPTED-TO-A-JOB-POSTING VERSION: this resume was reordered and its wording aligned to a specific job posting. That is EXPECTED and must be KEPT — do not undo it. Reordering sections/bullets, prioritizing what matters most for the posting, and rephrasing a fact with the posting\'s exact terminology are all ALLOWED as long as the underlying fact is backed by the WHITELIST. Only strip what adds a fact, tool, figure or scope absent from the whitelist — never strip a reordering or a same-fact rewording just because it now uses the posting\'s wording.'
   : '- VERSIÓN ADAPTADA A UNA VACANTE: este CV fue reordenado y redactado con la terminología de una vacante específica. Eso es ESPERADO y debe CONSERVARSE — no lo deshagas. Reordenar secciones/bullets, priorizar lo más relevante para la vacante y reformular un hecho con la terminología EXACTA de la oferta están PERMITIDOS siempre que el hecho subyacente esté respaldado por la LISTA BLANCA. Elimina solo lo que añada un hecho, herramienta, cifra o alcance ausente en la lista — nunca deshagas un reordenamiento ni una reformulación del mismo hecho solo porque ahora usa las palabras de la vacante.') : ''}
-Cuando elimines una cifra inventada, sustitúyela por alcance verificable (tipo de organización, complejidad, naturaleza de la función) — nunca dejes el bullet vacío ni pongas corchetes.
+Cuando elimines una cifra inventada, deja la tarea descrita sin cuantificar ni calificar — nunca la sustituyas por adjetivos de alcance/complejidad no declarados, y nunca dejes el bullet vacío ni pongas corchetes.
 VERIFICA ADEMÁS LAS FECHAS:
 - Ninguna fecha de inicio puede ser posterior a la de fin.
 - Ningún periodo puede empezar después del año en curso (${new Date().getFullYear()}).
@@ -3656,7 +3765,7 @@ VERIFICA Y CORRIGE:
 1. KEYWORDS: que las palabras clave reales del sector aparezcan de forma natural en perfil y bullets (sin stuffing).
 2. VERBOS: cada bullet inicia con verbo de acción fuerte; elimina "responsable de", "encargado de", "participé en".
 3. FECHAS (crítico): hoy es ${FECHA_ACTUAL}. Ninguna fecha puede superar ${ANIO_ACTUAL}. Verifica orden de más reciente a más antigua, sin solapes imposibles ni contradicciones. Usa SOLO las fechas que el candidato aportó — si una es futura o inventada, corrígela o elimínala. Los puestos vigentes se marcan "Actualidad"/"Present", nunca con un año futuro.
-4. HONESTIDAD: si detectas una cifra o hecho que no puede provenir del candidato, sustitúyelo por alcance verificable.
+4. HONESTIDAD: si detectas una cifra o hecho que no puede provenir del candidato, ELIMÍNALO y deja la tarea descrita sin cuantificar ni calificar — nunca lo sustituyas por un adjetivo de alcance no declarado.
 5. ATS: headers estándar, una sola columna, sin caracteres raros, sin tablas, texto plano legible.
 6. ORTOGRAFÍA y consistencia de tiempos verbales.
 7. CONTRADICCIONES: si la misma empresa, cargo o período aparece con datos distintos en el CV, unifica usando la versión más completa y coherente. Si un mismo empleo tiene dos fechas de inicio incompatibles, conserva la más antigua y elimina la duplicada. Nunca dejes dos versiones contradictorias del mismo hecho.
@@ -3808,7 +3917,7 @@ async function generarConValidacion(fnGenerar, fuente, enIng) {
         method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
         body: JSON.stringify({prompt: `${enIng?'Respond ENTIRELY in English.':'Responde en español.'}
 Este CV es demasiado pobre para un candidato profesional. Problemas: ${graves.join(', ')}.
-EXPANDE cada bullet a 22-35 palabras con contexto, alcance y resultado. El perfil debe tener 4-5 líneas densas. CV final de 900-1200 palabras.
+Mejora cada bullet (hasta 22-35 palabras si la fuente lo sostiene) con contexto, alcance y resultado reales — nunca rellenes para alcanzar una longitud. El perfil debe tener 4-5 líneas densas.
 NO inventes hechos ni cifras nuevas — desarrolla lo que ya está. Mismo formato y headers exactos. Devuelve SOLO el CV completo.
 CV:
 ${String(cv).substring(0,6000)}`, ..._iaExtra(), temperature: 0.3})
@@ -4573,6 +4682,24 @@ function construirCVData() {
     console.warn('⚠️ Resumen recortado: el extractor capturó de más');
   }
 
+  // RONDA D2 — FIX F / D2-AUDIT FIX #3: si TODOS los puestos declarados
+  // quedaron sin funciones (puesto1 sin funciones Y sin fuente cruzada; y
+  // puesto2 no declarado o también sin funciones) no hay base real para
+  // narrar una trayectoria en el perfil — cualquier texto de la IA ahí
+  // sería relleno no verificable (ver 5o2). Perfil mínimo en cliente, con
+  // los datos crudos, sin IA. Si hay fuente cruzada, NO aplica: el puesto
+  // 1 sí tiene contenido real para narrar.
+  const _puesto1SinFunciones = datos.logros1_sin_funciones && !datos.logros1_fuente_cruzada;
+  const _puesto2Declarado = datos.exp2 && !datos.exp2.toLowerCase().match(/^no$|solo|no tengo|ninguno/);
+  const _puesto2SinFunciones = !_puesto2Declarado || datos.logros2_sin_funciones;
+  if (_puesto1SinFunciones && _puesto2SinFunciones) {
+    const _formacion = ((datos.estudios || '').split('\n')[0] || '').replace(/\s+/g, ' ').trim();
+    const _habs = (datos.habilidades_tecnicas || '').replace(/\s+/g, ' ').trim();
+    resumen = LANG === 'en'
+      ? `${datos.puesto || 'Professional'} candidate${_formacion ? `, with training in ${_formacion}` : ''}${_habs ? ` and skills in ${_habs}` : ''}.`
+      : `Candidato/a a ${datos.puesto || 'el puesto'}${_formacion ? `, con formación en ${_formacion}` : ''}${_habs ? ` y habilidades en ${_habs}` : ''}.`;
+  }
+
   // ── EXPERIENCIA ──
   const experiencia = [];
   const expRaw = seccionHasta('EXPERIENCIA PROFESIONAL|EXPERIENCIA|PROFESSIONAL EXPERIENCE|WORK EXPERIENCE');
@@ -4641,6 +4768,11 @@ function construirCVData() {
   // prompt. Asume que el orden de `experiencia` sigue exp1 (índice 0) y
   // exp2 (índice 1), que es el orden en que se construye el prompt.
   [['logros1_sin_funciones', 0], ['logros2_sin_funciones', 1]].forEach(([flag, idx]) => {
+    // RONDA D2 — FIX C / D2-AUDIT FIX #3: no podar el puesto 1 si existe
+    // fuente cruzada (tareas descritas en resumen_personal/exp1) o quedó
+    // marcado logros1_fuente_cruzada — los bullets sí tienen respaldo,
+    // solo vinieron de otro campo del formulario.
+    if (idx === 0 && datos[flag] && (datos.logros1_fuente_cruzada || _tieneFuenteCruzadaTareas(datos))) return;
     if (datos[flag] && experiencia[idx] && experiencia[idx].bullets && experiencia[idx].bullets.length) {
       const cantidad = experiencia[idx].bullets.length;
       experiencia[idx].bullets = [];

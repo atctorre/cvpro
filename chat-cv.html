@@ -1373,6 +1373,7 @@ async function evaluarFuncionesPuesto(key, texto, datosRef) {
   if (_esSoloCargo(texto)) {
     FUNCIONES_PREGUNTADO[key] = true;
     seguimientosDados[key] = (seguimientosDados[key] || 0) + 1;
+    datosRef[key] = '';   // "solo cargo" no es contenido: lo confirmado en el checklist lo sustituye
     paso--;
     actualizarUI();
     await mostrarChecklistFunciones(key, datosRef);
@@ -1415,6 +1416,15 @@ function tieneDetallesRicos(texto, key) {
 async function evaluarRespuesta(key, texto, datos) {
   if (!KEYS_SEGUIMIENTO.has(key)) return false;
 
+  // Cifras opcionales (logros1/logros2): sustituye a la pregunta élite en
+  // texto libre. Va ANTES de la exención por fuente cruzada: que el puesto
+  // tenga tareas descritas en otro campo no significa que tenga números.
+  if (key === 'logros1' || key === 'logros2') {
+    const _neg = /^(no|ninguno|nada|no tengo|n\/a|na|no aplica|sin experiencia|no tuve)$/i.test(String(texto || '').trim());
+    if (_neg || datos[`${key}_sin_funciones`]) return false;
+    return await preguntarCifras(key, datos);
+  }
+
   // RONDA D2-AUDIT — FIX #1: si logros1 ya tiene fuente cruzada de tareas
   // (resumen_personal/exp1), no repetir la pregunta élite pidiendo cifras
   // — ya hay material suficiente para redactar ese puesto.
@@ -1427,12 +1437,6 @@ async function evaluarRespuesta(key, texto, datos) {
 
   // Evaluar calidad de respuesta
   const esNegacionClara = texto.toLowerCase().match(/^(no|ninguno|nada|no tengo|n\/a|na|no aplica|sin experiencia|no tuve)$/i);
-
-  // Cifras opcionales (logros1/logros2): sustituye a la pregunta élite en
-  // texto libre. Se hace aunque la respuesta sea "rica", si no trae números.
-  if ((key === 'logros1' || key === 'logros2') && !esNegacionClara) {
-    return await preguntarCifras(key, datos);
-  }
 
   if (tieneDetallesRicos(texto, key) || esNegacionClara) return false;
 

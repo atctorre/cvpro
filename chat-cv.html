@@ -1155,11 +1155,176 @@ function _tieneFuenteCruzadaTareas(datosRef) {
   return _RE_FUENTE_CRUZADA_TAREAS.test(texto);
 }
 
-// Repregunta obligatoria (texto fijo, no depende de la IA) para logros1/logros2.
-// Devuelve true si disparó la repregunta (y por tanto hay que detener el
-// avance del flujo, igual que evaluarRespuesta()).
+// ══ FUNCIONES TÍPICAS DEL PUESTO (checklist) + CIFRAS OPCIONALES ══
+// Principio: la IA aporta el conocimiento del oficio (qué suele hacer una
+// cajera, un mecánico…) y el candidato aporta la verdad (marca lo que SÍ
+// hacía). Solo lo confirmado por el candidato pasa a datos.logrosN y por
+// tanto al CV. Nada de lo sugerido se usa si no fue marcado/escrito.
+const FUNCIONES_SUGERIDAS = {};   // key → [textos mostrados como chips]
+const CIFRAS_PREGUNTADO = {};     // key → true si ya se hizo la pregunta de cifras
+
+function _limpiarItemSugerido(t) {
+  return String(t || '')
+    .replace(/<[^>]*>/g, '')                 // nada de HTML (viene de la IA)
+    .replace(/^[\s•\-\*\d\.\)]+/, '')       // viñetas/numeración
+    .replace(/[\s.;]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Parsea un array JSON de strings devuelto por la IA (tolerante a texto
+// alrededor). Devuelve [] si no hay nada usable.
+function _parsearListaIA(raw, max, maxLen) {
+  const txt = String(raw || '');
+  let items = [];
+  const m = txt.match(/\[[\s\S]*\]/);
+  if (m) { try { const arr = JSON.parse(m[0]); if (Array.isArray(arr)) items = arr; } catch (e) {} }
+  if (!items.length) items = txt.split('\n');
+  const vistos = new Set();
+  return items
+    .map(x => _limpiarItemSugerido(typeof x === 'string' ? x : ''))
+    .filter(x => x && x.length >= 4 && x.length <= (maxLen || 60))
+    .filter(x => !/\d/.test(x))              // sin cifras: los números los pone el candidato
+    .filter(x => { const k = x.toLowerCase(); if (vistos.has(k)) return false; vistos.add(k); return true; })
+    .slice(0, max || 8);
+}
+
+// Lista de funciones típicas para el cargo (IA → JSON). Sin cifras, sin
+// marcas ni herramientas específicas, sin resultados: solo TAREAS que la
+// persona puede confirmar o negar con certeza.
+async function sugerirFuncionesTipicas(key, datosRef) {
+  const expTexto = key === 'logros1' ? (datosRef.exp1 || '') : (datosRef.exp2 || '');
+  const cargo = `${expTexto} (${LANG === 'en' ? 'target role' : 'puesto objetivo'}: ${datosRef.puesto || ''})`;
+  const prompt = LANG === 'en'
+    ? `List 8 TYPICAL TASKS for this job, so the candidate can tick the ones they actually did.
+JOB: ${sanitizarEntrada(cargo, 400)}
+TYPE OF BUSINESS: ${sanitizarEntrada(datosRef.tipo_empresa || '', 120)}
+RULES: each task 3-7 words, starts with a noun or verb ("Cash and card payments", "Restocking shelves"); NO numbers, NO brand names, NO specific tools or systems, NO results or adjectives ("efficient", "accurate"). Common tasks only — the candidate must be able to say yes/no with certainty.
+FORMAT: ONLY a JSON array of 8 strings. Nothing else.`
+    : `Lista 8 FUNCIONES TÍPICAS de este puesto, para que el candidato marque las que de verdad hacía.
+PUESTO: ${sanitizarEntrada(cargo, 400)}
+TIPO DE NEGOCIO: ${sanitizarEntrada(datosRef.tipo_empresa || '', 120)}
+REGLAS: cada función de 3 a 7 palabras, empieza con sustantivo o verbo ("Cobro en efectivo y tarjeta", "Reposición de estantes"); SIN cifras, SIN marcas, SIN herramientas o sistemas específicos, SIN resultados ni adjetivos ("eficiente", "preciso"). Solo tareas comunes que la persona pueda confirmar o negar con certeza.
+FORMATO: SOLO un array JSON de 8 strings. Nada más.`;
+  try {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt, ..._iaExtra(0.2)})
+    }, 25);
+    const data = await res.json();
+    const lista = _parsearListaIA(data && data.cv, 8, 60);
+    if (lista.length >= 3) return lista;
+  } catch (e) { console.warn('sugerirFuncionesTipicas:', e && e.message); }
+  return [];
+}
+
+// Muestra la repregunta obligatoria como CHECKLIST (chips multi) + texto
+// libre. Reutiliza el sistema de chips existente: el clic agrega al input y
+// el candidato ENVÍA — así lo confirmado entra en datos[key] por el mismo
+// camino que cualquier respuesta (concatenado, ver enviar()).
+async function mostrarChecklistFunciones(key, datosRef) {
+  await mostrarTyping(600);
+  const lista = await sugerirFuncionesTipicas(key, datosRef);
+  FUNCIONES_SUGERIDAS[key] = lista;
+  const conLista = lista.length >= 3;
+  const pregunta = conLista
+    ? (LANG === 'en'
+      ? `To avoid inventing anything, here are tasks people in that role usually do. Tap the ones YOU actually did (you can add others in your own words). If you prefer, type "only title" and I'll keep just the title, company and dates.`
+      : `Para no inventar nada, estas son tareas que suelen hacerse en ese puesto. Marca las que TÚ hacías de verdad (puedes agregar otras con tus palabras). Si prefieres, escribe "solo cargo" y lo dejo con cargo, empresa y fechas.`)
+    : (LANG === 'en'
+      ? `To avoid inventing anything, tell me 2-3 things you did in that role (tasks, tools, results). If you prefer, type "only title" and I'll leave it with title, company and dates only.`
+      : `Para no inventar nada, cuéntame 2-3 cosas que hacías en ese puesto (tareas, herramientas, resultados). Si prefieres, escribe "solo cargo" y lo dejo con cargo, empresa y fechas.`);
+  const chips = conLista ? {
+    titulo: LANG === 'en' ? 'Tap what you actually did' : 'Marca lo que sí hacías',
+    opciones: lista.map(escHtml),
+    multi: true
+  } : null;
+  renderMsgAI(pregunta, [], true, null, chips);
+  setHint(LANG === 'en' ? 'Tick the ones you did, add your own, then send' : 'Marca las que hacías, agrega las tuyas y envía');
+  if (typeof ev === 'function') ev('funciones_sugeridas', { key, n: lista.length, con_lista: conLista });
+}
+
+// ¿Cuántos de los ítems enviados coinciden con chips sugeridos? (para no
+// marcar "sin funciones" una respuesta de 2 chips, y para telemetría)
+function _confirmadasDeSugeridas(key, texto) {
+  const lista = FUNCIONES_SUGERIDAS[key] || [];
+  if (!lista.length) return 0;
+  const t = String(texto || '').toLowerCase();
+  return lista.filter(x => t.includes(String(x).toLowerCase())).length;
+}
+
+// ── CIFRAS OPCIONALES ──
+const _RE_NO_SE_CIFRAS = /^(no s[eé]|no lo s[eé]|no tengo n[uú]meros|sin n[uú]meros|prefiero sin n[uú]meros|prefiero no poner n[uú]meros|i don'?t know|not sure|no numbers|skip)\.?$/i;
+function _esNoSeCifras(texto) { return _RE_NO_SE_CIFRAS.test(String(texto || '').trim()); }
+
+// 2-3 preguntas de cifras específicas del oficio (IA → JSON); la IA NO
+// sugiere valores, solo qué magnitud preguntar.
+async function sugerirPreguntasCifras(key, datosRef) {
+  const funciones = String(datosRef[key] || '').slice(0, 600);
+  const cargo = key === 'logros1' ? (datosRef.exp1 || '') : (datosRef.exp2 || '');
+  const prompt = LANG === 'en'
+    ? `The candidate described this job. Write 3 SHORT questions asking for NUMBERS they probably know (daily volume, people, amounts, units, frequency). Never suggest a value or range. Each question ≤ 12 words, ends with "?".
+JOB: ${sanitizarEntrada(cargo, 300)}
+TASKS: ${sanitizarEntrada(funciones, 600)}
+FORMAT: ONLY a JSON array of 3 strings.`
+    : `El candidato describió este puesto. Escribe 3 preguntas CORTAS pidiendo CIFRAS que probablemente conozca (volumen diario, personas, montos, unidades, frecuencia). Nunca sugieras un valor ni un rango. Cada pregunta ≤ 12 palabras, termina en "?".
+PUESTO: ${sanitizarEntrada(cargo, 300)}
+FUNCIONES: ${sanitizarEntrada(funciones, 600)}
+FORMATO: SOLO un array JSON de 3 strings.`;
+  try {
+    const res = await fetchIA(`${SUPABASE_URL}/functions/v1/super-service`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
+      body: JSON.stringify({prompt, ..._iaExtra(0.2)})
+    }, 25);
+    const data = await res.json();
+    const lista = _parsearListaIA(data && data.cv, 3, 90).filter(q => /\?$/.test(q));
+    if (lista.length >= 2) return lista;
+  } catch (e) { console.warn('sugerirPreguntasCifras:', e && e.message); }
+  return LANG === 'en'
+    ? ['About how many people or customers per day?', 'Any amount, volume or team size you handled?']
+    : ['¿Aproximadamente cuántas personas o clientes por día?', '¿Algún monto, volumen o tamaño de equipo que manejabas?'];
+}
+
+// Pregunta de cifras: un solo mensaje con 2-3 magnitudes + salida explícita
+// "No sé". Devuelve true si la mostró (detiene el avance, como un seguimiento).
+async function preguntarCifras(key, datosRef) {
+  if (CIFRAS_PREGUNTADO[key]) return false;
+  if (datosRef[`${key}_sin_funciones`]) return false;
+  if (/\d/.test(String(datosRef[key] || ''))) return false;   // ya dio números
+  const dado = seguimientosDados[key] || 0;
+  if (dado >= (MAX_SEGUIMIENTOS[key] || 1)) return false;
+  CIFRAS_PREGUNTADO[key] = true;
+  seguimientosDados[key] = dado + 1;   // la respuesta se CONCATENA en datos[key] (ver enviar)
+  paso--;
+  actualizarUI();
+  await mostrarTyping(700);
+  const preguntas = await sugerirPreguntasCifras(key, datosRef);
+  const noSe = LANG === 'en' ? "I don't know" : 'No sé';
+  const texto = (LANG === 'en'
+    ? `One optional thing: numbers make a resume stronger, but ONLY real ones. If you know any of these, type them; if not, tap "I don't know" and we move on — nothing will be made up.`
+    : `Algo opcional: los números hacen más fuerte un CV, pero SOLO si son reales. Si sabes alguno de estos, escríbelo; si no, toca "No sé" y seguimos — no se inventará ninguno.`)
+    + '\n\n' + preguntas.map(q => `• ${q}`).join('\n');
+  renderMsgAI(texto, [], true, null, {
+    titulo: LANG === 'en' ? 'Optional' : 'Opcional',
+    opciones: [escHtml(noSe)],
+    multi: false
+  });
+  setHint(LANG === 'en' ? 'Type real numbers, or tap "I don\'t know"' : 'Escribe cifras reales, o toca "No sé"');
+  if (typeof ev === 'function') ev('cifras_preguntadas', { key, n: preguntas.length });
+  return true;
+}
+
+// Repregunta obligatoria para logros1/logros2 — ahora como checklist de
+// funciones típicas (ver mostrarChecklistFunciones). Devuelve true si
+// disparó la repregunta (y por tanto hay que detener el avance del flujo,
+// igual que evaluarRespuesta()).
 async function evaluarFuncionesPuesto(key, texto, datosRef) {
   if (key !== 'logros1' && key !== 'logros2') return false;
+  // La respuesta a la pregunta de CIFRAS ("500 al día" / "No sé") no es una
+  // respuesta de funciones: no debe evaluarse como tal ni disparar el checklist.
+  if (CIFRAS_PREGUNTADO[key]) return false;
 
   if (key === 'logros2' && _exp2Negativa(datosRef.exp2) && _RE_NEG.test(String(texto || '').trim())) {
     // La pregunta de logros2 fue en realidad la de freelance/voluntariado
@@ -1191,18 +1356,27 @@ async function evaluarFuncionesPuesto(key, texto, datosRef) {
     // candidato y se deja el puesto solo con cargo/empresa/fechas — salvo
     // que exista fuente cruzada, en cuyo caso se usa esa fuente en vez de
     // dejarlo vacío.
+    const _confirmadas = _confirmadasDeSugeridas(key, texto);
+    if (typeof ev === 'function') ev('funciones_confirmadas', { key, n: _confirmadas, solo_cargo: _esSoloCargo(texto) });
     if (_esSoloCargo(texto)) {
       _marcarSegunFuente(texto);
-    } else if (_respuestaSinFunciones(texto)) {
+    } else if (_confirmadas === 0 && _respuestaSinFunciones(texto)) {
+      // Con ≥1 chip confirmado la respuesta SÍ tiene funciones aunque sea
+      // corta ("Cobro en caja, Arqueo de caja" = 2 ítems, <8 palabras).
       datosRef[`${key}_sin_funciones`] = true;
     }
     return false;
   }
 
+  // Primer "solo cargo": casi siempre es "no sé qué escribir", no "no hacía
+  // nada". Se ofrece el checklist UNA vez; si insiste, se respeta.
   if (_esSoloCargo(texto)) {
-    _marcarSegunFuente(texto);
     FUNCIONES_PREGUNTADO[key] = true;
-    return false;
+    seguimientosDados[key] = (seguimientosDados[key] || 0) + 1;
+    paso--;
+    actualizarUI();
+    await mostrarChecklistFunciones(key, datosRef);
+    return true;
   }
 
   // La fuente cruzada NUNCA salta la repregunta: si la respuesta está
@@ -1214,13 +1388,9 @@ async function evaluarFuncionesPuesto(key, texto, datosRef) {
   // repregunta se CONCATENE en datos[key] (ver enviarRespuesta) en vez de
   // pisar la respuesta original — mismo mecanismo que el seguimiento de IA.
   seguimientosDados[key] = (seguimientosDados[key] || 0) + 1;
-  const pregunta = LANG === 'en'
-    ? `To avoid inventing anything, tell me 2-3 things you did in that role (tasks, tools, results). If you prefer, type "only title" and I'll leave it with title, company and dates only.`
-    : `Para no inventar nada, cuéntame 2-3 cosas que hacías en ese puesto (tareas, herramientas, resultados). Si prefieres, escribe "solo cargo" y lo dejo con cargo, empresa y fechas.`;
   paso--;
   actualizarUI();
-  await mostrarTyping(900);
-  renderMsgAI(pregunta);
+  await mostrarChecklistFunciones(key, datosRef);
   return true;
 }
 
@@ -1257,6 +1427,12 @@ async function evaluarRespuesta(key, texto, datos) {
 
   // Evaluar calidad de respuesta
   const esNegacionClara = texto.toLowerCase().match(/^(no|ninguno|nada|no tengo|n\/a|na|no aplica|sin experiencia|no tuve)$/i);
+
+  // Cifras opcionales (logros1/logros2): sustituye a la pregunta élite en
+  // texto libre. Se hace aunque la respuesta sea "rica", si no trae números.
+  if ((key === 'logros1' || key === 'logros2') && !esNegacionClara) {
+    return await preguntarCifras(key, datos);
+  }
 
   if (tieneDetallesRicos(texto, key) || esNegacionClara) return false;
 
@@ -1920,7 +2096,7 @@ function agregarChipAlInput(el, wrapId, multi) {
   const textoChip = el.textContent.trim();
 
   // Saltar chips negativos
-  if (textoChip.toLowerCase().match(/^no tengo|^ninguno|^solo ese|^nada más/)) {
+  if (textoChip.toLowerCase().match(/^no tengo|^ninguno|^solo ese|^nada más|^no sé$|^no se$|^i don'?t know$/)) {
     input.value = textoChip;
     el.classList.add('selected');
     input.focus();
@@ -2028,7 +2204,7 @@ async function enviar() {
     // del sistema) o cuando ya se hizo la repregunta obligatoria de
     // funciones para esta key (FUNCIONES_PREGUNTADO) — si no, "solo cargo"
     // quedaba atrapado en un bucle con la propia compuerta de longitud.
-    const _omitirCompuertaLongitud = _esSoloCargo(texto) || FUNCIONES_PREGUNTADO[_pActual.key]
+    const _omitirCompuertaLongitud = _esSoloCargo(texto) || FUNCIONES_PREGUNTADO[_pActual.key] || CIFRAS_PREGUNTADO[_pActual.key]
       || ((_pActual.key === 'logros1' || _pActual.key === 'logros2') && _respuestaSinFunciones(texto));
     if (_min && texto.trim().length < _min && !_insistioKeys.has(_pActual.key) && !_omitirCompuertaLongitud) {
       _insistioKeys.add(_pActual.key);
@@ -2071,9 +2247,21 @@ async function enviar() {
     // normalizado, ya está contenido en el dato previo normalizado.
     const _normEco = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
     const _esEco = _esRespuestaDeSeguimiento && datos[key] && _normEco(datos[key]).includes(_normEco(texto));
+    // Cifras opcionales: "No sé" no es un dato — no se concatena; se
+    // registra la decisión para que nadie vuelva a preguntar.
+    const _esNoSe = CIFRAS_PREGUNTADO[key] && _esNoSeCifras(texto);
+    if (_esNoSe) {
+      datos[`${key}_sin_cifras`] = true;
+      if (typeof ev === 'function') ev('cifras_no_se', { key });
+    }
+    // "solo cargo" tras el checklist tampoco es contenido del puesto.
+    const _esEscape = _esRespuestaDeSeguimiento && _esSoloCargo(texto);
     datos[key] = _esRespuestaDeSeguimiento
-      ? (_esEco ? datos[key] : (datos[key] ? datos[key] + '\n' + texto : texto))
+      ? ((_esEco || _esNoSe || _esEscape) ? datos[key] : (datos[key] ? datos[key] + '\n' + texto : texto))
       : texto;
+    if (_esNoSe || (CIFRAS_PREGUNTADO[key] && /\d/.test(texto))) {
+      if (typeof ev === 'function' && !_esNoSe) ev('cifras_declaradas', { key, largo: texto.length });
+    }
     paso++;
     actualizarUI();
     guardarEstado();

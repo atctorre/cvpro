@@ -1,4 +1,4 @@
-// generar-cv — motor v2 de CVPro — v11.5 (fase 3 cerrada: idiomas "+", fechas declaradas, cursos≠empleos, empresa cruda, resumen como ámbito, recorte mínimo de cláusulas, degradación ES por cláusulas/EN pasado, inflación de rol, dedupe por evidencia, extra literal)
+// generar-cv — motor v2 de CVPro — v11.6 (fase 4: inflación con verbo previo, relleno en cláusulas, perfil sin negaciones)
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { validarCV, construirCVDesdeInput } from './validador.mjs';
 import { cvAtexto } from './serializar.mjs';

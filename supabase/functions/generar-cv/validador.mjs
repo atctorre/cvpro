@@ -772,7 +772,7 @@ function perfilFallback(datos, out, enIngles) {
   const habilidades = String(datos.habilidades_tecnicas || '')
     .split(/[,;\n]+|\s+y\s+|\s+and\s+/i)
     .map(s => s.trim().replace(/\.$/, ''))
-    .filter(s => s && !/^(no|none|ninguna|ninguno|n\/a)$/i.test(s))
+    .filter(s => s && !/^(no|none|ninguna|ninguno|n\/a|nada|nada m[aá]s|eso es todo|listo|nothing|nothing else|that'?s all|done)$/i.test(s))
     // v11.4 (J1): adjetivos/blandas ("responsable", "ordenado", "patient with customers") no van en "Manejo de…"
     .filter(s => !/^(responsable|puntual|ordenad[oa]|honest[oa]|proactiv[oa]|amable|paciente|comprometid[oa]|trabajador[a]?|reliable|punctual|organized|honest|patient|hardworking|hard-working|team player|friendly|dedicated)\b/i.test(s));
   const partes = [];
@@ -1045,6 +1045,7 @@ function recortarClausulaSinFuente(texto, alcanceNorm) {
     const norm = normalizar(w);
     if (norm.length < 5) return false;
     if (CONECTORES.has(norm) || STOPWORDS_LARGAS.has(norm) || CONTEXTO_TOLERADO.has(norm)) return false;
+    if (esRelleno(norm)) return false; // v11.6 (E2E Marcus): "approximately"/"around" no son hechos; la cifra se verifica aparte
     if (esVerboPermitido(norm) || esVerboConjugado(w)) return false;
     if (alcanceNorm.includes(norm.slice(0, RAIZ_LEN))) return false;
     if (familiaCubierta(norm, alcanceNorm)) return false;
@@ -1570,7 +1571,13 @@ export function validarCV(cv, datos) {
         {
           const evNorm = normalizar(evidenciaUsable);
           const primeraB = normalizar(b.split(/\s+/)[0]).replace(/[^a-z]/g, '');
-          const esApoyo = RE_EVIDENCIA_APOYO.test(evNorm);
+          // v11.6 (M1): si el modelo citó solo el objeto ("preparacion de estados
+          // financieros") pero el candidato lo introdujo con "ayudaba con la…",
+          // el verbo de apoyo que PRECEDE a la evidencia en el ámbito también cuenta.
+          const posEv = alcanceLaxo.indexOf(normalizarLaxo(evidenciaUsable.split(/\s*[;|]\s*/)[0]));
+          const previoEv = posEv > 0 ? alcanceLaxo.slice(Math.max(0, posEv - 25), posEv) : '';
+          const RE_PREVIO_APOYO = /\b(apoyaba|apoyo|apoye|ayudaba|ayudo|ayude|colaboraba|colaboro|asistia|assisted|helped|supported)\s+(con|en|a|la|el|with|in|on)?\s*(la|el|las|los|the)?\s*$/;
+          const esApoyo = RE_EVIDENCIA_APOYO.test(evNorm) || RE_PREVIO_APOYO.test(previoEv);
           const esHacer = RE_EVIDENCIA_HACER.test(evNorm);
           if ((esApoyo && !RE_VERBO_APOYO_OK.test(primeraB)) || (esHacer && RE_VERBO_ROL_SUPERIOR.test(primeraB))) {
             return degradar('verbo_inflado', [b.split(/\s+/)[0]]);

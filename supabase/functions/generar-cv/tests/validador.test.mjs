@@ -1244,6 +1244,31 @@ test('86. INFORMACIÓN ADICIONAL: ítem con palabras sin fuente → literal del 
   assert.deepEqual(c.extra, ['Immediate availability']);
 });
 
+
+test('87. Inflación de rol con evidencia sin el verbo: "ayudaba con la preparacion…" citado como "preparacion de estados financieros" (M1)', () => {
+  const datos = { puesto: 'Contadora', exp1: 'Despacho R - Auxiliar contable - 2018 a 2021', logros1: 'ayudaba con la preparacion de estados financieros para presentar a los dueños' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Auxiliar contable', empresa: 'Despacho R', ubicacion: null, inicio: '2018', fin: '2021', actual: false, sin_funciones: false,
+    vinetas: [vin('Elaboró estados financieros para presentar a los dueños.', 'preparacion de estados financieros para presentar a los dueños')] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.ok(correcciones.some(c => c.includes('verbo_inflado')), correcciones.join('\n'));
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Preparacion de estados financieros para presentar a los dueños.');
+});
+
+test('88. Perfil fallback ignora "nada más"/"eso es todo" pegados a las habilidades (E2E Rosa)', () => {
+  const { cv: out } = validarCV(cvBase({ perfil: 'xyzzy.' }), { puesto: 'Cajera', habilidades_tecnicas: 'manejo de caja, atención al cliente\nnada más' });
+  assert.ok(!/nada m/i.test(out.perfil), out.perfil);
+});
+
+
+test('89. Cláusula con cifra del candidato y relleno ("approximately") NO se recorta (E2E Marcus)', () => {
+  const datos = { puesto: 'HVAC Technician', exp1: 'Buckeye Comfort - HVAC Technician - 2021 to present', logros1: 'no callbacks on my installations\nabout 6 installs per week, no callbacks', resumen_personal: 'install/commission residential furnaces and AC units' , exp2: 'no' };
+  const cv = cvBase({ lang: 'en', experiencia: [{ cargo: 'HVAC Technician', empresa: 'Buckeye Comfort', ubicacion: null, inicio: '2021', fin: null, actual: true, sin_funciones: false,
+    vinetas: [vin('Installed and commissioned residential furnaces and AC units, completing approximately 6 installations per week with no callbacks.', 'install/commission residential furnaces and AC units | about 6 installs per week, no callbacks')] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Installed and commissioned residential furnaces and AC units, completing approximately 6 installations per week with no callbacks.');
+  assert.ok(!correcciones.some(c => c.includes('clausula_recortada')), correcciones.join('\n'));
+});
+
 // ────────────────────────────── Resumen ──────────────────────────────
 console.log('\n──────────────────────────────');
 console.log(`Total: ${pasados + fallidos} · Pasados: ${pasados} · Fallidos: ${fallidos}`);

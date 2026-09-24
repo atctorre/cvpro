@@ -1346,6 +1346,17 @@ async function evaluarFuncionesPuesto(key, texto, datosRef) {
   // repregunta obligatoria — solo sirve para GENERAR el CV y para NO
   // PODAR bullets, nunca para saltar la pregunta fija.
   const _marcarSegunFuente = (t) => {
+    // v19 (cliente) — FIX (auditoría Opus, E3/E4): la negación tras el
+    // checklist significa "no tengo MÁS que añadir", no "no hacía nada". Si
+    // el campo ya tiene contenido real (p. ej. "cambios de aceite y frenos"),
+    // NO se marca sin_funciones: el servidor vaciaba todas las viñetas de un
+    // puesto con funciones declaradas. Con contenido, el validador del motor
+    // v2 decide qué viñetas tienen fuente.
+    const _previo = String(datosRef[key] || '').trim();
+    if (_previo && !_RE_NEG.test(_previo) && !_esSoloCargo(_previo) && _contarPalabras(_previo) >= 2) {
+      if (typeof ev === 'function') ev('funciones_conservadas_tras_negacion', { key, palabras: _contarPalabras(_previo) });
+      return;
+    }
     if (key === 'logros1' && _tieneFuenteCruzadaTareas(datosRef)) {
       datosRef.logros1_fuente_cruzada = true;
     } else {

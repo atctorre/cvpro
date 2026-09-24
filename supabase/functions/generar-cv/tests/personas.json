@@ -67,7 +67,7 @@
       "idiomas_nivel": "español, inglés básico",
       "info_extra": "cero accidentes graves en 4 años",
       "logros1_sin_funciones": false,
-      "logros2_sin_funciones": true,
+      "logros2_sin_funciones": false,
       "logros1_fuente_cruzada": false
     }
   },
@@ -91,7 +91,7 @@
       "idiomas_nivel": "español",
       "info_extra": "los clientes siempre regresan",
       "logros1_sin_funciones": false,
-      "logros2_sin_funciones": true,
+      "logros2_sin_funciones": false,
       "logros1_fuente_cruzada": false
     }
   },

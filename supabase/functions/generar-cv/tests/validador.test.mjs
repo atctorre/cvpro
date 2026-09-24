@@ -1137,6 +1137,113 @@ test('75. Cargo/empresa en minúscula inicial se capitalizan ("mecanico" → "Me
   assert.equal(out.experiencia[0].vinetas[0].texto, 'Owned safety training.');
 });
 
+
+test('76. Perfil/extra: "Los clientes regresan" (opinión) se elimina; fallback "as Apprentice" sin empresa (E4, N2)', () => {
+  const datos = { puesto: 'HVAC Technician', exp1: 'Buckeye Comfort - HVAC Technician - 2021 to present', exp2: 'apprentice at a different HVAC company 2019-2021', info_extra: 'los clientes siempre regresan' };
+  const cv = cvBase({ lang: 'en', perfil: 'Works at Buckeye Comfort. Customers always come back.', extra: ['los clientes siempre regresan'], experiencia: [
+    { cargo: 'HVAC Technician', empresa: 'Buckeye Comfort', ubicacion: null, inicio: '2021', fin: null, actual: true, sin_funciones: false, vinetas: [] },
+    { cargo: 'Apprentice', empresa: 'a different HVAC company', ubicacion: null, inicio: '2019', fin: '2021', actual: false, sin_funciones: true, vinetas: [] },
+  ] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.ok(!/come back|regresan/i.test(out.perfil), out.perfil);
+  assert.deepEqual(out.extra, []);
+  assert.ok(out.perfil.includes('at Buckeye Comfort and as Apprentice'), out.perfil);
+});
+
+test('77. Cláusula "for …" sin fuente se recorta; con fuente se conserva (N3, B1)', () => {
+  const datos = { puesto: 'Operations Manager', exp1: 'FastShip - Operations Supervisor - 2020 to present', logros1: 'own safety training; took inbound calls for a phone company' };
+  const cv = cvBase({ lang: 'en', experiencia: [{ cargo: 'Operations Supervisor', empresa: 'FastShip', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
+    vinetas: [
+      vin('Owned safety training for warehouse shift personnel.', 'own safety training'),
+      vin('Answered inbound calls for a phone company.', 'took inbound calls for a phone company'),
+    ] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), ['Owned safety training.', 'Answered inbound calls for a phone company.']);
+});
+
+
+test('78. en_curso solo con marcador explícito: "some college, no degree" NO está en curso; "estudiando 2do año" sí (B1, E1)', () => {
+  const cvB = cvBase({ lang: 'en', educacion: [{ titulo: 'Some College — Business (no degree)', institucion: 'Houston Community College', anio: null, en_curso: true }] });
+  const { cv: outB, correcciones } = validarCV(cvB, { estudios: 'high school diploma 2021, some college at Houston Community College (business, no degree)' });
+  assert.equal(outB.educacion[0].en_curso, false);
+  assert.ok(correcciones.some(c => c.includes('en_curso: true → false')));
+  const cvE = cvBase({ educacion: [{ titulo: '2.º año de Administración de Empresas', institucion: 'UFG', anio: null, en_curso: true }] });
+  const { cv: outE } = validarCV(cvE, { estudios: 'estudiando 2do año de administracion de empresas en la UFG' });
+  assert.equal(outE.educacion[0].en_curso, true);
+});
+
+test('79. EN: viñeta en forma base → pasado ("Install and commission…" → "Installed…"); evidencia solo-opinión elimina la viñeta (N2, E4)', () => {
+  const datos = { puesto: 'HVAC Technician', resumen_personal: 'install/commission residential furnaces and AC units', exp1: 'Buckeye Comfort - HVAC Technician - 2021 to present', logros1: 'no callbacks on my installations; los clientes regresan' };
+  const cv = cvBase({ lang: 'en', experiencia: [{ cargo: 'HVAC Technician', empresa: 'Buckeye Comfort', ubicacion: null, inicio: '2021', fin: null, actual: true, sin_funciones: false,
+    vinetas: [
+      vin('Install and commission residential furnaces and AC units.', 'install/commission residential furnaces and AC units'),
+      vin('Maintains a loyal customer base.', 'los clientes regresan'),
+    ] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), ['Installed and commissioned residential furnaces and AC units.']);
+  assert.ok(correcciones.some(c => c.includes('evidencia_no_apta')));
+});
+
+test('80. listarNatural: "Git e inglés" (no "y inglés")', () => {
+  const { cv: out } = validarCV(cvBase({ perfil: 'Perfil de relleno sin fuente xyzzy.' }), { puesto: 'Desarrolladora', habilidades_tecnicas: 'HTML, Git, inglés' });
+  assert.ok(out.perfil.includes('Git e inglés'), out.perfil);
+});
+
+
+test('81. Inflación de rol: evidencia "ayudaba con…" no puede volverse "Preparó…"; "did the…" no puede volverse "Oversaw…" (M1, N4)', () => {
+  const datos = { puesto: 'Contadora', exp1: 'Despacho R - Auxiliar contable - 2018 a 2021', logros1: 'ayudaba con la preparacion de estados financieros; did the visual merchandising' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Auxiliar contable', empresa: 'Despacho R', ubicacion: null, inicio: '2018', fin: '2021', actual: false, sin_funciones: false,
+    vinetas: [
+      vin('Preparó estados financieros.', 'ayudaba con la preparacion de estados financieros'),
+      vin('Supervisó el visual merchandising.', 'did the visual merchandising'),
+    ] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Apoyo en la preparacion de estados financieros.');
+  assert.ok(correcciones.filter(c => c.includes('verbo_inflado')).length === 2, correcciones.join('\n'));
+});
+
+test('82. Habilidad calificada por el candidato ("excel basico") no pierde el nivel; idioma no va en Técnicas (E1, E5)', () => {
+  const datos = { habilidades_tecnicas: 'word, excel basico, atencion al publico', idiomas_nivel: 'español, inglés avanzado' };
+  const cv = cvBase({ habilidades: { tecnicas: ['Word', 'Excel', 'Atención al público', 'inglés'], blandas: [] }, idiomas: [{ idioma: 'Español', nivel: null }, { idioma: 'Inglés', nivel: 'Avanzado' }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.deepEqual(out.habilidades.tecnicas, ['Word', 'excel basico', 'Atención al público']);
+});
+
+test('83. Empleo descrito en resumen_personal y ausente del CV → error que dispara reintento (E5)', () => {
+  const datos = { resumen_personal: 'trabajé 5 años como maestra de inglés en el Colegio Cristóbal Colón (2018-2023), en 2024 hice el bootcamp', exp1: 'Freelance - Desarrolladora Web - 2024 a presente', exp2: 'no' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Desarrolladora Web', empresa: 'Freelance', ubicacion: null, inicio: '2024', fin: null, actual: true, sin_funciones: false, vinetas: [] }] });
+  const { errores } = validarCV(cv, datos);
+  assert.ok(errores.some(e => e.startsWith('experiencia_omitida_en_resumen') && e.includes('2018-2023')), errores.join('\n'));
+  const cv2 = cvBase({ experiencia: [
+    { cargo: 'Desarrolladora Web', empresa: 'Freelance', ubicacion: null, inicio: '2024', fin: null, actual: true, sin_funciones: false, vinetas: [] },
+    { cargo: 'Maestra de inglés', empresa: 'Colegio Cristóbal Colón', ubicacion: null, inicio: '2018', fin: '2023', actual: false, sin_funciones: true, vinetas: [] },
+  ] });
+  assert.ok(!validarCV(cv2, datos).errores.some(e => e.startsWith('experiencia_omitida_en_resumen')));
+});
+
+test('84. Perfil fallback no lista adjetivos como herramientas ("…y responsable") (J1)', () => {
+  const { cv: out } = validarCV(cvBase({ perfil: 'xyzzy sin fuente.' }), { puesto: 'Electricista', habilidades_tecnicas: 'instalaciones electricas, lectura de planos, trabajo en alturas, responsable' });
+  assert.equal(out.perfil, 'Electricista. Manejo de instalaciones electricas, lectura de planos y trabajo en alturas.');
+});
+
+
+test('85. Evidencia compuesta ES se nominaliza cláusula a cláusula (M1)', () => {
+  const datos = { puesto: 'Contadora', exp1: 'Despacho R - Auxiliar contable - 2018 a 2021', logros1: 'apoyaba en registros contables, conciliaciones bancarias; manejaba varios clientes PyME, conciliaba varias cuentas bancarias al mes' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Auxiliar contable', empresa: 'Despacho R', ubicacion: null, inicio: '2018', fin: '2021', actual: false, sin_funciones: false,
+    vinetas: [vin('Realizó registros contables y conciliaciones bancarias para una cartera diversificada.', 'apoyaba en registros contables, conciliaciones bancarias | manejaba varios clientes PyME, conciliaba varias cuentas bancarias al mes')] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Apoyo en registros contables, conciliaciones bancarias; manejo de varios clientes PyME; conciliación de varias cuentas bancarias al mes.');
+});
+
+test('86. INFORMACIÓN ADICIONAL: ítem con palabras sin fuente → literal del candidato; opinión se descarta (E3, E4)', () => {
+  const { cv: a } = validarCV(cvBase({ extra: ['Cero accidentes graves registrados en 4 años de trabajo en obra.'] }), { info_extra: 'cero accidentes graves en 4 años' });
+  assert.deepEqual(a.extra, ['Cero accidentes graves en 4 años']);
+  const { cv: b } = validarCV(cvBase({ extra: ['Clientes recurrentes que regresan al taller.'] }), { info_extra: 'los clientes siempre regresan' });
+  assert.deepEqual(b.extra, []);
+  const { cv: c } = validarCV(cvBase({ extra: ['Immediate availability'] }), { info_extra: 'immediate availability' });
+  assert.deepEqual(c.extra, ['Immediate availability']);
+});
+
 // ────────────────────────────── Resumen ──────────────────────────────
 console.log('\n──────────────────────────────');
 console.log(`Total: ${pasados + fallidos} · Pasados: ${pasados} · Fallidos: ${fallidos}`);

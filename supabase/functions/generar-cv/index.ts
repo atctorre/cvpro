@@ -1,4 +1,4 @@
-// generar-cv — motor v2 de CVPro — v11.1 (fase 3: idiomas "+", fechas declaradas y años sin fuente, cursos≠empleos, empresa cruda, resumen como ámbito, recorte de cláusulas, degradación ES/EN, dedupe por evidencia, perfil 1.ª palabra)
+// generar-cv — motor v2 de CVPro — v11.5 (fase 3 cerrada: idiomas "+", fechas declaradas, cursos≠empleos, empresa cruda, resumen como ámbito, recorte mínimo de cláusulas, degradación ES por cláusulas/EN pasado, inflación de rol, dedupe por evidencia, extra literal)
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { validarCV, construirCVDesdeInput } from './validador.mjs';
 import { cvAtexto } from './serializar.mjs';
@@ -223,7 +223,10 @@ RULES (elite executive-recruiter standard):
 21. COMPANY = the name the candidate gave, nothing more. If they only described it ("a different HVAC company", "my uncle's shop"), write the short description as given — never a sentence and never with "my/I".
 22. LANGUAGES with "+" or "and": "English native + Spanish intermediate" → English: native, Spanish: intermediate. A level applies ONLY to the language it is written next to; "Spanish + English intermediate" → Spanish: null, English: intermediate.
 23. PROFILE: build it ONLY with nouns and adjectives that appear in the candidate's data (job titles, tools, tasks, figures they gave). No new descriptors ("dedicated", "detail-oriented", "strong", "seasoned"). If the data gives nothing beyond title and jobs, write one plain sentence: title + where they worked + the tools they listed.
-24. resumen_personal often contains the real functions of the CURRENT job (job 1). Use it as evidence for the job it talks about (quote it verbatim in "evidencia"), never for another job.` : `
+24. resumen_personal often contains the real functions of the CURRENT job (job 1). Use it as evidence for the job it talks about (quote it verbatim in "evidencia"), never for another job.
+25. PREVIOUS JOB ONLY IN resumen_personal: if the candidate answered exp2 with "no" but resumen_personal names an earlier job with employer and dates ("worked 5 years as an English teacher at Colegio X (2018-2023)"), it IS a real job → include it as experiencia[1] with cargo, empresa, inicio/fin as stated, sin_funciones: true and vinetas: [] (unless functions were given). Never drop a job the candidate described.
+26. EDUCATION en_curso: true ONLY if the candidate said they are still studying ("estudiando", "2do año", "currently", "in progress"). "Some college, no degree" → en_curso: false, anio: null.
+27. TENSE (English): write every bullet with a past-tense action verb ("Installed", "Handled", "Managed"), also for the current job, so tenses stay consistent.` : `
 REGLAS (estándar de reclutador ejecutivo élite):
 1. PERFIL: MÁXIMO 60 palabras. Quién es + años (SOLO si se derivan exactamente de las fechas dadas o el candidato los dijo) + especialización + un diferenciador. Sin "yo/soy/tengo". Sin adjetivos de alcance/volumen/intensidad no declarados (alto volumen, exigente, entorno dinámico, alta rotación, a gran escala...) SALVO que el candidato haya usado exactamente esas palabras. Sin inferencias sobre el empleador ("gran cadena nacional") — solo lo que el candidato escribió.
 2. VIÑETAS de experiencia: verbo de acción + qué hizo + resultado, SOLO con hechos, herramientas, cifras y alcance que el candidato realmente dio. Nunca rellenes para alcanzar una cantidad de viñetas.
@@ -248,7 +251,10 @@ REGLAS (estándar de reclutador ejecutivo élite):
 21. EMPRESA = el nombre que dio el candidato, nada más. Si solo la describió ("otra empresa de aire acondicionado", "taller de mi tío"), escribe la descripción corta tal cual (en tercera persona: "taller de su tío") — nunca una oración ni con "mi/yo".
 22. IDIOMAS con "+" o "y": "Español + Inglés intermedio" → Español: null (sin nivel), Inglés: intermedio. Un nivel aplica SOLO al idioma junto al que está escrito.
 23. PERFIL: constrúyelo SOLO con sustantivos y adjetivos que aparezcan en los datos del candidato (cargos, herramientas, tareas y cifras que dio). Sin descriptores nuevos ("comprometido", "sólido", "amplia", "orientado a resultados"). Si los datos no dan más que cargo y empleos, escribe una oración simple: título + dónde trabajó + herramientas que listó.
-24. resumen_personal suele contener las funciones reales del empleo ACTUAL (puesto 1). Úsalo como evidencia del puesto del que habla (cítalo literal en "evidencia"), nunca para otro puesto.`;
+24. resumen_personal suele contener las funciones reales del empleo ACTUAL (puesto 1). Úsalo como evidencia del puesto del que habla (cítalo literal en "evidencia"), nunca para otro puesto.
+25. EMPLEO ANTERIOR SOLO EN resumen_personal: si el candidato respondió exp2 con "no" pero en resumen_personal nombra un empleo anterior con empleador y fechas ("trabajé 5 años como maestra de inglés en el Colegio X (2018-2023)"), ES un empleo real → inclúyelo como experiencia[1] con cargo, empresa, inicio/fin tal como los dijo, sin_funciones: true y vinetas: [] (salvo que haya dado funciones). Nunca omitas un empleo que el candidato describió.
+26. EDUCACIÓN en_curso: true SOLO si el candidato dijo que sigue estudiando ("estudiando", "2do año", "en curso", "actualmente"). "Estudios universitarios incompletos / sin título" → en_curso: false, anio: null.
+27. TIEMPO VERBAL: viñetas del puesto actual en presente de 3.ª persona ("Ejecuta", "Supervisa") y de puestos terminados en pretérito ("Realizó", "Elaboró"); nunca infinitivo ni 1.ª persona.`;
 
   const puesto1Marca = d.logros1_sin_funciones
     ? (enIngles ? '\n[POSITION 1 MARKED NO FUNCTIONS DECLARED — vinetas must be []]' : '\n[PUESTO 1 MARCADO SIN FUNCIONES DECLARADAS — vinetas debe ser []]')
@@ -379,6 +385,16 @@ Deno.serve(async (req) => {
           lang === 'en'
             ? `Rewrite the bullets for position ${idx + 1} using ONLY these words from the candidate, and quote them literally in "evidencia": "${logrosLiteral}"`
             : `Reescribe las viñetas del puesto ${idx + 1} usando únicamente estas palabras del candidato, y cítalas literalmente en "evidencia": "${logrosLiteral}"`
+        );
+      });
+      // v11.4 (E5): empleo descrito en resumen_personal que el modelo omitió.
+      resultado.errores.forEach(e => {
+        const m = e.match(/^experiencia_omitida_en_resumen: .*?(\d{4})-(\d{4})/);
+        if (!m) return;
+        instruccionesExtra.push(
+          lang === 'en'
+            ? `resumen_personal describes a job in ${m[1]}-${m[2]} that is missing from experiencia. Add it as its own position (cargo, empresa, inicio ${m[1]}, fin ${m[2]}, actual false) exactly as the candidate described it; if no functions were given, sin_funciones: true and vinetas: [].`
+            : `resumen_personal describe un empleo en ${m[1]}-${m[2]} que falta en experiencia. Agrégalo como puesto propio (cargo, empresa, inicio ${m[1]}, fin ${m[2]}, actual false) exactamente como lo describió el candidato; si no dio funciones, sin_funciones: true y vinetas: [].`
         );
       });
       if (instruccionesExtra.length) informe += '\n\n' + instruccionesExtra.join('\n');

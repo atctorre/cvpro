@@ -276,6 +276,8 @@ const RE_NEGACION_LINEA = /^(nada( m[aá]s)?|eso es todo|eso ser[ií]a todo|ning
 // Palabras de título/grado reconocibles — un segmento de `datos.estudios`
 // solo cuenta como "titulación declarada" para la heurística de
 // `educacion_incompleta` si contiene alguna de estas.
+const RE_NIVEL_HABILIDAD = /\b(basico|basica|intermedio|intermedia|avanzado|avanzada|basic|intermediate|advanced|nivel|level)\b/;
+const RE_EN_CURSO = /\b(en curso|estudiando|cursando|actualmente|estoy en|voy en|\d+(?:º|°|do|er|to|mo)?\s*a[nñ]o|semestre|ciclo|in progress|currently|pursuing|ongoing|enrolled|attending|expected|sophomore|junior year|senior year|freshman)\b/i;
 const RE_TITULACION = /\b(licenciatura|ingenier[ií]a|t[eé]cnic[oa]|bachillerato|maestr[ií]a|doctorado|diplomado|diploma|certificad[oa]|degree|bachelor|master|ph\.?d|associate|certificate|bootcamp|carrera|posgrado|postgrado)\b/i;
 
 // ─────────────────────── Fechas ───────────────────────
@@ -741,7 +743,8 @@ function listarNatural(items, enIngles) {
   const xs = items.map(s => String(s || '').trim()).filter(Boolean);
   if (!xs.length) return '';
   if (xs.length === 1) return xs[0];
-  const conj = enIngles ? ' and ' : ' y ';
+  const ultimo = xs[xs.length - 1];
+  const conj = enIngles ? ' and ' : (/^h?i(?!e)/i.test(normalizar(ultimo)) ? ' e ' : ' y ');
   return xs.slice(0, -1).join(', ') + conj + xs[xs.length - 1];
 }
 
@@ -761,7 +764,7 @@ function perfilFallback(datos, out, enIngles) {
       const mismoCargo = normalizar(p.cargo) === normalizar(titulo)
         || (wCargo.length > 0 && wTitulo.length > 0
           && (wCargo.every(w => wTitulo.includes(w)) || wTitulo.every(w => wCargo.includes(w))));
-      if (!p.empresa) return mismoCargo ? null : p.cargo;
+      if (!p.empresa) return mismoCargo ? null : (enIngles ? `as ${p.cargo}` : `como ${p.cargo}`);
       if (mismoCargo) return enIngles ? `at ${p.empresa}` : `en ${p.empresa}`;
       return enIngles ? `as ${p.cargo} at ${p.empresa}` : `como ${p.cargo} en ${p.empresa}`;
     })
@@ -769,7 +772,9 @@ function perfilFallback(datos, out, enIngles) {
   const habilidades = String(datos.habilidades_tecnicas || '')
     .split(/[,;\n]+|\s+y\s+|\s+and\s+/i)
     .map(s => s.trim().replace(/\.$/, ''))
-    .filter(s => s && !/^(no|none|ninguna|ninguno|n\/a)$/i.test(s));
+    .filter(s => s && !/^(no|none|ninguna|ninguno|n\/a)$/i.test(s))
+    // v11.4 (J1): adjetivos/blandas ("responsable", "ordenado", "patient with customers") no van en "Manejo de…"
+    .filter(s => !/^(responsable|puntual|ordenad[oa]|honest[oa]|proactiv[oa]|amable|paciente|comprometid[oa]|trabajador[a]?|reliable|punctual|organized|honest|patient|hardworking|hard-working|team player|friendly|dedicated)\b/i.test(s));
   const partes = [];
   if (puestos.length) {
     partes.push(enIngles
@@ -849,6 +854,24 @@ const NOMINAL_ES = {
   mantengo: 'Mantenimiento de', mantuve: 'Mantenimiento de', mantenia: 'Mantenimiento de',
   ayudo: 'Apoyo a', ayude: 'Apoyo a', ayudaba: 'Apoyo a',
   llevo: 'Manejo de', llevaba: 'Manejo de',
+  concilio: 'Conciliación de', concilie: 'Conciliación de', conciliaba: 'Conciliación de',
+  facturo: 'Facturación de', facture: 'Facturación de', facturaba: 'Facturación de',
+  digito: 'Digitación de', digite: 'Digitación de', digitaba: 'Digitación de',
+  redacto: 'Redacción de', redacte: 'Redacción de', redactaba: 'Redacción de',
+  entrego: 'Entrega de', entregue: 'Entrega de', entregaba: 'Entrega de',
+  recibo: 'Recepción de', recibi: 'Recepción de', recibia: 'Recepción de',
+  despacho: 'Despacho de', despache: 'Despacho de', despachaba: 'Despacho de',
+  empaco: 'Empaque de', empaque: 'Empaque de', empacaba: 'Empaque de',
+  cocino: 'Preparación de', cocine: 'Preparación de', cocinaba: 'Preparación de',
+  cuido: 'Cuidado de', cuide: 'Cuidado de', cuidaba: 'Cuidado de',
+  enseno: 'Enseñanza de', ensene: 'Enseñanza de', ensenaba: 'Enseñanza de',
+  diseno: 'Diseño de', disene: 'Diseño de', disenaba: 'Diseño de',
+  programo: 'Programación de', programe: 'Programación de', programaba: 'Programación de',
+  archivo: 'Archivo de', archive: 'Archivo de', archivaba: 'Archivo de',
+  contesto: 'Atención de', conteste: 'Atención de', contestaba: 'Atención de',
+  arreglo: 'Arreglo de', arregle: 'Arreglo de', arreglaba: 'Arreglo de',
+  soldo: 'Soldadura de', solde: 'Soldadura de', soldaba: 'Soldadura de',
+  pinto: 'Pintura de', pinte: 'Pintura de', pintaba: 'Pintura de',
 };
 const PREPOSICIONES_ES = new Set(['a', 'al', 'de', 'del', 'en', 'con', 'para', 'por', 'sobre']);
 
@@ -888,6 +911,11 @@ const INFINITIVO_ES = {
 const RE_VERBO_APOYO_ES = /^(apoyaba|apoyo|apoye|ayudaba|ayudo|ayude|colaboraba|colaboro)\s+(con|en|a)\s+/i;
 const RE_ENCARGO_ES = /^(me encargaba de|me encargo de|estaba a cargo de|estoy a cargo de|me tocaba)\s+/i;
 // Minimizadores/muletillas al inicio de la evidencia — no aportan hechos.
+// v11.4: verbos de apoyo en la evidencia y verbos "de rol superior" en la viñeta
+const RE_EVIDENCIA_APOYO = /^(solo\s+|only\s+|just\s+)?(apoyaba|apoyo|apoye|ayudaba|ayudo|ayude|colaboraba|colaboro|asistia|assisted|helped|supported|aided)\b/;
+const RE_EVIDENCIA_HACER = /^(solo\s+|only\s+|just\s+)?(hacia|hice|hago|did|do|made|make)\b/;
+const RE_VERBO_APOYO_OK = /^(apoyo|apoya|apoyaba|apoye|apoyó|ayudo|ayuda|ayudaba|ayude|ayudó|colaboro|colabora|colaboró|colaboraba|asistio|asiste|asistió|asistia|brindo|brinda|brindó|assisted|assists|helped|helps|supported|supports|aided|contributed|contributes|participated|participates|participo|participa|participó)$/;
+const RE_VERBO_ROL_SUPERIOR = /^(oversaw|oversee|led|lead|managed|manage|supervised|supervise|directed|direct|headed|spearheaded|owned|dirigio|dirigió|lidero|lideró|superviso|supervisó|gestiono|gestionó|encabezo|encabezó|coordino|coordinó)$/;
 const RE_MINIMIZADOR = /^(solo|sólo|solamente|nada mas|básicamente|basicamente|normalmente|generalmente|a veces|only|just|typically|usually|mostly|mainly|basically|generally|sometimes|also|también|tambien)\s+/i;
 
 function nominalizarInfinitivosES(texto) {
@@ -914,6 +942,9 @@ const VERBO_EN_PASADO = {
   organize: 'Organized', support: 'Supported', provide: 'Provided', perform: 'Performed', complete: 'Completed',
   receive: 'Received', check: 'Checked', count: 'Counted', greet: 'Greeted', file: 'Filed', enter: 'Entered',
   own: 'Owned', oversee: 'Oversaw', build: 'Built', create: 'Created', write: 'Wrote', make: 'Made', set: 'Set', keep: 'Kept',
+  commission: 'Commissioned', explain: 'Explained', diagnose: 'Diagnosed', inspect: 'Inspected', test: 'Tested', resolve: 'Resolved',
+  respond: 'Responded', document: 'Documented', monitor: 'Monitored', order: 'Ordered', track: 'Tracked', update: 'Updated', review: 'Reviewed',
+  cut: 'Cut', reduce: 'Reduced', increase: 'Increased', improve: 'Improved', ensure: 'Ensured', develop: 'Developed', design: 'Designed', plan: 'Planned',
 };
 const RE_ARRANQUE_EN = /^(i\s+)?(am|was|got|did|do|have been|have|had)\s+(the\s+|a\s+|an\s+)?/i;
 
@@ -926,6 +957,38 @@ function limpiarEvidenciaEN(t) {
   const clave = normalizar(palabras[0]).replace(/[^a-z]/g, '');
   if (VERBO_EN_PASADO[clave]) palabras[0] = VERBO_EN_PASADO[clave];
   return palabras.join(' ');
+}
+
+function nominalizarUnaClausulaES(c) {
+  c = c.trim();
+  if (!c) return c;
+  if (RE_ENCARGO_ES.test(c)) return 'Encargado de ' + c.replace(RE_ENCARGO_ES, '');
+  if (RE_VERBO_APOYO_ES.test(c)) {
+    const resto = nominalizarInfinitivosES(c.replace(RE_VERBO_APOYO_ES, ''));
+    return 'Apoyo en ' + resto.charAt(0).toLowerCase() + resto.slice(1);
+  }
+  const n1 = nominalizarPrimeraPersonaES(c);
+  return n1 !== c ? n1 : nominalizarInfinitivosES(c);
+}
+function esVerboClausulaES(w) {
+  const k = normalizar(w).replace(/[^a-z]/g, '');
+  return !!(NOMINAL_ES[k] || INFINITIVO_ES[k]) || /^(apoyaba|apoyo|ayudaba|ayudo|colaboraba|colaboro)$/.test(k);
+}
+// v11.5: separa por "; " y por ", " SOLO cuando lo que sigue empieza con un verbo
+// de la tabla; nominaliza cada cláusula y las une con "; ".
+function nominalizarClausulasES(texto) {
+  const partes = texto.split(/\s*;\s*/).flatMap(seg => {
+    const piezas = seg.split(/,\s+/);
+    const out = [];
+    piezas.forEach((pz, idx) => {
+      if (idx > 0 && esVerboClausulaES(pz.split(/\s+/)[0])) out.push(pz);
+      else if (out.length) out[out.length - 1] += ', ' + pz;
+      else out.push(pz);
+    });
+    return out;
+  }).map(nominalizarUnaClausulaES).filter(Boolean);
+  if (!partes.length) return texto;
+  return partes.map((pz, idx) => idx === 0 ? pz : pz.charAt(0).toLowerCase() + pz.slice(1)).join('; ');
 }
 
 function vinetaDesdeEvidencia(evidencia, enIngles) {
@@ -948,22 +1011,14 @@ function vinetaDesdeEvidencia(evidencia, enIngles) {
     const resto = partes.slice(1);
     const cifras = resto.filter(x => /\d/.test(x));
     const otras = resto.filter(x => !/\d/.test(x));
-    t = base + (otras.length ? ', ' + otras.join(', ') : '') + (cifras.length ? ' (' + cifras.join('; ') + ')' : '');
+    t = base + (otras.length ? '; ' + otras.join('; ') : '') + (cifras.length ? ' (' + cifras.join('; ') + ')' : '');
   }
   if (enIngles) {
     t = limpiarEvidenciaEN(t);
   } else {
     t = t.replace(/\b(mi|mis)\b\s*/gi, '').replace(/\s{2,}/g, ' ').trim();
-    if (RE_ENCARGO_ES.test(t)) t = 'Encargado de ' + t.replace(RE_ENCARGO_ES, '');
-    else if (RE_VERBO_APOYO_ES.test(t)) {
-      const resto = nominalizarInfinitivosES(t.replace(RE_VERBO_APOYO_ES, ''));
-      t = 'Apoyo en ' + resto.charAt(0).toLowerCase() + resto.slice(1);
-    }
-    else {
-      const antes = t;
-      t = nominalizarPrimeraPersonaES(t);
-      if (t === antes) t = nominalizarInfinitivosES(t);
-    }
+    // v11.5 (M1): la evidencia compuesta se nominaliza CLÁUSULA a cláusula.
+    t = nominalizarClausulasES(t);
   }
   if (t.split(/\s+/).length < 2) return '';
   t = t.charAt(0).toUpperCase() + t.slice(1);
@@ -979,25 +1034,13 @@ function vinetaDesdeEvidencia(evidencia, enIngles) {
 // Comprobación estricta: cada palabra significativa de la cláusula (≥5
 // letras, no conector/stopword/contexto tolerado, no verbo) debe tener raíz
 // en el ámbito del puesto — SIN tolerancia de clúster de oficio.
-const RE_MARCADOR_CLAUSULA = /(,\s+\S+(?:ando|iendo|ing)\b|\s+\S+(?:ando|iendo)\b|,\s+\S+ing\b|\s+(?:para|to|in order to|con el fin de|a fin de|como parte de|as part of|while|mientras|ensuring|helping|supporting)\s+)/i;
+const RE_MARCADOR_CLAUSULA = /(,\s+\S+(?:ando|iendo|ing)\b|\s+\S+(?:ando|iendo)\b|,\s+\S+ing\b|\s+(?:para|to|for|in order to|con el fin de|a fin de|como parte de|as part of|while|mientras|ensuring|helping|supporting)\s+)/i;
 function recortarClausulaSinFuente(texto, alcanceNorm) {
   const palabrasTexto = texto.trim().split(/\s+/);
-  if (palabrasTexto.length < 5) return { texto, recortado: false, clausula: '' };
-  // buscar el marcador más temprano que NO sea la primera palabra
-  let idx = -1, marcador = '';
-  const re = new RegExp(RE_MARCADOR_CLAUSULA.source, 'gi');
-  let m;
-  while ((m = re.exec(texto)) !== null) {
-    if (m.index === 0) continue;
-    const previo = texto.slice(0, m.index).trim();
-    if (previo.split(/\s+/).length < 2) continue;
-    idx = m.index; marcador = m[0]; break;
-  }
-  if (idx < 0) return { texto, recortado: false, clausula: '' };
-  const clausula = texto.slice(idx);
-  const palabras = clausula.split(/\s+/).map(w => w.replace(/^[^a-zA-Z0-9ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖòóôõöÙÚÛÜùúûüÑñ]+|[^a-zA-Z0-9ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖòóôõöÙÚÛÜùúûüÑñ]+$/g, '')).filter(Boolean);
-  const sinFuente = palabras.filter(w => {
-    if (/\d/.test(w)) return false;
+  if (palabrasTexto.length < 4) return { texto, recortado: false, clausula: '' };
+  const limpiarPal = (w) => w.replace(/^[^a-zA-Z0-9ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖòóôõöÙÚÛÜùúûüÑñ]+|[^a-zA-Z0-9ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖòóôõöÙÚÛÜùúûüÑñ]+$/g, '');
+  const sinFuentePalabra = (w) => {
+    if (!w || /\d/.test(w)) return false;
     if (/^[A-Z]{2,}$/.test(w)) return false; // siglas: ya cubiertas por el paso (ii)
     const norm = normalizar(w);
     if (norm.length < 5) return false;
@@ -1006,12 +1049,36 @@ function recortarClausulaSinFuente(texto, alcanceNorm) {
     if (alcanceNorm.includes(norm.slice(0, RAIZ_LEN))) return false;
     if (familiaCubierta(norm, alcanceNorm)) return false;
     return true;
-  });
-  if (!sinFuente.length) return { texto, recortado: false, clausula: '' };
+  };
+  // marcadores (posición en el texto), nunca en la primera palabra
+  const marcadores = [];
+  const re = new RegExp(RE_MARCADOR_CLAUSULA.source, 'gi');
+  let m;
+  while ((m = re.exec(texto)) !== null) {
+    if (m.index === 0) continue;
+    if (texto.slice(0, m.index).trim().split(/\s+/).length < 2) continue;
+    marcadores.push(m.index);
+  }
+  if (!marcadores.length) return { texto, recortado: false, clausula: '' };
+  // primera palabra sin fuente que esté DESPUÉS del primer marcador
+  const primerMarcador = marcadores[0];
+  let posSinFuente = -1;
+  const reW = /\S+/g;
+  let w;
+  while ((w = reW.exec(texto)) !== null) {
+    if (w.index < primerMarcador) continue;
+    if (sinFuentePalabra(limpiarPal(w[0]))) { posSinFuente = w.index; break; }
+  }
+  if (posSinFuente < 0) return { texto, recortado: false, clausula: '' };
+  // corte mínimo: el ÚLTIMO marcador anterior a esa palabra
+  const idx = marcadores.filter(x => x < posSinFuente).pop();
+  if (idx === undefined) return { texto, recortado: false, clausula: '' };
+  const clausula = texto.slice(idx);
+  const tokens = clausula.split(/\s+/).map(limpiarPal).filter(sinFuentePalabra);
   let resto = texto.slice(0, idx).trim().replace(/[,;:\s]+$/, '');
   if (resto.split(/\s+/).length < 2) return { texto, recortado: false, clausula: '' };
   if (!/[.!?]$/.test(resto)) resto += '.';
-  return { texto: resto, recortado: true, clausula: clausula.trim(), tokens: sinFuente };
+  return { texto: resto, recortado: true, clausula: clausula.trim(), tokens };
 }
 
 // v4.1 (hallazgo 1): una habilidad con palabra capitalizada no declarada
@@ -1262,7 +1329,10 @@ export function validarCV(cv, datos) {
     // se elimina oración por oración, no palabra por palabra.
     const sinTokens = limpiarTokensSinFuenteEnParrafo(sinAnios.texto, datosNorm);
     if (sinTokens.recortado) correcciones.push('perfil: eliminada oración con término sin fuente en datos');
-    out.perfil = sinTokens.texto;
+    // v11.2 (E4): oraciones de opinión/negativas ("Los clientes regresan.") no van en el perfil.
+    const oracionesAptas = sinTokens.texto.split(/(?<=[.!?])\s+/).filter(o => o.trim() && !RE_EVIDENCIA_NO_APTA.test(o));
+    if (oracionesAptas.join(' ').trim() !== sinTokens.texto.trim()) correcciones.push('perfil: eliminada oración de opinión/negativa');
+    out.perfil = oracionesAptas.join(' ').trim();
     if (!out.perfil || !out.perfil.trim()) {
       out.perfil = perfilFallback(datos, out, out.lang === 'en');
       correcciones.push('perfil: reconstruido determinísticamente (quedó vacío tras la validación)');
@@ -1473,6 +1543,16 @@ export function validarCV(cv, datos) {
           vinetasFiltradas.push({ texto: literal, evidencia: evidenciaUsable, degradada: true });
         };
         if (evidenciaParcial) return degradar('evidencia_parcialmente_literal', ['evidencia_parcial']);
+        // v11.3 (E4): si TODOS los fragmentos de la evidencia son opinión/negativos
+        // ("los clientes regresan"), no respaldan ningún hecho → viñeta fuera.
+        {
+          const frags = String(evidenciaOriginal).split(/\s*[;|]\s*/).map(x => x.trim()).filter(Boolean);
+          if (frags.length && frags.every(f => RE_EVIDENCIA_NO_APTA.test(f))) {
+            correcciones.push(`experiencia[${i}].vinetas[${j}]: viñeta_eliminada — motivo=evidencia_no_apta (opinión/negativa), evidencia="${evidenciaOriginal}"`);
+            tokensRechazadosPuesto.push('evidencia_no_apta');
+            return;
+          }
+        }
 
         // v11 (patrón 3): cláusula final de gerundio/finalidad sin fuente → recorte.
         {
@@ -1480,6 +1560,20 @@ export function validarCV(cv, datos) {
           if (rCl.recortado) {
             correcciones.push(`experiencia[${i}].vinetas[${j}]: clausula_recortada — "${rCl.clausula}" (sin fuente: ${rCl.tokens.join(', ')})`);
             b = rCl.texto;
+          }
+        }
+
+        // v11.4 (M1, N4): inflación de rol. Si la evidencia dice "ayudaba/apoyaba/
+        // assisted/helped/did", la viñeta no puede empezar con un verbo de rol
+        // superior ("Realizó", "Preparó", "Oversaw", "Led") → se degrada a la
+        // evidencia ("Apoyo en …"). Hecho ≠ nivel de responsabilidad.
+        {
+          const evNorm = normalizar(evidenciaUsable);
+          const primeraB = normalizar(b.split(/\s+/)[0]).replace(/[^a-z]/g, '');
+          const esApoyo = RE_EVIDENCIA_APOYO.test(evNorm);
+          const esHacer = RE_EVIDENCIA_HACER.test(evNorm);
+          if ((esApoyo && !RE_VERBO_APOYO_OK.test(primeraB)) || (esHacer && RE_VERBO_ROL_SUPERIOR.test(primeraB))) {
+            return degradar('verbo_inflado', [b.split(/\s+/)[0]]);
           }
         }
 
@@ -1510,6 +1604,23 @@ export function validarCV(cv, datos) {
         const rTok = tokensSinFuenteEnUnidad(b, fuentePuestoNorm, { raices: raicesPuesto });
         if (rTok.sinFuente) return degradar('token_sin_fuente', rTok.tokens);
 
+        // v11.3 (N2/N5): en inglés, viñeta que arranca en forma base ("Install…",
+        // "Troubleshoot…", "Manage…") → pasado, para no mezclar tiempos con las
+        // demás ("Handled…"). Tabla cerrada; lo que no está en la tabla no se toca.
+        if (out.lang === 'en') {
+          const pal = b.split(/\s+/);
+          const clave = normalizar(pal[0]).replace(/[^a-z]/g, '');
+          if (VERBO_EN_PASADO[clave] && VERBO_EN_PASADO[clave].toLowerCase() !== clave) {
+            pal[0] = VERBO_EN_PASADO[clave];
+            // "Install and commission…" → "Installed and commissioned…" (solo si la 2.ª también es verbo de la tabla)
+            if (pal[1] && /^(and|&)$/i.test(pal[1]) && pal[2]) {
+              const c2 = normalizar(pal[2]).replace(/[^a-z]/g, '');
+              if (VERBO_EN_PASADO[c2]) pal[2] = VERBO_EN_PASADO[c2].toLowerCase();
+            }
+            b = pal.join(' ');
+            correcciones.push(`experiencia[${i}].vinetas[${j}]: verbo_en_pasado — "${clave}" → "${pal[0]}"`);
+          }
+        }
         vinetasFiltradas.push({ texto: b, evidencia: evidenciaOriginal });
       });
       // v5.1 (prueba real N1): viñetas redundantes — si el texto normalizado
@@ -1598,6 +1709,21 @@ export function validarCV(cv, datos) {
   });
   out.experiencia = out.experiencia.filter((_, i) => !eliminarPuesto.has(i));
 
+  // v11.4 (E5): un rango de años en resumen_personal que ningún puesto del CV
+  // cubre indica un empleo descrito por el candidato que el modelo omitió
+  // ("trabajé 5 años como maestra en el Colegio X (2018-2023)"). Se reporta
+  // como error no corregible → generar-cv.ts reintenta pidiendo incluirlo.
+  {
+    const resumen = normalizar(datos.resumen_personal);
+    const rangos = [...resumen.matchAll(/\b((?:19|20)\d{2})\s*(?:-|–|—|a|al|to|hasta)\s*((?:19|20)\d{2})\b/g)];
+    const aniosCV = new Set(out.experiencia.flatMap(p => [p.inicio, p.fin].map(x => (x || '').slice(0, 4)).filter(Boolean)));
+    rangos.forEach(m => {
+      if (!aniosCV.has(m[1]) && !aniosCV.has(m[2])) {
+        errores.push(`experiencia_omitida_en_resumen: el resumen menciona un empleo ${m[1]}-${m[2]} que no aparece en el CV`);
+      }
+    });
+  }
+
   // ── 4. EDUCACIÓN ──
   out.educacion = Array.isArray(out.educacion) ? out.educacion : [];
   const estudiosNorm = normalizar(datos.estudios);
@@ -1619,6 +1745,12 @@ export function validarCV(cv, datos) {
     if (fechaEsFutura(e.anio)) {
       correcciones.push(`educacion[${i}].anio: fecha futura eliminada`);
       e.anio = null;
+    }
+    // v11.3 (B1): "en curso" solo si el candidato lo dijo ("estudiando", "2do año",
+    // "in progress", "currently"…); "some college, no degree" NO está en curso.
+    if (e.en_curso === true && !RE_EN_CURSO.test(String(datos.estudios || ''))) {
+      correcciones.push(`educacion[${i}].en_curso: true → false (sin marcador de estudio en curso en datos.estudios)`);
+      e.en_curso = false;
     }
     const wTitulo = palabrasSignificativas(e.titulo).concat(palabrasSignificativas(e.institucion));
     const overlap = wTitulo.some(w => estudiosNorm.includes(w));
@@ -1664,6 +1796,7 @@ export function validarCV(cv, datos) {
     // ("Microsoft Excel" → "Excel"; "SAP (nivel básico)" → "sistema SAP básico";
     // "Checkout Processing" sin segmento declarado → se elimina).
     const segmentos = segmentosHabilidadesDeclaradas(datos);
+    const idiomasCV = (Array.isArray(out.idiomas) ? out.idiomas : []).map(it => normalizar(it && it.idioma)).filter(x => x && x.length >= 4);
     const literalizar = (lista, ruta) => {
       const vistos = new Set();
       const out2 = [];
@@ -1675,10 +1808,28 @@ export function validarCV(cv, datos) {
             : `${ruta}: "${item}" eliminada (sin fuente: ${r.sinFuente.join(', ')})`);
         }
         if (!r.item) return;
-        const k = normalizar(r.item);
+        let item2 = r.item;
+        // v11.4 (E1): si el candidato calificó la habilidad ("excel basico") y el
+        // modelo la dejó sin calificar ("Excel"), se usa el segmento literal del
+        // candidato — quitar el nivel hace la afirmación MÁS fuerte de lo dicho.
+        {
+          const itemNorm = normalizar(item2);
+          const seg = segmentos.find(sg => {
+            const sgNorm = normalizar(sg);
+            return RE_NIVEL_HABILIDAD.test(sgNorm) && !RE_NIVEL_HABILIDAD.test(itemNorm)
+              && palabrasSignificativas(item2, 3).some(w => sgNorm.includes(w.slice(0, RAIZ_LEN)));
+          });
+          if (seg) { correcciones.push(`${ruta}: "${item2}" → literal "${seg}" (el candidato declaró un nivel)`); item2 = seg; }
+        }
+        // v11.4 (E5/N1): un idioma no es una habilidad técnica/blanda si ya está en idiomas.
+        if (idiomasCV.some(idm => idm && normalizar(item2).includes(idm))) {
+          correcciones.push(`${ruta}: "${item2}" eliminada (es un idioma, ya listado en Idiomas)`);
+          return;
+        }
+        const k = normalizar(item2);
         if (vistos.has(k)) return;
         vistos.add(k);
-        out2.push(r.item);
+        out2.push(item2);
       });
       return out2;
     };
@@ -1733,11 +1884,24 @@ export function validarCV(cv, datos) {
       out.extra = [];
     } else {
       const infoNorm = normalizar(infoExtra);
-      const filtrado = original.filter(x => {
+      // v11.5 (E3/E4): un ítem con palabras sin fuente ("registrados", "recurrentes")
+      // se sustituye por el texto literal del candidato; si ese literal es
+      // opinión/negativo, se descarta.
+      const literalExtra = infoExtra.charAt(0).toUpperCase() + infoExtra.slice(1).replace(/[.\s]+$/, '');
+      const vistosExtra = new Set();
+      const filtrado = original.map(x => {
         const w = palabrasSignificativas(x);
-        return w.length === 0 || w.some(word => infoNorm.includes(word));
-      });
-      if (filtrado.length < original.length) correcciones.push('extra: eliminado(s) ítem(s) sin solape con datos.info_extra');
+        const solapa = w.length === 0 || w.some(word => infoNorm.includes(word));
+        if (!solapa) { correcciones.push(`extra: "${x}" eliminado (sin solape con datos.info_extra)`); return null; }
+        const r = tokensSinFuenteEnUnidad(x, infoNorm, { incluirPrimera: true });
+        let y = x;
+        if (r.sinFuente) { correcciones.push(`extra: "${x}" → literal de info_extra (sin fuente: ${r.tokens.join(', ')})`); y = literalExtra; }
+        if (RE_EVIDENCIA_NO_APTA.test(y)) { correcciones.push(`extra: "${y}" eliminado (opinión/negativo)`); return null; }
+        const k = normalizar(y);
+        if (vistosExtra.has(k)) return null;
+        vistosExtra.add(k);
+        return y;
+      }).filter(Boolean);
       out.extra = filtrado;
     }
   }

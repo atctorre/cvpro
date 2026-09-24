@@ -24,4 +24,4 @@ Cada deploy reemplaza el conjunto completo de archivos. Si falta uno o va vacío
 6. Regresión con `tests/personas.json` contra producción y guardar `FASE3_REGRESION_vN.md`.
 
 ## Historial de versiones Edge ↔ código
-- Edge v17 = código v11.6 · Edge v18 = v11.7 · Edge v19/v20 = ROTOS (no usar) · Edge v21 = código v19 (v11.8).
+- Edge v17 = código v11.6 · Edge v18 = v11.7 · Edge v19/v20 = ROTOS (no usar) · Edge v21 = código v19 (v11.8) · Edge v22 = código v20 (v11.9).

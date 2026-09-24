@@ -1184,9 +1184,10 @@ test('79. EN: viñeta en forma base → pasado ("Install and commission…" → 
   assert.ok(correcciones.some(c => c.includes('evidencia_no_apta')));
 });
 
-test('80. listarNatural: "Git e inglés" (no "y inglés")', () => {
-  const { cv: out } = validarCV(cvBase({ perfil: 'Perfil de relleno sin fuente xyzzy.' }), { puesto: 'Desarrolladora', habilidades_tecnicas: 'HTML, Git, inglés' });
-  assert.ok(out.perfil.includes('Git e inglés'), out.perfil);
+test('80. listarNatural: "Git e Illustrator" (no "y Illustrator"); v20: el idioma NO entra en el perfil de respaldo', () => {
+  const { cv: out } = validarCV(cvBase({ perfil: 'Perfil de relleno sin fuente xyzzy.' }), { puesto: 'Desarrolladora', habilidades_tecnicas: 'HTML, Git, Illustrator, inglés' });
+  assert.ok(out.perfil.includes('Git e Illustrator'), out.perfil);
+  assert.ok(!/ingl[eé]s/i.test(out.perfil), out.perfil);
 });
 
 
@@ -1337,6 +1338,55 @@ test('94. Perfil fallback: "Freelance" no es empresa; empresa en minúscula se c
 });
 
 // ────────────────────────────── Resumen ──────────────────────────────
+// ── v20 (v11.9) ─────────────────────────────────────────────────────────────
+test('96. v20 (N1): perfil de respaldo sin idiomas ("spanish basic" fuera; "cash register" dentro)', () => {
+  const { cv: out } = validarCV(cvBase({ lang: 'en', perfil: 'Filler without source qwzx.' }), { puesto: 'Retail Sales Associate', habilidades_tecnicas: 'cash register, customer service, spanish basic', idiomas_nivel: 'english, spanish basic' });
+  assert.ok(/cash register/.test(out.perfil), out.perfil);
+  assert.ok(!/spanish/i.test(out.perfil), out.perfil);
+});
+
+test('97. v20 (J1/N3/E3): colas de relleno con acentos y nuevas ("en las intervenciones eléctricas", "across daily operations", "for the warehouse team", "bajo su responsabilidad") se recortan; una cola escrita por el candidato se conserva', () => {
+  const datosJ = { puesto: 'Electricista', exp1: 'Electrosur - Electricista - 2019 a la fecha', logros1: 'uso multimetro y pinza amperimetrica; coordino subcontratistas' };
+  const cvJ = cvBase({ experiencia: [{ cargo: 'Electricista', empresa: 'Electrosur', ubicacion: null, inicio: '2019', fin: null, actual: true, sin_funciones: false, vinetas: [
+    { texto: 'Utiliza multímetro y pinza amperimétrica en las intervenciones eléctricas.', evidencia: 'uso multimetro y pinza amperimetrica' },
+    { texto: 'Coordina subcontratistas en las obras bajo su responsabilidad.', evidencia: 'coordino subcontratistas' },
+  ] }] });
+  const rJ = validarCV(cvJ, datosJ);
+  assert.equal(rJ.cv.experiencia[0].vinetas[0].texto, 'Utiliza multímetro y pinza amperimétrica.');
+  assert.equal(rJ.cv.experiencia[0].vinetas[1].texto, 'Coordina subcontratistas.');
+  const datosN = { puesto: 'Operations Manager', exp1: 'FastShip Logistics - Operations Supervisor - 2020 to present', logros1: 'supervised a 40-person warehouse shift; own safety training; trained the warehouse team on safety' };
+  const cvN = cvBase({ lang: 'en', experiencia: [{ cargo: 'Operations Supervisor', empresa: 'FastShip Logistics', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false, vinetas: [
+    { texto: 'Supervised a 40-person warehouse shift across daily operations.', evidencia: 'supervised a 40-person warehouse shift' },
+    { texto: 'Owned safety training for the warehouse team.', evidencia: 'own safety training' },
+    { texto: 'Trained the warehouse team on safety.', evidencia: 'trained the warehouse team on safety' },
+  ] }] });
+  const rN = validarCV(cvN, datosN);
+  assert.equal(rN.cv.experiencia[0].vinetas[0].texto, 'Supervised a 40-person warehouse shift.');
+  assert.equal(rN.cv.experiencia[0].vinetas[1].texto, 'Owned safety training.');
+  assert.equal(rN.cv.experiencia[0].vinetas[2].texto, 'Trained the warehouse team on safety.', 'la cola la escribió el candidato → se conserva');
+});
+
+test('98. v20 (E2): un único participio sin fuente al final ("…ventas realizadas") se recorta y la viñeta sobrevive', () => {
+  const datos = { puesto: 'Cajera', exp1: 'Tienda de ropa - Vendedora - 2019 a 2021', logros1: 'atender clientes, arreglar la tienda, cobrar' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Vendedora', empresa: 'Tienda de ropa', ubicacion: null, inicio: '2019', fin: '2021', actual: false, sin_funciones: false, vinetas: [
+    { texto: 'Realizó el cobro a los clientes de las ventas realizadas.', evidencia: 'cobrar' },
+  ] }] });
+  const r = validarCV(cv, datos);
+  assert.equal(r.cv.experiencia[0].vinetas.length, 1, JSON.stringify(r.correcciones));
+  assert.ok(!/realizadas/.test(r.cv.experiencia[0].vinetas[0].texto), r.cv.experiencia[0].vinetas[0].texto);
+  assert.ok(r.correcciones.some(c => /participio_sin_fuente_recortado/.test(c)), JSON.stringify(r.correcciones));
+});
+
+test('99. v20 (E1): nivel declarado en habilidades se conserva en el perfil ("Excel" → "Excel (básico)"; EN "basic")', () => {
+  const r = validarCV(cvBase({ perfil: 'Practicante con experiencia en archivo. Maneja Word y Excel.' }), { puesto: 'Asistente', exp1: 'Alcaldía - Practicante', logros1: 'archivo de documentos', habilidades_tecnicas: 'word, excel basico' });
+  assert.ok(/Excel \(básico\)/.test(r.cv.perfil), r.cv.perfil);
+  assert.ok(!/Word \(/.test(r.cv.perfil), r.cv.perfil);
+  const rEn = validarCV(cvBase({ lang: 'en', perfil: 'Associate with experience at Target. Uses Excel and Word.' }), { puesto: 'Associate', exp1: 'Target - Associate', logros1: 'stocked shelves', habilidades_tecnicas: 'excel basic, word' });
+  assert.ok(/Excel \(basic\)/.test(rEn.cv.perfil), rEn.cv.perfil);
+  const rYa = validarCV(cvBase({ perfil: 'Practicante. Maneja Excel básico.' }), { puesto: 'Asistente', exp1: 'Alcaldía - Practicante', logros1: 'archivo', habilidades_tecnicas: 'excel basico' });
+  assert.ok(!/\(básico\)/.test(rYa.cv.perfil), 'si ya está el nivel no se duplica: ' + rYa.cv.perfil);
+});
+
 console.log('\n──────────────────────────────');
 console.log(`Total: ${pasados + fallidos} · Pasados: ${pasados} · Fallidos: ${fallidos}`);
 if (fallidos > 0) {
@@ -1344,3 +1394,4 @@ if (fallidos > 0) {
   fallos.forEach(f => console.log(` - ${f.nombre}: ${f.error}`));
   process.exit(1);
 }
+

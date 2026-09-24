@@ -276,6 +276,8 @@ const RE_NEGACION_LINEA = /^(nada( m[aá]s)?|eso es todo|eso ser[ií]a todo|ning
 // Palabras de título/grado reconocibles — un segmento de `datos.estudios`
 // solo cuenta como "titulación declarada" para la heurística de
 // `educacion_incompleta` si contiene alguna de estas.
+// v20 (N1): idioma escrito como habilidad ("spanish basic", "inglés", "english b2").
+const RE_IDIOMA_EN_SKILL = /^(espa[nñ]ol|spanish|ingl[eé]s|english|franc[eé]s|french|portugu[eé]s|portuguese|alem[aá]n|german|italiano|italian|chino|mandarin|chinese|japon[eé]s|japanese|[aá]rabe|arabic)\b/i;
 const RE_NIVEL_HABILIDAD = /\b(basico|basica|intermedio|intermedia|avanzado|avanzada|basic|intermediate|advanced|nivel|level)\b/;
 const RE_EN_CURSO = /\b(en curso|estudiando|cursando|actualmente|estoy en|voy en|\d+(?:º|°|do|er|to|mo)?\s*a[nñ]o|semestre|ciclo|in progress|currently|pursuing|ongoing|enrolled|attending|expected|sophomore|junior year|senior year|freshman)\b/i;
 const RE_TITULACION = /\b(licenciatura|ingenier[ií]a|t[eé]cnic[oa]|bachillerato|maestr[ií]a|doctorado|diplomado|diploma|certificad[oa]|degree|bachelor|master|ph\.?d|associate|certificate|bootcamp|carrera|posgrado|postgrado)\b/i;
@@ -779,7 +781,9 @@ function perfilFallback(datos, out, enIngles) {
     .map(s => s.trim().replace(/\.$/, ''))
     .filter(s => s && !/^(no|none|ninguna|ninguno|n\/a|nada|nada m[aá]s|eso es todo|listo|nothing|nothing else|that'?s all|done)$/i.test(s))
     // v11.4 (J1): adjetivos/blandas ("responsable", "ordenado", "patient with customers") no van en "Manejo de…"
-    .filter(s => !/^(responsable|puntual|ordenad[oa]|honest[oa]|proactiv[oa]|amable|paciente|comprometid[oa]|trabajador[a]?|reliable|punctual|organized|honest|patient|hardworking|hard-working|team player|friendly|dedicated)\b/i.test(s));
+    .filter(s => !/^(responsable|puntual|ordenad[oa]|honest[oa]|proactiv[oa]|amable|paciente|comprometid[oa]|trabajador[a]?|reliable|punctual|organized|honest|patient|hardworking|hard-working|team player|friendly|dedicated)\b/i.test(s))
+    // v20 (N1): los idiomas ("spanish basic", "inglés intermedio") ya van en Idiomas, no en el perfil.
+    .filter(s => !RE_IDIOMA_EN_SKILL.test(s));
   const partes = [];
   if (puestos.length) {
     partes.push(enIngles
@@ -921,7 +925,9 @@ const RE_EVIDENCIA_APOYO = /^(solo\s+|only\s+|just\s+)?(apoyaba|apoyo|apoye|ayud
 const RE_EVIDENCIA_HACER = /^(solo\s+|only\s+|just\s+)?(hacia|hice|hago|did|do|made|make)\b/;
 const RE_VERBO_APOYO_OK = /^(apoyo|apoya|apoyaba|apoye|apoyó|ayudo|ayuda|ayudaba|ayude|ayudó|colaboro|colabora|colaboró|colaboraba|asistio|asiste|asistió|asistia|brindo|brinda|brindó|assisted|assists|helped|helps|supported|supports|aided|contributed|contributes|participated|participates|participo|participa|participó)$/;
 const RE_VERBO_ROL_SUPERIOR = /^(oversaw|oversee|led|lead|managed|manage|supervised|supervise|directed|direct|headed|spearheaded|owned|dirigio|dirigió|lidero|lideró|superviso|supervisó|gestiono|gestionó|encabezo|encabezó|coordino|coordinó)$/;
-const RE_COLA_RELLENO = /,?\s+(durante\s+(su|la|el)\s+(estad[ií]a|jornada|turno)(\s+en\s+(el|la)\s+\w+)?|como parte de (sus|las|los)\s+(funciones|tareas|labores|responsabilidades|operaciones)(\s+\w+){0,3}|en (las|los)\s+(intervenciones|labores|tareas|operaciones)(\s+\w+){0,2}|en el (d[ií]a a d[ií]a|desempe[ñn]o de sus funciones)|throughout (the|each|every)\s+\w+(\s+\w+)?|across the\s+\w+(\s+floor)?|as part of (daily|regular|routine|store|shift)\s+\w+|on a daily basis|during (each|every|the)\s+shift)\s*(?=[.,;]|$)/gi;
+// v20: `\w` no cubre acentos ("en las intervenciones eléctricas" no se recortaba, J1);
+// nuevas colas (N3 "across daily operations", "for the warehouse team"; E3 "bajo su responsabilidad").
+const RE_COLA_RELLENO = /,?\s+(durante\s+(su|la|el)\s+(estad[ií]a|jornada|turno)(\s+en\s+(el|la)\s+[\wáéíóúñ]+)?|como parte de (sus|las|los)\s+(funciones|tareas|labores|responsabilidades|operaciones)(\s+[\wáéíóúñ]+){0,3}|en (las|los)\s+(intervenciones|labores|tareas|operaciones)(\s+[\wáéíóúñ]+){0,2}|en el (d[ií]a a d[ií]a|desempe[ñn]o de sus funciones)|bajo su (responsabilidad|cargo|supervisi[oó]n)|en (las|los) (obras|proyectos|tareas) bajo su (responsabilidad|cargo)|throughout (the|each|every)\s+\w+(\s+\w+)?|across (the\s+)?(daily\s+|warehouse\s+|store\s+|all\s+)?(\w+\s+)?(operations|floor|shifts?)|as part of (daily|regular|routine|store|shift)\s+\w+|on a daily basis|during (each|every|the)\s+shift|for the (warehouse|store|whole|entire|sales|kitchen)\s+(team|staff|crew))\s*(?=[.,;]|$)/gi;
 const RE_MANDO_EN_AMBITO = /\b(coordin\w*|lider\w*|dirig\w*|supervis\w*|gestion\w*|encabez\w*|a cargo|jefe|jefa|encargad[oa]|responsable de|lead|led|leading|manag\w*|oversee|oversaw|overseeing|supervis\w*|direct\w*|head\w*|in charge)\b/;
 const RE_MINIMIZADOR = /^(solo|sólo|solamente|nada mas|básicamente|basicamente|normalmente|generalmente|a veces|only|just|typically|usually|mostly|mainly|basically|generally|sometimes|also|también|tambien)\s+/i;
 
@@ -1341,6 +1347,23 @@ export function validarCV(cv, datos) {
     const oracionesAptas = sinTokens.texto.split(/(?<=[.!?])\s+/).filter(o => o.trim() && !RE_EVIDENCIA_NO_APTA.test(o));
     if (oracionesAptas.join(' ').trim() !== sinTokens.texto.trim()) correcciones.push('perfil: eliminada oración de opinión/negativa');
     out.perfil = oracionesAptas.join(' ').trim();
+    // v20 (E1): si el candidato calificó una herramienta con nivel ("excel basico") y el perfil la
+    // nombra sin ese nivel, se añade entre paréntesis — el nivel es un hecho declarado, no adorno.
+    {
+      const conNivel = String(datos.habilidades_tecnicas || '').split(/[,;\n]+|\s+y\s+|\s+and\s+/i).map(x => x.trim()).filter(x => x && RE_NIVEL_HABILIDAD.test(normalizar(x)));
+      conNivel.forEach(item => {
+        const partesItem = item.split(/\s+/);
+        const nivelTok = partesItem.find(w => RE_NIVEL_HABILIDAD.test(normalizar(w)));
+        const herramienta = partesItem.filter(w => !RE_NIVEL_HABILIDAD.test(normalizar(w)) && !/^(nivel|level|de|en|in)$/i.test(w)).join(' ');
+        if (!nivelTok || herramienta.length < 3) return;
+        const reH = new RegExp('\\b(' + herramienta.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')\\b(?![^.]{0,3}\\s*\\(?\\s*' + nivelTok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'i');
+        if (reH.test(out.perfil) && !normalizar(out.perfil).includes(normalizar(nivelTok))) {
+          const nivelTxt = out.lang === 'en' ? nivelTok.toLowerCase() : nivelTok.toLowerCase().replace(/^basico$/, 'básico').replace(/^basica$/, 'básica');
+          out.perfil = out.perfil.replace(reH, `$1 (${nivelTxt})`);
+          correcciones.push(`perfil: nivel declarado conservado — "${herramienta} (${nivelTxt})"`);
+        }
+      });
+    }
     if (!out.perfil || !out.perfil.trim()) {
       out.perfil = perfilFallback(datos, out, out.lang === 'en');
       correcciones.push('perfil: reconstruido determinísticamente (quedó vacío tras la validación)');
@@ -1610,7 +1633,8 @@ export function validarCV(cv, datos) {
         // "across the store floor", "en las intervenciones eléctricas") → fuera.
         {
           const antes = b;
-          b = b.replace(RE_COLA_RELLENO, '').replace(/\s+([.,;])/g, '$1').trim();
+          // v20: si el candidato escribió esa misma cola en su respuesta, no es relleno del modelo.
+          b = b.replace(RE_COLA_RELLENO, (m) => (fuentePuestoNorm.includes(normalizar(m).replace(/^,?\s*/, '')) ? m : '')).replace(/\s+([.,;])/g, '$1').trim();
           if (b !== antes) {
             if (!/[.!?]$/.test(b)) b += '.';
             if (b.split(/\s+/).length < 2) b = antes; else correcciones.push(`experiencia[${i}].vinetas[${j}]: cola_relleno_recortada`);
@@ -1656,7 +1680,23 @@ export function validarCV(cv, datos) {
         // evidencia citada: mezclar dos frases del mismo puesto no inventa
         // nada. La evidencia sigue siendo obligatoria y literal (paso 0).
         // Además se toleran las raíces de clúster del oficio (lexico.mjs).
-        const rTok = tokensSinFuenteEnUnidad(b, fuentePuestoNorm, { raices: raicesPuesto });
+        let rTok = tokensSinFuenteEnUnidad(b, fuentePuestoNorm, { raices: raicesPuesto });
+        // v20 (E2): si el ÚNICO token sin fuente es un participio/adjetivo calificativo al final
+        // de la viñeta ("…ventas realizadas", "…tasks completed"), se quita esa palabra y se
+        // conserva el hecho, en vez de perder la viñeta entera.
+        if (rTok.sinFuente && rTok.tokens.length === 1) {
+          const tk = rTok.tokens[0].replace(/[.,;:]+$/, '');
+          const esParticipio = /(ad[oa]s?|id[oa]s?|ed)$/i.test(tk) && b.split(/\s+/).length >= 4 && !new RegExp('^' + tk).test(b);
+          if (esParticipio) {
+            const b2 = b.replace(new RegExp('\\s+' + tk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[\\s.,;:]|$)'), '').replace(/\s+([.,;])/g, '$1').trim();
+            const r2 = tokensSinFuenteEnUnidad(b2, fuentePuestoNorm, { raices: raicesPuesto });
+            if (!r2.sinFuente && b2.split(/\s+/).length >= 3) {
+              correcciones.push(`experiencia[${i}].vinetas[${j}]: participio_sin_fuente_recortado — "${tk}"`);
+              b = /[.!?]$/.test(b2) ? b2 : b2 + '.';
+              rTok = r2;
+            }
+          }
+        }
         if (rTok.sinFuente) return degradar('token_sin_fuente', rTok.tokens);
 
         // v11.3 (N2/N5): en inglés, viñeta que arranca en forma base ("Install…",

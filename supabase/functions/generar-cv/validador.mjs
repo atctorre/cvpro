@@ -764,9 +764,14 @@ function perfilFallback(datos, out, enIngles) {
       const mismoCargo = normalizar(p.cargo) === normalizar(titulo)
         || (wCargo.length > 0 && wTitulo.length > 0
           && (wCargo.every(w => wTitulo.includes(w)) || wTitulo.every(w => wCargo.includes(w))));
+      // v19: "Freelance/independiente" no es una empresa → "experiencia freelance como X";
+      // nombres de empresa en minúscula ("taller hermanos flores") → Title Case.
+      const esFreelance = /^(freelance|freelancer|independiente|por cuenta propia|self[- ]employed|autonom[oa])$/i.test(String(p.empresa || '').trim());
+      const empresaTxt = (String(p.empresa || '').length > 1 && !/[A-ZÁÉÍÓÚÑ]/.test(String(p.empresa).slice(1))) ? capitalizarNombre(p.empresa, true) : p.empresa;
+      if (esFreelance) return mismoCargo ? 'freelance' : (enIngles ? `as a freelance ${p.cargo}` : `freelance como ${p.cargo}`);
       if (!p.empresa) return mismoCargo ? null : (enIngles ? `as ${p.cargo}` : `como ${p.cargo}`);
-      if (mismoCargo) return enIngles ? `at ${p.empresa}` : `en ${p.empresa}`;
-      return enIngles ? `as ${p.cargo} at ${p.empresa}` : `como ${p.cargo} en ${p.empresa}`;
+      if (mismoCargo) return enIngles ? `at ${empresaTxt}` : `en ${empresaTxt}`;
+      return enIngles ? `as ${p.cargo} at ${empresaTxt}` : `como ${p.cargo} en ${empresaTxt}`;
     })
     .filter(Boolean);
   const habilidades = String(datos.habilidades_tecnicas || '')
@@ -916,6 +921,8 @@ const RE_EVIDENCIA_APOYO = /^(solo\s+|only\s+|just\s+)?(apoyaba|apoyo|apoye|ayud
 const RE_EVIDENCIA_HACER = /^(solo\s+|only\s+|just\s+)?(hacia|hice|hago|did|do|made|make)\b/;
 const RE_VERBO_APOYO_OK = /^(apoyo|apoya|apoyaba|apoye|apoyó|ayudo|ayuda|ayudaba|ayude|ayudó|colaboro|colabora|colaboró|colaboraba|asistio|asiste|asistió|asistia|brindo|brinda|brindó|assisted|assists|helped|helps|supported|supports|aided|contributed|contributes|participated|participates|participo|participa|participó)$/;
 const RE_VERBO_ROL_SUPERIOR = /^(oversaw|oversee|led|lead|managed|manage|supervised|supervise|directed|direct|headed|spearheaded|owned|dirigio|dirigió|lidero|lideró|superviso|supervisó|gestiono|gestionó|encabezo|encabezó|coordino|coordinó)$/;
+const RE_COLA_RELLENO = /,?\s+(durante\s+(su|la|el)\s+(estad[ií]a|jornada|turno)(\s+en\s+(el|la)\s+\w+)?|como parte de (sus|las|los)\s+(funciones|tareas|labores|responsabilidades|operaciones)(\s+\w+){0,3}|en (las|los)\s+(intervenciones|labores|tareas|operaciones)(\s+\w+){0,2}|en el (d[ií]a a d[ií]a|desempe[ñn]o de sus funciones)|throughout (the|each|every)\s+\w+(\s+\w+)?|across the\s+\w+(\s+floor)?|as part of (daily|regular|routine|store|shift)\s+\w+|on a daily basis|during (each|every|the)\s+shift)\s*(?=[.,;]|$)/gi;
+const RE_MANDO_EN_AMBITO = /\b(coordin\w*|lider\w*|dirig\w*|supervis\w*|gestion\w*|encabez\w*|a cargo|jefe|jefa|encargad[oa]|responsable de|lead|led|leading|manag\w*|oversee|oversaw|overseeing|supervis\w*|direct\w*|head\w*|in charge)\b/;
 const RE_MINIMIZADOR = /^(solo|sólo|solamente|nada mas|básicamente|basicamente|normalmente|generalmente|a veces|only|just|typically|usually|mostly|mainly|basically|generally|sometimes|also|también|tambien)\s+/i;
 
 function nominalizarInfinitivosES(texto) {
@@ -1544,6 +1551,21 @@ export function validarCV(cv, datos) {
           vinetasFiltradas.push({ texto: literal, evidencia: evidenciaUsable, degradada: true });
         };
         if (evidenciaParcial) return degradar('evidencia_parcialmente_literal', ['evidencia_parcial']);
+        // v11.7 (E2 v17): una viñeta cuya evidencia es el propio encabezado del
+        // puesto ("cajera en super selectos desde 2022" → "Ejerce funciones de
+        // cajera.") no aporta contenido → fuera, se haya degradado o no.
+        {
+          const evN = normalizar(evidenciaOriginal);
+          const partesEnc = [puesto.cargo, puesto.empresa].filter(Boolean).map(normalizar).filter(x => x.length >= 4);
+          const expN = normalizar(i === 0 ? datos.exp1 : datos.exp2);
+          const esEncabezado = (partesEnc.length > 0 && partesEnc.every(x => evN.includes(x)))
+            || (expN && normalizarLaxo(expN) === normalizarLaxo(evN));
+          if (esEncabezado) {
+            correcciones.push(`experiencia[${i}].vinetas[${j}]: viñeta_eliminada — motivo=evidencia_es_encabezado, evidencia="${evidenciaOriginal}"`);
+            tokensRechazadosPuesto.push('evidencia_es_encabezado');
+            return;
+          }
+        }
         // v11.3 (E4): si TODOS los fragmentos de la evidencia son opinión/negativos
         // ("los clientes regresan"), no respaldan ningún hecho → viñeta fuera.
         {
@@ -1556,6 +1578,21 @@ export function validarCV(cv, datos) {
         }
 
         // v11 (patrón 3): cláusula final de gerundio/finalidad sin fuente → recorte.
+        // v19 (E3): "…, coordinando un equipo de 35 personas" cuando el candidato
+        // solo dijo "equipo de 35 personas en obra" — un gerundio de MANDO
+        // (coordinando/liderando/dirigiendo/supervisando/gestionando/leading/
+        // managing/overseeing) solo se conserva si el ámbito trae un verbo de
+        // mando; si no, se recorta la cláusula y queda el hecho.
+        {
+          const mMando = b.match(/,?\s+\b(coordinando|liderando|dirigiendo|supervisando|gestionando|encabezando|leading|managing|overseeing|directing|supervising|coordinating|heading)\b[^.]*\.?$/i);
+          if (mMando && !RE_MANDO_EN_AMBITO.test(fuentePuestoNorm)) {
+            const resto = b.slice(0, mMando.index).trim().replace(/[,;:\s]+$/, '');
+            if (resto.split(/\s+/).length >= 3) {
+              correcciones.push(`experiencia[${i}].vinetas[${j}]: clausula_recortada — "${mMando[0].trim()}" (verbo de mando sin fuente)`);
+              b = /[.!?]$/.test(resto) ? resto : resto + '.';
+            }
+          }
+        }
         {
           const rCl = recortarClausulaSinFuente(b, fuentePuestoNorm);
           if (rCl.recortado) {
@@ -1568,6 +1605,17 @@ export function validarCV(cv, datos) {
         // assisted/helped/did", la viñeta no puede empezar con un verbo de rol
         // superior ("Realizó", "Preparó", "Oversaw", "Led") → se degrada a la
         // evidencia ("Apoyo en …"). Hecho ≠ nivel de responsabilidad.
+        // v19 (E2/N1/B1/J1): colas de relleno sin información ("durante su estadía
+        // en el local", "como parte de sus funciones", "throughout the store",
+        // "across the store floor", "en las intervenciones eléctricas") → fuera.
+        {
+          const antes = b;
+          b = b.replace(RE_COLA_RELLENO, '').replace(/\s+([.,;])/g, '$1').trim();
+          if (b !== antes) {
+            if (!/[.!?]$/.test(b)) b += '.';
+            if (b.split(/\s+/).length < 2) b = antes; else correcciones.push(`experiencia[${i}].vinetas[${j}]: cola_relleno_recortada`);
+          }
+        }
         {
           const evNorm = normalizar(evidenciaUsable);
           const primeraB = normalizar(b.split(/\s+/)[0]).replace(/[^a-z]/g, '');
@@ -1670,6 +1718,33 @@ export function validarCV(cv, datos) {
           else pierde = a.length >= b.length ? k : idx;
           perdedoras.add(pierde);
           correcciones.push(`experiencia[${i}].vinetas[${pierde}]: viñeta_eliminada — motivo=misma_evidencia_que_otra_viñeta`);
+        });
+      });
+      // v19 (E3/E4 en v17): duplicado SEMÁNTICO — dos viñetas cuyos sustantivos
+      // clave (≥5 letras, sin conectores/verbos/relleno) coinciden en ≥60 % y la
+      // más corta no aporta ningún sustantivo propio ("Supervisa la obra de un
+      // edificio de 6 niveles…" + "Supervisión de obra de un edificio de 6
+      // niveles y dos proyectos de vivienda" → se conserva la que aporta más).
+      const sustantivosClave = (t) => {
+        const pal = palabrasSignificativas(t, 5).map(w => w.replace(/[.,;:]+$/, ''));
+        return new Set(pal.slice(1).filter(w => w.length >= 5 && !CONECTORES.has(w) && !STOPWORDS_LARGAS.has(w) && !esRelleno(w) && !esVerboConjugado(w) && !CONTEXTO_TOLERADO.has(w)));
+      };
+      const claves = vinetasFiltradas.map(v => sustantivosClave(v.texto));
+      vinetasFiltradas.forEach((v, idx) => {
+        vinetasFiltradas.forEach((w, k) => {
+          if (k <= idx || perdedoras.has(idx) || perdedoras.has(k)) return;
+          const a = claves[idx], b = claves[k];
+          if (a.size < 2 || b.size < 2) return;
+          const [chica, grande, idxChica, idxGrande] = a.size <= b.size ? [a, b, idx, k] : [b, a, k, idx];
+          const comunes = [...chica].filter(x => grande.has(x)).length;
+          // una cifra propia (que la otra viñeta no tiene) es información nueva → no es duplicado
+          const nums = (t) => (t.match(/\d[\d.,]*/g) || []).map(n => n.replace(/[.,]+$/, ''));
+          const numsChica = nums(vinetasFiltradas[idxChica].texto), numsGrande = nums(vinetasFiltradas[idxGrande].texto);
+          const cifraPropia = numsChica.some(n => !numsGrande.includes(n));
+          if (!cifraPropia && comunes / chica.size >= 0.6 && comunes >= 2) {
+            perdedoras.add(idxChica);
+            correcciones.push(`experiencia[${i}].vinetas[${idxChica}]: viñeta_eliminada — motivo=duplicado_semantico (${comunes}/${chica.size} sustantivos en otra viñeta)`);
+          }
         });
       });
       puesto.vinetas = vinetasFiltradas.filter((v, idx) => {

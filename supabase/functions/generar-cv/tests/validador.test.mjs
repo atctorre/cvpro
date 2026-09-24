@@ -1106,7 +1106,7 @@ test('72. Viñeta degradada que repite el encabezado ("cajera en super selectos 
     vinetas: [vin('Opera caja registradora en el puesto de cajera.', 'cajera en super selectos desde 2022')] }] });
   const { cv: out, correcciones } = validarCV(cv, datos);
   assert.equal(out.experiencia[0].vinetas.length, 0);
-  assert.ok(correcciones.some(c => c.includes('evidencia_repite_encabezado')));
+  assert.ok(correcciones.some(c => c.includes('evidencia_repite_encabezado') || c.includes('evidencia_es_encabezado')));
 });
 
 test('73. Fragmento negativo/opinión de una evidencia compuesta se descarta, el resto se conserva (E3, E4)', () => {
@@ -1267,6 +1267,73 @@ test('89. Cláusula con cifra del candidato y relleno ("approximately") NO se re
   const { cv: out, correcciones } = validarCV(cv, datos);
   assert.equal(out.experiencia[0].vinetas[0].texto, 'Installed and commissioned residential furnaces and AC units, completing approximately 6 installations per week with no callbacks.');
   assert.ok(!correcciones.some(c => c.includes('clausula_recortada')), correcciones.join('\n'));
+});
+
+
+test('90. Viñeta cuya evidencia es el encabezado del puesto se elimina aunque pase los tokens ("Ejerce funciones de cajera.")', () => {
+  const datos = { puesto: 'Cajera', resumen_personal: 'cajera en super selectos desde 2022', exp1: 'Super Selectos - Cajera - 2022 a presente', logros1: 'solo cargo', exp2: 'no' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Cajera', empresa: 'Super Selectos', ubicacion: null, inicio: '2022', fin: null, actual: true, sin_funciones: false,
+    vinetas: [vin('Ejerce funciones de cajera.', 'cajera en super selectos desde 2022')] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas.length, 0);
+  assert.ok(correcciones.some(c => c.includes('evidencia_es_encabezado')));
+});
+
+
+// ══════════════ v19 ══════════════
+test('91. Duplicado semántico: viñeta cuyos sustantivos clave ya están en otra se elimina (E4); dos viñetas con hechos distintos se conservan (E3)', () => {
+  const datosE4 = { puesto: 'mecanico automotriz', exp1: 'taller X - mecanico - 2016 a presente', logros1: 'reparacion de motores, frenos, suspencion y diagnostico con escaner', exp2: 'no' };
+  const cvE4 = cvBase({ experiencia: [{ cargo: 'Mecanico', empresa: 'Taller X', ubicacion: null, inicio: '2016', fin: null, actual: true, sin_funciones: false,
+    vinetas: [
+      vin('Reparacion de motores, frenos, suspencion y diagnostico con escaner.', 'reparacion de motores, frenos, suspencion y diagnostico con escaner'),
+      vin('Realiza diagnóstico de vehículos mediante escáner para identificar fallas.', 'diagnostico con escaner'),
+    ] }] });
+  const { cv: a, correcciones } = validarCV(cvE4, datosE4);
+  assert.equal(a.experiencia[0].vinetas.length, 1, correcciones.join('\n'));
+  assert.ok(correcciones.some(c => c.includes('duplicado_semantico')));
+  const datosE3 = { puesto: 'Ingeniero civil residente', resumen_personal: 'ingeniero residente en Constructora Meridiano desde 2020, supervisión de obra de un edificio de 6 niveles y dos proyectos de vivienda', exp1: 'Constructora Meridiano - Ingeniero Residente - 2020 a presente', logros1: 'el edificio fue de 4,200 m2, equipo de 35 personas en obra', exp2: 'no' };
+  const cvE3 = cvBase({ experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora Meridiano', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
+    vinetas: [
+      vin('Supervisa la obra de un edificio de 6 niveles de 4,200 m² con un equipo de 35 personas en obra.', 'supervisión de obra de un edificio de 6 niveles | el edificio fue de 4,200 m2, equipo de 35 personas en obra'),
+      vin('Supervisión de obra de un edificio de 6 niveles y dos proyectos de vivienda.', 'supervisión de obra de un edificio de 6 niveles y dos proyectos de vivienda'),
+    ] }] });
+  assert.equal(validarCV(cvE3, datosE3).cv.experiencia[0].vinetas.length, 2, 'hechos distintos (m²/equipo vs. proyectos de vivienda) no son duplicados');
+});
+
+test('92. Gerundio de mando sin verbo de mando en el input se recorta ("…, coordinando un equipo de 35 personas") (E3)', () => {
+  const datos = { puesto: 'Ingeniero civil residente', exp1: 'Constructora Meridiano - Ingeniero Residente - 2020 a presente', logros1: 'el edificio fue de 4,200 m2, equipo de 35 personas en obra', exp2: 'no' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora Meridiano', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
+    vinetas: [vin('Supervisó la construcción de un edificio de 4,200 m², coordinando un equipo de 35 personas en obra.', 'el edificio fue de 4,200 m2, equipo de 35 personas en obra')] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Supervisó la construcción de un edificio de 4,200 m².');
+  assert.ok(correcciones.some(c => c.includes('verbo de mando sin fuente')));
+  // con verbo de mando en el input ("coordino un equipo") se conserva
+  const datos2 = { ...datos, logros1: 'coordino un equipo de 35 personas en obra, el edificio fue de 4,200 m2' };
+  const cv2 = cvBase({ experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora Meridiano', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
+    vinetas: [vin('Supervisó la construcción de un edificio de 4,200 m², coordinando un equipo de 35 personas en obra.', 'coordino un equipo de 35 personas en obra, el edificio fue de 4,200 m2')] }] });
+  assert.ok(validarCV(cv2, datos2).cv.experiencia[0].vinetas[0].texto.includes('coordinando'));
+});
+
+test('93. Colas de relleno se recortan ("durante su estadía en el local", "throughout the store") (E2, N1)', () => {
+  const datos = { puesto: 'Vendedora', exp1: 'Tienda - Vendedora - 2019 a 2021', logros1: 'atender clientes, cobrar', exp2: 'no' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Vendedora', empresa: 'Tienda', ubicacion: null, inicio: '2019', fin: '2021', actual: false, sin_funciones: false,
+    vinetas: [
+      vin('Atendió a los clientes de la tienda durante su estadía en el local.', 'atender clientes'),
+      vin('Realizó el cobro a los clientes como parte de sus funciones en la tienda.', 'cobrar'),
+    ] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), ['Atendió a los clientes de la tienda.', 'Realizó el cobro a los clientes.']);
+  const datosEN = { puesto: 'Sales Associate', exp1: 'Target - Sales Associate - 2025', logros1: 'helping customers find products', exp2: 'no' };
+  const cvEN = cvBase({ lang: 'en', experiencia: [{ cargo: 'Sales Associate', empresa: 'Target', ubicacion: null, inicio: '2025', fin: '2025', actual: false, sin_funciones: false,
+    vinetas: [vin('Assisted customers in locating products throughout the store.', 'helping customers find products')] }] });
+  assert.equal(validarCV(cvEN, datosEN).cv.experiencia[0].vinetas[0].texto, 'Assisted customers in locating products.');
+});
+
+test('94. Perfil fallback: "Freelance" no es empresa; empresa en minúscula se capitaliza (E5, E4)', () => {
+  const { cv: a } = validarCV(cvBase({ perfil: 'xyzzy.', experiencia: [{ cargo: 'Desarrolladora Web', empresa: 'Freelance', ubicacion: null, inicio: '2024', fin: null, actual: true, sin_funciones: false, vinetas: [] }] }), { puesto: 'Desarrolladora web junior', exp1: 'Freelance - Desarrolladora Web - 2024 a presente', habilidades_tecnicas: 'HTML, CSS' });
+  assert.ok(a.perfil.startsWith('Desarrolladora Web Junior con experiencia freelance.'), a.perfil);
+  const { cv: b } = validarCV(cvBase({ perfil: 'xyzzy.', experiencia: [{ cargo: 'mecanico', empresa: 'taller hermanos flores', ubicacion: null, inicio: '2016', fin: null, actual: true, sin_funciones: false, vinetas: [] }] }), { puesto: 'mecanico automotriz', exp1: 'taller hermanos flores - mecanico - 2016 a presente' });
+  assert.ok(b.perfil.includes('en Taller Hermanos Flores'), b.perfil);
 });
 
 // ────────────────────────────── Resumen ──────────────────────────────

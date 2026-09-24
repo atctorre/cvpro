@@ -1,4 +1,4 @@
-// generar-cv — motor v2 de CVPro — v11.6 (fase 4: inflación con verbo previo, relleno en cláusulas, perfil sin negaciones)
+// generar-cv — motor v2 de CVPro — v19 (v11.8) (fase 4 cerrada: evidencia=encabezado fuera, relleno en cláusulas, inflación con verbo previo)
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { validarCV, construirCVDesdeInput } from './validador.mjs';
 import { cvAtexto } from './serializar.mjs';
@@ -226,7 +226,10 @@ RULES (elite executive-recruiter standard):
 24. resumen_personal often contains the real functions of the CURRENT job (job 1). Use it as evidence for the job it talks about (quote it verbatim in "evidencia"), never for another job.
 25. PREVIOUS JOB ONLY IN resumen_personal: if the candidate answered exp2 with "no" but resumen_personal names an earlier job with employer and dates ("worked 5 years as an English teacher at Colegio X (2018-2023)"), it IS a real job → include it as experiencia[1] with cargo, empresa, inicio/fin as stated, sin_funciones: true and vinetas: [] (unless functions were given). Never drop a job the candidate described.
 26. EDUCATION en_curso: true ONLY if the candidate said they are still studying ("estudiando", "2do año", "currently", "in progress"). "Some college, no degree" → en_curso: false, anio: null.
-27. TENSE (English): write every bullet with a past-tense action verb ("Installed", "Handled", "Managed"), also for the current job, so tenses stay consistent.` : `
+27. TENSE (English): write every bullet with a past-tense action verb ("Installed", "Handled", "Managed"), also for the current job, so tenses stay consistent.
+28. NO FILLER TAILS: never end a bullet with empty phrases ("throughout the store", "as part of daily operations", "across the store floor", "during each shift"). Stop at the fact.
+29. PRACTICE PROJECTS from a course (candidate says "practice projects", "redesigning a fictional app", "class project") are NOT a job and are NOT dropped either: put ONE line in "extra" quoting what they did, labeled as course practice (e.g. "Course practice project: redesign of a fictional app (UX Design Certificate, 2024)"). Never present them as client work.
+30. ONE VERB LEVEL: if the candidate said "helped", "assisted", "supported" or "did", keep that level ("Assisted with…", "Supported…") — never upgrade to "led", "managed", "oversaw", "owned".` : `
 REGLAS (estándar de reclutador ejecutivo élite):
 1. PERFIL: MÁXIMO 60 palabras. Quién es + años (SOLO si se derivan exactamente de las fechas dadas o el candidato los dijo) + especialización + un diferenciador. Sin "yo/soy/tengo". Sin adjetivos de alcance/volumen/intensidad no declarados (alto volumen, exigente, entorno dinámico, alta rotación, a gran escala...) SALVO que el candidato haya usado exactamente esas palabras. Sin inferencias sobre el empleador ("gran cadena nacional") — solo lo que el candidato escribió.
 2. VIÑETAS de experiencia: verbo de acción + qué hizo + resultado, SOLO con hechos, herramientas, cifras y alcance que el candidato realmente dio. Nunca rellenes para alcanzar una cantidad de viñetas.
@@ -254,7 +257,10 @@ REGLAS (estándar de reclutador ejecutivo élite):
 24. resumen_personal suele contener las funciones reales del empleo ACTUAL (puesto 1). Úsalo como evidencia del puesto del que habla (cítalo literal en "evidencia"), nunca para otro puesto.
 25. EMPLEO ANTERIOR SOLO EN resumen_personal: si el candidato respondió exp2 con "no" pero en resumen_personal nombra un empleo anterior con empleador y fechas ("trabajé 5 años como maestra de inglés en el Colegio X (2018-2023)"), ES un empleo real → inclúyelo como experiencia[1] con cargo, empresa, inicio/fin tal como los dijo, sin_funciones: true y vinetas: [] (salvo que haya dado funciones). Nunca omitas un empleo que el candidato describió.
 26. EDUCACIÓN en_curso: true SOLO si el candidato dijo que sigue estudiando ("estudiando", "2do año", "en curso", "actualmente"). "Estudios universitarios incompletos / sin título" → en_curso: false, anio: null.
-27. TIEMPO VERBAL: viñetas del puesto actual en presente de 3.ª persona ("Ejecuta", "Supervisa") y de puestos terminados en pretérito ("Realizó", "Elaboró"); nunca infinitivo ni 1.ª persona.`;
+27. TIEMPO VERBAL: viñetas del puesto actual en presente de 3.ª persona ("Ejecuta", "Supervisa") y de puestos terminados en pretérito ("Realizó", "Elaboró"); nunca infinitivo ni 1.ª persona.
+28. SIN COLAS DE RELLENO: nunca termines una viñeta con frases vacías ("durante su estadía en el local", "como parte de sus funciones", "en las intervenciones", "en el día a día"). La viñeta termina en el hecho.
+29. PROYECTOS DE PRÁCTICA de un curso ("proyectos de práctica", "rediseñé una app ficticia", "proyecto de clase") NO son empleo, pero tampoco se pierden: una sola línea en "extra" citando lo que hizo, etiquetada como práctica de curso (p. ej. "Proyecto de práctica del curso: rediseño de una app ficticia (Certificado UX, 2024)"). Nunca como trabajo para un cliente.
+30. UN SOLO NIVEL DE VERBO: si el candidato dijo "ayudaba", "apoyaba", "colaboraba" o "hacía", mantén ese nivel ("Apoyó en…", "Colaboró en…") — nunca lo subas a "dirigió", "lideró", "supervisó", "coordinó".`;
 
   const puesto1Marca = d.logros1_sin_funciones
     ? (enIngles ? '\n[POSITION 1 MARKED NO FUNCTIONS DECLARED — vinetas must be []]' : '\n[PUESTO 1 MARCADO SIN FUNCIONES DECLARADAS — vinetas debe ser []]')

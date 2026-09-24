@@ -2167,6 +2167,9 @@ function enviarChips(wrapId) {
   if (!seleccionados.length && !input.value.trim()) return;
   if (!input.value.trim()) input.value = seleccionados.join(', ');
   if (typeof ev === 'function') ev('chips_enviados', { n: seleccionados.length });
+  // La lista ya cumplió su función: se apaga para que no quede un botón "vivo" en el historial.
+  const wrap = document.getElementById(wrapId);
+  if (wrap) { wrap.querySelectorAll('.chip').forEach(c => { c.style.pointerEvents = 'none'; c.style.opacity = '0.55'; }); const ok = document.getElementById(wrapId + '_ok'); if (ok) ok.classList.remove('visible'); }
   enviar();
 }
 

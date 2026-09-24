@@ -1302,12 +1302,15 @@ test('91. Duplicado semántico: viñeta cuyos sustantivos clave ya están en otr
 });
 
 test('92. Gerundio de mando sin verbo de mando en el input se recorta ("…, coordinando un equipo de 35 personas") (E3)', () => {
-  const datos = { puesto: 'Ingeniero civil residente', exp1: 'Constructora Meridiano - Ingeniero Residente - 2020 a presente', logros1: 'el edificio fue de 4,200 m2, equipo de 35 personas en obra', exp2: 'no' };
+  // v20.1: "Supervisó" necesita fuente cercana ("supervisión de obra de un edificio" en el resumen); sin ella, se degrada a la evidencia.
+  const datos = { puesto: 'Ingeniero civil residente', resumen_personal: 'supervisión de obra de un edificio de 6 niveles', exp1: 'Constructora Meridiano - Ingeniero Residente - 2020 a presente', logros1: 'el edificio fue de 4,200 m2, equipo de 35 personas en obra', exp2: 'no' };
   const cv = cvBase({ experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora Meridiano', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
     vinetas: [vin('Supervisó la construcción de un edificio de 4,200 m², coordinando un equipo de 35 personas en obra.', 'el edificio fue de 4,200 m2, equipo de 35 personas en obra')] }] });
   const { cv: out, correcciones } = validarCV(cv, datos);
   assert.equal(out.experiencia[0].vinetas[0].texto, 'Supervisó la construcción de un edificio de 4,200 m².');
   assert.ok(correcciones.some(c => c.includes('verbo de mando sin fuente')));
+  const sinFuente = validarCV(cv, { ...datos, resumen_personal: '' });
+  assert.ok(!/^Supervis/.test(sinFuente.cv.experiencia[0].vinetas[0].texto), sinFuente.cv.experiencia[0].vinetas[0].texto);
   // con verbo de mando en el input ("coordino un equipo") se conserva
   const datos2 = { ...datos, logros1: 'coordino un equipo de 35 personas en obra, el edificio fue de 4,200 m2' };
   const cv2 = cvBase({ experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora Meridiano', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
@@ -1385,6 +1388,40 @@ test('99. v20 (E1): nivel declarado en habilidades se conserva en el perfil ("Ex
   assert.ok(/Excel \(basic\)/.test(rEn.cv.perfil), rEn.cv.perfil);
   const rYa = validarCV(cvBase({ perfil: 'Practicante. Maneja Excel básico.' }), { puesto: 'Asistente', exp1: 'Alcaldía - Practicante', logros1: 'archivo', habilidades_tecnicas: 'excel basico' });
   assert.ok(!/\(básico\)/.test(rYa.cv.perfil), 'si ya está el nivel no se duplica: ' + rYa.cv.perfil);
+});
+
+test('100. v20.1 (E3): viñeta que arranca con verbo de mando y evidencia sin verbo ("equipo de 35 personas en obra") se degrada; con verbo en la evidencia se conserva', () => {
+  const datos = { puesto: 'Ingeniero Civil', exp1: 'Constructora Meridiano - Ingeniero Residente - 2020 a presente', logros1: 'el edificio fue de 4,200 m2, equipo de 35 personas en obra, coordinación con subcontratistas' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora Meridiano', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false, vinetas: [
+    { texto: 'Coordina un equipo de 35 personas en obra.', evidencia: 'equipo de 35 personas en obra' },
+    { texto: 'Coordina con subcontratistas.', evidencia: 'coordinación con subcontratistas' },
+  ] }] });
+  const r = validarCV(cv, datos);
+  const t = r.cv.experiencia[0].vinetas.map(v => v.texto);
+  assert.ok(!t.some(x => /^Coordina un equipo/.test(x)), JSON.stringify(t));
+  assert.ok(r.correcciones.some(c => /verbo_de_mando_sin_verbo_en_evidencia/.test(c)), JSON.stringify(r.correcciones));
+  assert.ok(t.some(x => /^Coordina con subcontratistas/.test(x)), JSON.stringify(t));
+});
+
+test('101. v20.1 (J1): "y hago mantenimiento" se nominaliza ("mantenimiento…"), nunca queda "hago" en el CV', () => {
+  const datos = { puesto: 'Electricista', exp1: 'Electrosur - Electricista - 2019 a la fecha', logros1: 'instalo tableros electricos, canalizacion y hago mantenimiento preventivo y correctivo en plantas industriales y casas' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Electricista', empresa: 'Electrosur', ubicacion: null, inicio: '2019', fin: null, actual: true, sin_funciones: false, vinetas: [
+    { texto: 'Instala tableros eléctricos con certificación NEC y hace mantenimiento.', evidencia: 'instalo tableros electricos, canalizacion y hago mantenimiento preventivo y correctivo en plantas industriales y casas' },
+  ] }] });
+  const r = validarCV(cv, datos);
+  const t = r.cv.experiencia[0].vinetas[0].texto;
+  assert.ok(!/\bhago\b/.test(t), t);
+  assert.ok(/Mantenimiento preventivo|mantenimiento preventivo/.test(t), t);
+});
+
+test('102. v20.1 (J1): participio con auxiliar ("Ha completado más de 30…") no se recorta a "Ha más de 30…"', () => {
+  const datos = { puesto: 'Electricista', exp1: 'Electrosur - Electricista - 2019 a la fecha', logros1: 'más de 30 instalaciones residenciales' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Electricista', empresa: 'Electrosur', ubicacion: null, inicio: '2019', fin: null, actual: true, sin_funciones: false, vinetas: [
+    { texto: 'Ha completado más de 30 instalaciones residenciales.', evidencia: 'más de 30 instalaciones residenciales' },
+  ] }] });
+  const r = validarCV(cv, datos);
+  const t = r.cv.experiencia[0].vinetas.map(v => v.texto).join(' | ');
+  assert.ok(!/^Ha más/.test(t), t);
 });
 
 console.log('\n──────────────────────────────');

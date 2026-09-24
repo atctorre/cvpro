@@ -25,3 +25,7 @@ Cada deploy reemplaza el conjunto completo de archivos. Si falta uno o va vacío
 
 ## Historial de versiones Edge ↔ código
 - Edge v17 = código v11.6 · Edge v18 = v11.7 · Edge v19/v20 = ROTOS (no usar) · Edge v21 = código v19 (v11.8) · Edge v22 = código v20 (v11.9).
+
+## ESTADO 2026-09-24 (cierre de sesión)
+- Producción = **Edge v22 = código v20 (v11.9)**, verificada.
+- En el repo ya está **v20.1 (v11.9.1)** — 102 tests — PENDIENTE DE DEPLOY (sería Edge v23): verbo de mando sin verbo en la evidencia se degrada salvo fuente cercana (E3 "Coordina un equipo de 35"); "y hago…" se nominaliza (J1); participio con auxiliar no se recorta ("Ha completado", J1). Desplegar con el procedimiento de arriba y correr `tests/personas.json`.

@@ -936,7 +936,8 @@ function nominalizarInfinitivosES(texto) {
     if (idx % 2 === 1) return parte; // el conector
     const palabras = parte.trim().split(/\s+/);
     const clave = normalizar(palabras[0]).replace(/[^a-z]/g, '');
-    const nominal = INFINITIVO_ES[clave];
+    // v20.1 (J1): tras "y" también puede venir un verbo conjugado ("y hago mantenimiento") → tabla NOMINAL_ES.
+    const nominal = INFINITIVO_ES[clave] || (idx > 0 ? NOMINAL_ES[clave] : undefined);
     if (!nominal || palabras.length < 2) return parte;
     const partesNominal = nominal.split(' ');
     if (PREPOSICIONES_ES.has(normalizar(palabras[1]))) partesNominal.pop();
@@ -981,7 +982,8 @@ function nominalizarUnaClausulaES(c) {
     return 'Apoyo en ' + resto.charAt(0).toLowerCase() + resto.slice(1);
   }
   const n1 = nominalizarPrimeraPersonaES(c);
-  return n1 !== c ? n1 : nominalizarInfinitivosES(c);
+  // v20.1 (J1): aunque la primera persona ya se nominalizó, el resto de la cláusula puede traer "y hago…".
+  return nominalizarInfinitivosES(n1);
 }
 function esVerboClausulaES(w) {
   const k = normalizar(w).replace(/[^a-z]/g, '');
@@ -1607,8 +1609,27 @@ export function validarCV(cv, datos) {
         // managing/overseeing) solo se conserva si el ámbito trae un verbo de
         // mando; si no, se recorta la cláusula y queda el hecho.
         {
+          // v20.1 (E3): "Coordina un equipo de 35 personas" con evidencia "equipo de 35 personas en obra"
+          // (frase nominal, sin ningún verbo del candidato) → el verbo de mando es invento → degradar.
+          // Un verbo de mando (raíz de 6 letras) se tolera solo si en la fuente del puesto aparece CERCA
+          // (≤70 car.) de un sustantivo del texto que lo acompaña ("supervisión de obra de un edificio" ↔
+          // "edificio de 4,200 m2"); "coordinación con subcontratistas" NO respalda "coordina un equipo".
+          const mandoConFuenteCercana = (verbo, textoAcompanante) => {
+            const raiz = normalizar(verbo).replace(/[^a-z]/g, '').slice(0, 6);
+            const nouns = palabrasSignificativas(textoAcompanante, 4).filter(w => !CONECTORES.has(w) && !/^\d/.test(w) && !RE_MANDO_EN_AMBITO.test(w));
+            const idxs = []; let pos = fuentePuestoNorm.indexOf(raiz);
+            while (pos >= 0) { idxs.push(pos); pos = fuentePuestoNorm.indexOf(raiz, pos + 1); }
+            return idxs.some(i => nouns.some(nn => { const j = fuentePuestoNorm.indexOf(nn.slice(0, 5), i); return j >= 0 && j - i <= 70; }));
+          };
+          {
+            const primera = normalizar(b.split(/\s+/)[0]).replace(/[^a-z]/g, '');
+            const evTieneVerbo = palabrasSignificativas(evidenciaUsable, 3).some(w => esVerboConjugado(w) || esVerboPermitido(w) || NOMINAL_ES[w] || INFINITIVO_ES[w]);
+            if (RE_MANDO_EN_AMBITO.test(primera) && !evTieneVerbo && !mandoConFuenteCercana(primera, evidenciaUsable)) {
+              return degradar('verbo_de_mando_sin_verbo_en_evidencia', [b.split(/\s+/)[0]]);
+            }
+          }
           const mMando = b.match(/,?\s+\b(coordinando|liderando|dirigiendo|supervisando|gestionando|encabezando|leading|managing|overseeing|directing|supervising|coordinating|heading)\b[^.]*\.?$/i);
-          if (mMando && !RE_MANDO_EN_AMBITO.test(fuentePuestoNorm)) {
+          if (mMando && !mandoConFuenteCercana(mMando[1], mMando[0])) {
             const resto = b.slice(0, mMando.index).trim().replace(/[,;:\s]+$/, '');
             if (resto.split(/\s+/).length >= 3) {
               correcciones.push(`experiencia[${i}].vinetas[${j}]: clausula_recortada — "${mMando[0].trim()}" (verbo de mando sin fuente)`);
@@ -1686,7 +1707,10 @@ export function validarCV(cv, datos) {
         // conserva el hecho, en vez de perder la viñeta entera.
         if (rTok.sinFuente && rTok.tokens.length === 1) {
           const tk = rTok.tokens[0].replace(/[.,;:]+$/, '');
-          const esParticipio = /(ad[oa]s?|id[oa]s?|ed)$/i.test(tk) && b.split(/\s+/).length >= 4 && !new RegExp('^' + tk).test(b);
+          const prevTk = (b.match(new RegExp('(\\S+)\\s+' + tk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[\\s.,;:]|$)')) || [])[1] || '';
+          // v20.1 (J1): "Ha completado más de 30…" — el participio va con auxiliar: recortarlo deja "Ha más de 30…".
+          const conAuxiliar = /^(ha|han|he|has|hemos|hab[ií]a|hab[ií]an|have|had|been|was|were|is|are)$/i.test(prevTk);
+          const esParticipio = !conAuxiliar && /(ad[oa]s?|id[oa]s?|ed)$/i.test(tk) && b.split(/\s+/).length >= 4 && !new RegExp('^' + tk).test(b);
           if (esParticipio) {
             const b2 = b.replace(new RegExp('\\s+' + tk.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=[\\s.,;:]|$)'), '').replace(/\s+([.,;])/g, '$1').trim();
             const r2 = tokensSinFuenteEnUnidad(b2, fuentePuestoNorm, { raices: raicesPuesto });

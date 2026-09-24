@@ -1,4 +1,4 @@
-// generar-cv — motor v2 de CVPro — v20 (v11.9) (regla 31: resultados≠finalidad, info_extra no es logro, perfil con oficio y años; validador: idiomas fuera del perfil, colas con acentos, participio recortable, nivel declarado en perfil)
+// generar-cv — motor v2 de CVPro — v20.1 (v11.9.1) (regla 31: resultados≠finalidad, info_extra no es logro, perfil con oficio y años; validador: idiomas fuera del perfil, colas con acentos, participio recortable, nivel declarado en perfil)
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { validarCV, construirCVDesdeInput } from './validador.mjs';
 import { cvAtexto } from './serializar.mjs';

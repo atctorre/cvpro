@@ -619,12 +619,15 @@ function _iaExtra(temp) {
 // servidor) — FASE 2, detrás de bandera. Se activa con ?motor=v2 (se
 // recuerda en sessionStorage para toda la sesión) y se apaga con ?motor=v1.
 // Sin bandera, el flujo v1 (super-service, texto libre) sigue intacto.
+// FASE 4 (2026-09-23): v2 es el motor POR DEFECTO tras la regresión de 13
+// personas (auditoría Opus, versión 16 de generar-cv). ?motor=v1 mantiene el
+// motor anterior como vía de escape para la sesión.
 function _motorCV() {
   try {
     const p = new URLSearchParams(location.search).get('motor');
     if (p === 'v2' || p === 'v1') sessionStorage.setItem('cvpro_motor', p);
-    return sessionStorage.getItem('cvpro_motor') === 'v2' ? 'v2' : 'v1';
-  } catch (e) { return 'v1'; }
+    return sessionStorage.getItem('cvpro_motor') === 'v1' ? 'v1' : 'v2';
+  } catch (e) { return 'v2'; }
 }
 // JSON del último CV generado por v2: {cv, cv_texto, validacion}. Solo es
 // válido mientras `cvGenerado` sea exactamente ese cv_texto (ver
@@ -1360,10 +1363,13 @@ async function evaluarFuncionesPuesto(key, texto, datosRef) {
     if (typeof ev === 'function') ev('funciones_confirmadas', { key, n: _confirmadas, solo_cargo: _esSoloCargo(texto) });
     if (_esSoloCargo(texto)) {
       _marcarSegunFuente(texto);
-    } else if (_confirmadas === 0 && _respuestaSinFunciones(texto)) {
-      // Con ≥1 chip confirmado la respuesta SÍ tiene funciones aunque sea
-      // corta ("Cobro en caja, Arqueo de caja" = 2 ítems, <8 palabras).
-      datosRef[`${key}_sin_funciones`] = true;
+    } else if (_confirmadas === 0 && _RE_NEG.test(String(texto || '').trim())) {
+      // FASE 4 — FIX (E2E Marcus): solo una NEGACIÓN explícita ("no", "none",
+      // "ninguno") tras el checklist deja el puesto sin funciones. Un texto
+      // libre corto ("about 6 installs per week, no callbacks") SÍ es
+      // contenido: antes se marcaba sin_funciones por tener <3 ítems y el
+      // servidor vaciaba las viñetas del puesto entero.
+      _marcarSegunFuente(texto);
     }
     return false;
   }
@@ -2260,8 +2266,17 @@ async function enviar() {
     }
     // "solo cargo" tras el checklist tampoco es contenido del puesto.
     const _esEscape = _esRespuestaDeSeguimiento && _esSoloCargo(texto);
-    datos[key] = _esRespuestaDeSeguimiento
-      ? ((_esEco || _esNoSe || _esEscape) ? datos[key] : (datos[key] ? datos[key] + '\n' + texto : texto))
+    // FASE 4 — FIX: una negación escueta como respuesta a una repregunta
+    // ("no", "nada más", "eso es todo", "no sé") NO es contenido: nunca se
+    // concatena al dato (salía "…atención al cliente y nada más" en el CV) y
+    // nunca PISA una respuesta ya dada (resumen_personal quedó en "no" en la
+    // prueba E2E de Rosa). Solo se acepta como dato cuando el campo estaba
+    // vacío (p. ej. exp2 = "no" es una respuesta válida de primera vez).
+    const _RE_NEGACION_BREVE = /^(no|nop|nada|nada m[aá]s|eso es todo|eso ser[ií]a todo|ninguno|ninguna|ya|listo|no s[eé]|no tengo m[aá]s|none|nothing|nothing else|that'?s all|that is all|done|no more)[.!]?$/i;
+    const _esNegacionBreve = _RE_NEGACION_BREVE.test(texto.trim()) && !!(datos[key] && String(datos[key]).trim());
+    if (_esNegacionBreve && typeof ev === 'function') ev('seguimiento_negacion', { key });
+    datos[key] = (_esRespuestaDeSeguimiento || _esNegacionBreve)
+      ? ((_esEco || _esNoSe || _esEscape || _esNegacionBreve) ? datos[key] : (datos[key] ? datos[key] + '\n' + texto : texto))
       : texto;
     if (_esNoSe || (CIFRAS_PREGUNTADO[key] && /\d/.test(texto))) {
       if (typeof ev === 'function' && !_esNoSe) ev('cifras_declaradas', { key, largo: texto.length });
@@ -2516,7 +2531,16 @@ async function generarConIA() {
   // Cualquier generación nueva invalida el JSON v2 anterior (si v2 vuelve a
   // generar, lo vuelve a escribir).
   try { sessionStorage.removeItem('cvpro_cv_v2'); } catch (e) {}
-  if (_motorCV() === 'v2') return await generarConMotorV2();
+  if (_motorCV() === 'v2') {
+    try {
+      return await generarConMotorV2();
+    } catch (e) {
+      if (!(e && e.fallbackV1)) throw e;
+      ev('motor_fallback_v1', { causa: String(e.causa || '').slice(0, 80) });
+      console.warn('motor v2 falló, se genera con v1:', e.causa);
+      // sigue el flujo v1 de abajo
+    }
+  }
   // Parsear contacto
   const ct = datos.email_tel || '';
   const emailM = ct.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
@@ -2874,10 +2898,14 @@ async function generarConMotorV2() {
     }
   } catch (e) {
     console.error('❌ Error en generarConMotorV2:', e && e.message);
-    terminarProgreso(false);
-    if (e && e.isLimite) { renderMsgLimiteIA(e.retryAfter, '_reintentarGeneracion'); throw e; }
-    _renderErrorGeneracion();
-    throw new Error('Generación fallida (motor v2) — no mostrar fallback');
+    if (e && e.isLimite) { terminarProgreso(false); renderMsgLimiteIA(e.retryAfter, '_reintentarGeneracion'); throw e; }
+    // FASE 4: con v2 por defecto, un fallo técnico del motor (timeout, 5xx)
+    // NO deja al usuario sin CV: generarConIA cae al motor v1 (texto libre +
+    // pasada de veracidad del cliente) y lo registra en analytics.
+    const _err = new Error('motor_v2_fallo');
+    _err.fallbackV1 = true;
+    _err.causa = e && e.message;
+    throw _err;
   }
   _limiteIARegistrar();   // solo con 200 confirmado, como v1
   marcarPaso(3);

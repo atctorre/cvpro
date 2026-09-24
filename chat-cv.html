@@ -182,6 +182,11 @@ nav{display:flex;align-items:center;justify-content:space-between;padding:14px 5
 .chip{background:#161616;border:1.5px solid #2a2a2a;color:#aaa;font-size:0.78rem;padding:7px 13px;border-radius:50px;cursor:pointer;transition:all 0.18s;font-family:'Inter',sans-serif;user-select:none}
 .chip:hover{border-color:rgba(255,208,0,0.4);color:#ddd}
 .chip.selected{background:rgba(255,208,0,0.1);border-color:var(--yellow);color:var(--yellow);font-weight:600}
+.chip.selected::before{content:'✓ ';font-weight:800}
+@media(max-width:480px){.chips-wrap{max-width:100%}.chip{font-size:0.82rem;padding:9px 14px}}
+.chips-confirm{display:none}.chips-confirm.visible{display:flex}
+/* v19 (móvil): cabecera del editor — antes los 3 botones desbordaban en 375px */
+@media(max-width:600px){.editor-header{padding:16px!important}.editor-acciones{width:100%;flex-direction:column}.editor-acciones button{width:100%;min-height:44px}}
 .chips-confirm{display:flex;gap:8px;margin-top:8px;align-items:center}
 .btn-chips-ok{background:var(--yellow);color:#000;font-weight:700;font-size:0.8rem;padding:9px 20px;border-radius:50px;border:none;cursor:pointer;font-family:'Inter',sans-serif;transition:transform 0.2s}
 .btn-chips-ok:hover{transform:scale(1.03)}
@@ -2067,7 +2072,10 @@ function renderMsg(tipo, texto, opts=[], animar=true, pasoIdx=null, chips=null) 
       chipsHtml = `<div class="chips-wrap" id="${chipsId}">
         <div class="chips-titulo">${chips.titulo}</div>
         <div class="chips-grid">${chips.opciones.map(o=>`<div class="chip" onclick="agregarChipAlInput(this,'${chipsId}',${chips.multi})">${o}</div>`).join('')}</div>
-        <div style="font-size:0.68rem;color:#555;margin-top:6px">${LANG==='en'?'💡 Click to add to your answer — then complete with your real info':'💡 Haz clic para agregar al texto — luego completa con tus datos reales'}</div>
+        ${chips.multi ? `<div class="chips-confirm" id="${chipsId}_ok"><button type="button" class="btn-chips-ok" onclick="enviarChips('${chipsId}')">${LANG==='en'?'Use the ticked ones →':'Usar las marcadas →'}</button><span class="chips-count" id="${chipsId}_n"></span></div>` : ''}
+        <div style="font-size:0.68rem;color:#555;margin-top:6px">${chips.multi
+          ? (LANG==='en'?'💡 Tap what applies; you can also type other tasks in your own words before sending':'💡 Toca las que apliquen; también puedes escribir otras tareas con tus palabras antes de enviar')
+          : (LANG==='en'?'💡 Tap an option or type your own answer':'💡 Toca una opción o escribe tu propia respuesta')}</div>
       </div>`;
     }
     const ayudaHtml = (pasoIdx !== null && !chips) ? renderAyuda(PASOS[pasoIdx]?.key) : '';
@@ -2134,12 +2142,32 @@ function agregarChipAlInput(el, wrapId, multi) {
     el.classList.toggle('selected');
     const seleccionados = [...document.querySelectorAll(`#${wrapId} .chip.selected`)].map(c => c.textContent.trim());
     input.value = seleccionados.join(', ');
+    // v19 (móvil): botón "Usar las marcadas" + contador; en pantallas táctiles
+    // NO se enfoca el input en cada toque — el teclado tapaba la lista de
+    // chips mientras el usuario seguía marcando.
+    const okWrap = document.getElementById(wrapId + '_ok');
+    const cnt = document.getElementById(wrapId + '_n');
+    if (okWrap) okWrap.classList.toggle('visible', seleccionados.length > 0);
+    if (cnt) cnt.textContent = seleccionados.length ? (LANG === 'en' ? `${seleccionados.length} selected` : `${seleccionados.length} marcada${seleccionados.length === 1 ? '' : 's'}`) : '';
+    autoResize(input);
+    if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
   }
 
   autoResize(input);
   input.focus();
   // Mover cursor al final para que el usuario pueda seguir escribiendo
   input.setSelectionRange(input.value.length, input.value.length);
+}
+
+// v19 (móvil): envía directamente lo marcado en el checklist (más lo que el
+// usuario haya escrito a mano en el input, si lo hay).
+function enviarChips(wrapId) {
+  const input = document.getElementById('chatInput');
+  const seleccionados = [...document.querySelectorAll(`#${wrapId} .chip.selected`)].map(c => c.textContent.trim());
+  if (!seleccionados.length && !input.value.trim()) return;
+  if (!input.value.trim()) input.value = seleccionados.join(', ');
+  if (typeof ev === 'function') ev('chips_enviados', { n: seleccionados.length });
+  enviar();
 }
 
 // Mantener por compatibilidad
@@ -4688,15 +4716,15 @@ function mostrarResultado(cv) {
   <div style="max-width:900px;margin:0 auto;padding:24px 16px">
 
     <!-- HEADER EDITOR -->
-    <div style="background:#fff;border-radius:16px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
-      <div>
+    <div class="editor-header" style="background:#fff;border-radius:16px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
+      <div style="flex:1 1 260px;min-width:0">
         <div style="font-size:1.1rem;font-weight:800;color:#0a0a0a">${LANG==="en"?"✅ Your resume was generated by AI":"✅ Tu CV fue generado por IA"}</div>
         <div id="badgeCodigoEditor" style="font-size:0.75rem;color:#0d6e4f;background:#e1f5ee;display:inline-block;padding:3px 10px;border-radius:6px;margin-top:4px">${_puedeVerCodigo()
           ? `${LANG==="en"?"🔑 Recovery code":"🔑 Código de recuperación"}: <strong>${sessionStorage.getItem('cvpro_codigo')||'------'}</strong> — ${LANG==="en"?"also sent to your email — use it to come back and download anytime":"también enviado a tu email — úsalo para volver y descargar cuando quieras"}`
           : `${LANG==="en"?"🔒 Your recovery code arrives with your purchase — on screen and by email":"🔒 Tu código de recuperación llega con tu compra — en pantalla y por email"}`}</div>
         <div style="font-size:0.8rem;color:#888;margin-top:3px">${LANG==="en"?"Click any field to edit it directly":"Haz clic en cualquier campo para editarlo directamente"}</div>
       </div>
-      <div style="display:flex;gap:10px">
+      <div class="editor-acciones" style="display:flex;gap:10px;flex-wrap:wrap">
         <button onclick="abrirModalVacante()" id="btnVacante" style="background:#0d1b2a;border:none;color:#FFD000;padding:10px 18px;border-radius:50px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:Inter,sans-serif">${LANG==="en"?"🎯 Adapt to a job posting":"🎯 Adaptar a una vacante"}</button>
         <button onclick="regenerarCV()" style="background:#f5f5f5;border:1px solid #ddd;color:#333;padding:10px 18px;border-radius:50px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:Inter,sans-serif">${LANG==="en"?"🔄 Regenerate":"🔄 Regenerar"}</button>
         <button onclick="irAPlantillasDesdeEditor()" style="background:#FFD000;border:none;color:#000;padding:10px 22px;border-radius:50px;font-size:0.82rem;font-weight:800;cursor:pointer;font-family:Inter,sans-serif">${LANG==="en"?"Choose template →":"Elegir plantilla →"}</button>

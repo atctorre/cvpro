@@ -550,7 +550,7 @@ test('25. Puesto con funciones declaradas que queda en 0 viñetas reporta error 
   // v4: "cobrar" (<2 palabras) no se puede degradar → se elimina; "atender clientes" y
   // "arreglar la tienda" sí → sobreviven literales. Ya no queda en 0, así que no hay error no corregible.
   assert.equal(out.experiencia[1].vinetas.length, 2);
-  assert.deepEqual(out.experiencia[1].vinetas.map(v => v.texto), ['Atender clientes.', 'Arreglar la tienda.']);
+  assert.deepEqual(out.experiencia[1].vinetas.map(v => v.texto), ['Atención a clientes.', 'Arreglo de la tienda.']);
   assert.ok(!errores.some(e => e.startsWith('experiencia[1]_sin_vinetas_tras_validacion')));
   assert.equal(correcciones.filter(c => c.includes('experiencia[1]') && c.includes('viñeta_eliminada')).length, 1);
 });
@@ -618,7 +618,7 @@ test('29. Fecha "for 1 year (2025)" corrige un inicio mal calculado (2024) al a�
   });
   const { cv: out, correcciones } = validarCV(cv, datos);
   assert.equal(out.experiencia[0].inicio, '2025', 'el inicio debe corregirse al año que el candidato SÍ dio, no calcularse');
-  assert.ok(correcciones.some(c => c.includes('inicio_ajustado_a_declarado')));
+  assert.ok(correcciones.some(c => c.includes('inicio_ajustado_a_declarado') || (c.includes('.inicio:') && c.includes('declarado en exp1'))));
 });
 
 // ─────────────────────────── CASO 30 ───────────────────────────
@@ -755,7 +755,7 @@ test('45. Viñetas redundantes por contención: se conserva la más completa', (
   assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), [
     'Handled checkout, returns and helped customers find products.', 'Restocked shelves.',
   ]);
-  assert.ok(correcciones.some(c => c.includes('redundante_con_otra_viñeta')));
+  assert.ok(correcciones.some(c => c.includes('redundante_con_otra_viñeta') || c.includes('misma_evidencia_que_otra_viñeta')));
 });
 
 test('46. Evidencia precedida por muletilla de duda ("creo que también hago …") se elimina, no se afirma', () => {
@@ -783,7 +783,7 @@ test('47. Retail: "transactions"/"register" tolerados si el candidato dijo "chec
       cargo: 'Cashier', empresa: 'Target', ubicacion: null, inicio: '2025', fin: '2025', actual: false, sin_funciones: false,
       vinetas: [
         vin('Processed register transactions and returns.', 'handled checkout and returns'),
-        vin('Processed accurate register transactions.', 'handled checkout and returns'),
+        vin('Delivered accurate service at the register.', 'handled checkout'),
         vin('Restocked shelves and maintained inventory displays.', 'restocked shelves'),
       ],
     }],
@@ -791,7 +791,7 @@ test('47. Retail: "transactions"/"register" tolerados si el candidato dijo "chec
   const { cv: out, correcciones } = validarCV(cv, datos);
   assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), [
     'Processed register transactions and returns.',
-    'Handled checkout and returns.',
+    'Handled checkout.',
     'Restocked shelves and maintained inventory displays.',
   ]);
   assert.ok(correcciones.some(c => c.includes('vinetas[1]') && c.includes('accurate')));
@@ -854,7 +854,7 @@ test('51. Evidencia compuesta por dos fragmentos literales (función + cifra) �
   assert.ok(!correcciones.some(c => c.includes('evidencia_no_literal')));
 });
 
-test('52. Evidencia con un fragmento NO literal sigue eliminándose', () => {
+test('52. Evidencia con un fragmento NO literal: v11 degrada a los fragmentos literales', () => {
   const datos = { exp1: 'Cajera en X desde 2022', logros1: 'cobro en efectivo' };
   const cv = cvBase({
     experiencia: [{
@@ -863,8 +863,8 @@ test('52. Evidencia con un fragmento NO literal sigue eliminándose', () => {
     }],
   });
   const { cv: out, correcciones } = validarCV(cv, datos);
-  assert.equal(out.experiencia[0].vinetas.length, 0);
-  assert.ok(correcciones.some(c => c.includes('evidencia_no_literal')));
+  assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), ['Cobro en efectivo.']);
+  assert.ok(correcciones.some(c => c.includes('evidencia_parcialmente_literal')));
 });
 
 test('53. Total de años DECLARADO por el candidato se conserva en el perfil; no declarado se quita sin dejar la frase rota', () => {
@@ -888,6 +888,253 @@ test('54. Viñeta degradada con evidencia compuesta "tarea | cifra" se redacta "
   });
   const { cv: out } = validarCV(cv, datos);
   assert.equal(out.experiencia[0].vinetas[0].texto, 'Cobro en efectivo y tarjeta (unas 150 transacciones por turno).');
+});
+
+
+// ══════════════ v11 — regresión fase 3 (13 personas, 2026-09-23) ══════════════
+
+test('55. Idiomas "Español + Inglés intermedio": el nivel NO se copia al primer idioma (M1)', () => {
+  const datos = { idiomas_nivel: 'Español + Inglés intermedio' };
+  const cv = cvBase({ idiomas: [{ idioma: 'Español', nivel: 'Nativo' }, { idioma: 'Inglés', nivel: null }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.idiomas[0].nivel, null, 'Español no tiene nivel declarado → null (nunca "intermedio" ni "Nativo")');
+  assert.equal(out.idiomas[1].nivel, 'intermedio');
+});
+
+test('56. Idiomas "English native + Spanish intermediate" (B1): cada nivel a su idioma', () => {
+  const datos = { idiomas_nivel: 'English native + Spanish intermediate' };
+  const cv = cvBase({ lang: 'en', idiomas: [{ idioma: 'English', nivel: null }, { idioma: 'Spanish', nivel: null }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.idiomas[0].nivel, 'native');
+  assert.equal(out.idiomas[1].nivel, 'intermediate');
+});
+
+test('57. Fechas: "2024 to 2025" → fin 2025, actual=false aunque el modelo dijera Present (B1)', () => {
+  const datos = { exp1: 'Teleperformance - Call Center Representative - 2024 to 2025' };
+  const cv = cvBase({ lang: 'en', experiencia: [{ cargo: 'Call Center Representative', empresa: 'Teleperformance', ubicacion: null, inicio: '2024', fin: null, actual: true, sin_funciones: false, vinetas: [] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].actual, false);
+  assert.equal(out.experiencia[0].fin, '2025');
+  assert.ok(correcciones.some(c => c.includes('.actual: true → false')));
+});
+
+test('58. Fechas: "marzo 2021 a la fecha" → inicio 2021-03, actual=true; "2025" solo → 2025–2025', () => {
+  const datos = { exp1: 'Distribuidora La Fuente - Contadora general - marzo 2021 a la fecha', exp2: 'Target - Sales Associate - 2025' };
+  const cv = cvBase({ experiencia: [
+    { cargo: 'Contadora general', empresa: 'Distribuidora La Fuente', ubicacion: null, inicio: '2021', fin: '2024', actual: false, sin_funciones: false, vinetas: [] },
+    { cargo: 'Sales Associate', empresa: 'Target', ubicacion: null, inicio: '2025', fin: null, actual: true, sin_funciones: false, vinetas: [] },
+  ] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].inicio, '2021-03');
+  assert.equal(out.experiencia[0].actual, true);
+  assert.equal(out.experiencia[0].fin, null);
+  assert.equal(out.experiencia[1].actual, false);
+  assert.equal(out.experiencia[1].fin, '2025');
+  const txt = cvAtexto(out, 'es');
+  assert.ok(txt.includes('Marzo 2021 – Actualidad'), txt);
+  assert.ok(txt.includes('Target | 2025\n') || txt.endsWith('Target | 2025'), 'un solo año no se imprime "2025 – 2025"');
+});
+
+test('59. Puesto creado desde un curso ("UX Design Student — Coursework Projects") se elimina (N4)', () => {
+  const datos = { exp1: 'Riverside Retail - Store Manager - 2019 to 2024', exp2: 'no', estudios: 'UX Design Certificate, online bootcamp, 2024' };
+  const cv = cvBase({ lang: 'en', experiencia: [
+    { cargo: 'Store Manager', empresa: 'Riverside Retail', ubicacion: null, inicio: '2019', fin: '2024', actual: false, sin_funciones: false, vinetas: [] },
+    { cargo: 'UX Design Student — Coursework Projects', empresa: 'UX Design Certificate Program', ubicacion: null, inicio: '2024', fin: '2024', actual: false, sin_funciones: false, vinetas: [] },
+  ] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia.length, 1);
+  assert.ok(correcciones.some(c => c.includes('puesto_eliminado') && c.includes('estudios')));
+});
+
+test('60. Empresa = frase cruda ("apprentice at a different HVAC company") se vacía y el texto omite el segmento (N2)', () => {
+  const datos = { exp1: 'Buckeye Comfort - HVAC Technician - 2021 to present', exp2: 'apprentice at a different HVAC company 2019-2021' };
+  const cv = cvBase({ lang: 'en', experiencia: [
+    { cargo: 'HVAC Technician', empresa: 'Buckeye Comfort', ubicacion: null, inicio: '2021', fin: null, actual: true, sin_funciones: false, vinetas: [] },
+    { cargo: 'HVAC Apprentice', empresa: 'apprentice at a different HVAC company', ubicacion: null, inicio: '2019', fin: '2021', actual: false, sin_funciones: true, vinetas: [] },
+  ] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.experiencia[1].empresa, '');
+  const txt = cvAtexto(out, 'en');
+  assert.ok(txt.includes('HVAC Apprentice | 2019 – 2021'), txt);
+  assert.ok(!txt.includes('|  |'));
+});
+
+test('61. resumen_personal cuenta como ámbito del puesto cuya empresa menciona (E3/N2)', () => {
+  const datos = {
+    puesto: 'Ingeniero civil residente',
+    resumen_personal: 'ingeniero residente en Constructora Meridiano desde 2020, control de calidad de concreto, coordinación con subcontratistas',
+    exp1: 'Constructora Meridiano - Ingeniero Residente - 2020 a presente', logros1: 'equipo de 35 personas en obra',
+    exp2: 'auxiliar de ingeniería en Alcaldía de Soyapango 2017-2020', logros2: 'levantamientos topográficos',
+  };
+  const cv = cvBase({ experiencia: [
+    { cargo: 'Ingeniero Residente', empresa: 'Constructora Meridiano', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
+      vinetas: [vin('Realizó control de calidad de concreto y coordinación con subcontratistas.', 'control de calidad de concreto, coordinación con subcontratistas')] },
+    { cargo: 'Auxiliar de Ingeniería', empresa: 'Alcaldía de Soyapango', ubicacion: null, inicio: '2017', fin: '2020', actual: false, sin_funciones: false,
+      vinetas: [vin('Realizó control de calidad de concreto.', 'control de calidad de concreto')] },
+  ] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas.length, 1, 'el resumen habla de Meridiano → respalda el puesto 1');
+  assert.equal(out.experiencia[1].vinetas.length, 0, 'el resumen NO habla de la Alcaldía → no respalda el puesto 2');
+  assert.ok(correcciones.some(c => c.includes('experiencia[0]') && c.includes('resumen_personal')));
+});
+
+test('62. Cláusula final de gerundio/finalidad sin fuente se recorta, no se inventa (E1, M1, N4)', () => {
+  const datos = { puesto: 'asistente administrativo', exp1: 'Alcaldia de Santa Tecla - Practicante - 3 meses', logros1: 'archivar documentos y contestar llamadas del publico' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Practicante', empresa: 'Alcaldía de Santa Tecla', ubicacion: null, inicio: null, fin: null, actual: false, sin_funciones: false,
+    vinetas: [
+      vin('Atendió llamadas del público, canalizando solicitudes al personal correspondiente.', 'contestar llamadas del publico'),
+      vin('Archivó documentos para mantener el orden del archivo.', 'archivar documentos'),
+    ] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Atendió llamadas del público.');
+  assert.ok(correcciones.some(c => c.includes('clausula_recortada') && c.includes('canalizando')));
+  assert.equal(out.experiencia[0].duracion, '3 meses');
+  assert.ok(cvAtexto(out, 'es').includes('Alcaldía de Santa Tecla | 3 meses'));
+  // EN: "to support product presentation" sin fuente → recorte
+  const datosEN = { puesto: 'Junior UX Designer', exp1: 'Riverside Retail - Store Manager - 2019 to 2024', logros1: 'did the visual merchandising' };
+  const cvEN = cvBase({ lang: 'en', experiencia: [{ cargo: 'Store Manager', empresa: 'Riverside Retail', ubicacion: null, inicio: '2019', fin: '2024', actual: false, sin_funciones: false,
+    vinetas: [vin('Executed visual merchandising for the store to support product presentation.', 'did the visual merchandising')] }] });
+  const { cv: outEN } = validarCV(cvEN, datosEN);
+  assert.equal(outEN.experiencia[0].vinetas[0].texto, 'Executed visual merchandising for the store.');
+});
+
+test('63. Cláusula con fuente NO se recorta ("para presentar a los dueños" dicho por el candidato)', () => {
+  const datos = { puesto: 'Contadora', exp1: 'Despacho R - Auxiliar contable - 2018 a 2021', logros1: 'ayudaba con la preparacion de estados financieros para presentar a los dueños' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Auxiliar contable', empresa: 'Despacho R', ubicacion: null, inicio: '2018', fin: '2021', actual: false, sin_funciones: false,
+    vinetas: [vin('Apoyó en la preparación de estados financieros para presentar a los dueños.', 'preparacion de estados financieros para presentar a los dueños')] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Apoyó en la preparación de estados financieros para presentar a los dueños.');
+  assert.ok(!correcciones.some(c => c.includes('clausula_recortada')));
+});
+
+test('64. Degradación ES: minimizador + verbo de apoyo + infinitivos → sintagma nominal (E1, E2)', () => {
+  const datos = { puesto: 'asistente', exp1: 'Alcaldia - Practicante - 3 meses', logros1: 'solo apoyaba con archivar documentos y contestar llamadas; arreglar la tienda' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Practicante', empresa: 'Alcaldia', ubicacion: null, inicio: null, fin: null, actual: false, sin_funciones: false,
+    vinetas: [
+      vin('Gestionó el archivo documental y la centralita telefónica.', 'solo apoyaba con archivar documentos y contestar llamadas'),
+      vin('Optimizó el layout comercial.', 'arreglar la tienda'),
+    ] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), ['Apoyo en archivo de documentos y atención de llamadas.', 'Arreglo de la tienda.']);
+});
+
+test('65. Degradación EN: "I am the go-to person…", "got employee of the month twice", "no callbacks on my installations" (N5, B1, N2)', () => {
+  const datos = { puesto: 'Registered Nurse', exp1: 'Mercy General - RN - 2018 to present', logros1: 'I typically handle 5-6 patients per shift, I am the go-to person for wound care consults, got employee of the month twice, no callbacks on my installations' };
+  const cv = cvBase({ lang: 'en', experiencia: [{ cargo: 'RN', empresa: 'Mercy General', ubicacion: null, inicio: '2018', fin: null, actual: true, sin_funciones: false,
+    vinetas: [
+      vin('Delivered comprehensive bedside assessments to 5-6 patients per shift.', 'I typically handle 5-6 patients per shift'),
+      vin('Served as clinical resource for wound care consults.', 'I am the go-to person for wound care consults'),
+      vin('Earned formal recognition as employee of the month twice.', 'got employee of the month twice'),
+      vin('Maintained a flawless record with no callbacks on installations.', 'no callbacks on my installations'),
+    ] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), [
+    'Handled 5-6 patients per shift.',
+    'Go-to person for wound care consults.',
+    'Employee of the month twice.',
+    'No callbacks on installations.',
+  ]);
+});
+
+test('66. Habilidad sin fuente NO se sustituye por una frase narrativa del resumen (B1)', () => {
+  const datos = { resumen_personal: 'i worked at a call center for 1 year, before that i was a cashier at HEB for 2 years while in school', habilidades_tecnicas: 'typing 60 wpm, zendesk', logros2: 'handled cash register' };
+  const cv = cvBase({ lang: 'en', habilidades: { tecnicas: ['Typing 60 WPM', 'Zendesk', 'Cash register operation'], blandas: [] } });
+  const { cv: out } = validarCV(cv, datos);
+  assert.deepEqual(out.habilidades.tecnicas, ['Typing 60 WPM', 'Zendesk']);
+});
+
+test('67. Perfil fallback sin tautología ("Ingeniero Residente" ⊂ título) ni "Manejo de manejo de caja" (E3, E2)', () => {
+  const datos = { puesto: 'Ingeniero civil residente', habilidades_tecnicas: 'manejo de caja, atención al cliente', exp1: 'Constructora M - Ingeniero Residente - 2020 a presente' };
+  const cv = cvBase({ perfil: 'Profesional con trayectoria consolidada.', experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora M', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false, vinetas: [] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.perfil, 'Ingeniero Civil Residente con experiencia en Constructora M. Conocimientos en manejo de caja y atención al cliente.');
+});
+
+test('68. Siglas del título objetivo y país se conservan/capitalizan bien ("HVAC Technician", "el salvador" → "El Salvador")', () => {
+  const { cv: out } = validarCV(cvBase({ lang: 'en' }), { nombre: 'marcus bell', puesto: 'HVAC Technician', pais: 'el salvador' });
+  assert.equal(out.titulo_objetivo, 'HVAC Technician');
+  assert.equal(out.contacto.ubicacion, 'El Salvador');
+  const { cv: out2 } = validarCV(cvBase(), { nombre: 'JOSE ANTONIO', puesto: 'Junior UX Designer' });
+  assert.equal(out2.titulo_objetivo, 'Junior UX Designer');
+  assert.equal(out2.nombre, 'Jose Antonio');
+});
+
+test('69. Viñetas con la misma evidencia: se conserva la de mayor cobertura (E4)', () => {
+  const datos = { puesto: 'mecanico', exp1: 'taller X - mecanico - 2016 a presente', logros1: 'reparacion de motores, frenos, suspencion y diagnostico con escaner' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Mecánico', empresa: 'taller X', ubicacion: null, inicio: '2016', fin: null, actual: true, sin_funciones: false,
+    vinetas: [
+      vin('Ejecuta reparación de motores, frenos y suspensión y diagnóstico con escáner.', 'reparacion de motores, frenos, suspencion y diagnostico con escaner'),
+      vin('Realiza reparación y mantenimiento de sistemas de frenos.', 'reparacion de motores, frenos, suspencion y diagnostico con escaner'),
+    ] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas.length, 1);
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Ejecuta reparación de motores, frenos y suspensión y diagnóstico con escáner.');
+  assert.ok(correcciones.some(c => c.includes('misma_evidencia_que_otra_viñeta')));
+});
+
+
+test('70. Empresa larga pero real ("Distribuidora La Fuente S.A. de C.V.") NO se vacía (M1, regresión v11)', () => {
+  const datos = { exp1: 'Distribuidora La Fuente S.A. de C.V. - Contadora general - marzo 2021 a la fecha' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Contadora general', empresa: 'Distribuidora La Fuente S.A. de C.V.', ubicacion: null, inicio: '2021-03', fin: null, actual: true, sin_funciones: false, vinetas: [] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].empresa, 'Distribuidora La Fuente S.A. de C.V.');
+});
+
+test('71. Año que el modelo tomó de estudios ("2023") se anula si expN/resumen no lo traen (E1)', () => {
+  const datos = { resumen_personal: 'solo hice practicas de 3 meses en la alcaldia', exp1: 'Alcaldia de Santa Tecla - Practicante - 3 meses', exp2: 'no', estudios: 'bachillerato tecnico, INTI 2023' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Practicante', empresa: 'Alcaldía de Santa Tecla', ubicacion: null, inicio: '2023', fin: '2023', actual: false, sin_funciones: false, vinetas: [] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].inicio, null);
+  assert.equal(out.experiencia[0].fin, null);
+  assert.equal(out.experiencia[0].duracion, '3 meses');
+  assert.ok(correcciones.some(c => c.includes('año sin fuente')));
+  // pero un año que SÍ está en el resumen del puesto se conserva (E5: maestra 2018-2023)
+  const datos2 = { resumen_personal: 'trabajé 5 años como maestra en el Colegio Colón (2018-2023), en 2024 hice el bootcamp', exp1: 'Freelance - Desarrolladora Web - 2024 a presente', exp2: 'no' };
+  const cv2 = cvBase({ experiencia: [
+    { cargo: 'Desarrolladora Web', empresa: 'Freelance', ubicacion: null, inicio: '2024', fin: null, actual: true, sin_funciones: false, vinetas: [] },
+    { cargo: 'Maestra de inglés', empresa: 'Colegio Colón', ubicacion: null, inicio: '2018', fin: '2023', actual: false, sin_funciones: true, vinetas: [] },
+  ] });
+  const { cv: out2, errores } = validarCV(cv2, datos2);
+  assert.equal(out2.experiencia[1].inicio, '2018');
+  assert.equal(out2.experiencia[1].fin, '2023');
+  assert.ok(!errores.some(e => e.includes('empresa_no_verificable')), 'Freelance (genérica) no es error');
+});
+
+test('72. Viñeta degradada que repite el encabezado ("cajera en super selectos desde 2022") se descarta (E2)', () => {
+  const datos = { puesto: 'Cajera', resumen_personal: 'cajera en super selectos desde 2022', exp1: 'Super Selectos - Cajera - 2022 a presente', logros1: 'solo cargo', exp2: 'no' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Cajera', empresa: 'Super Selectos', ubicacion: null, inicio: '2022', fin: null, actual: true, sin_funciones: false,
+    vinetas: [vin('Opera caja registradora en el puesto de cajera.', 'cajera en super selectos desde 2022')] }] });
+  const { cv: out, correcciones } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].vinetas.length, 0);
+  assert.ok(correcciones.some(c => c.includes('evidencia_repite_encabezado')));
+});
+
+test('73. Fragmento negativo/opinión de una evidencia compuesta se descarta, el resto se conserva (E3, E4)', () => {
+  const datos = { puesto: 'Ingeniero', exp1: 'Constructora M - Ingeniero Residente - 2020 a presente', logros1: 'coordinación con subcontratistas; entregamos con 2 semanas de retraso por lluvias; los clientes regresan' };
+  const cv = cvBase({ experiencia: [{ cargo: 'Ingeniero Residente', empresa: 'Constructora M', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
+    vinetas: [
+      vin('Lideró alianzas estratégicas con subcontratistas pese a contingencias climáticas.', 'coordinación con subcontratistas | entregamos con 2 semanas de retraso por lluvias'),
+      vin('Fidelizó la cartera de clientes.', 'los clientes regresan'),
+    ] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.deepEqual(out.experiencia[0].vinetas.map(v => v.texto), ['Coordinación con subcontratistas.']);
+});
+
+test('74. Perfil: la PRIMERA palabra de la oración también necesita fuente ("Bilingual…" con "some spanish") (N1)', () => {
+  const datos = { puesto: 'Retail Sales Associate', idiomas_nivel: 'english, some spanish', habilidades_tecnicas: 'cash register' };
+  const cv = cvBase({ lang: 'en', perfil: 'Bilingual in English and Spanish.' });
+  const { cv: out } = validarCV(cv, datos);
+  assert.ok(!/bilingual/i.test(out.perfil), out.perfil);
+});
+
+test('75. Cargo/empresa en minúscula inicial se capitalizan ("mecanico" → "Mecanico"); "Own safety training" → "Owned…" (E4, N3)', () => {
+  const datos = { puesto: 'Operations Manager', exp1: 'FastShip - Operations Supervisor - 2020 to present', logros1: 'own safety training' };
+  const cv = cvBase({ lang: 'en', experiencia: [{ cargo: 'operations supervisor', empresa: 'fastShip', ubicacion: null, inicio: '2020', fin: null, actual: true, sin_funciones: false,
+    vinetas: [vin('Spearheaded enterprise-wide safety curriculum.', 'own safety training')] }] });
+  const { cv: out } = validarCV(cv, datos);
+  assert.equal(out.experiencia[0].cargo, 'Operations supervisor');
+  assert.equal(out.experiencia[0].empresa, 'FastShip');
+  assert.equal(out.experiencia[0].vinetas[0].texto, 'Owned safety training.');
 });
 
 // ────────────────────────────── Resumen ──────────────────────────────

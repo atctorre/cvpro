@@ -5188,12 +5188,26 @@ function construirCVDataDesdeJSON(cv) {
   cv = cv || {};
   const en = cv.lang === 'en';
   const c = cv.contacto || {};
+  // v11 (motor): mismo formato que serializar.mjs — "2021-03" → "Marzo 2021",
+  // inicio === fin → un solo año, sin fechas pero con `duracion` → "3 meses".
+  const _MESES_JSON = en
+    ? ['January','February','March','April','May','June','July','August','September','October','November','December']
+    : ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const _fmtFecha = (f) => {
+    if (!f) return '';
+    const m = String(f).match(/^(\d{4})-(\d{2})$/);
+    if (!m) return String(f);
+    const mes = _MESES_JSON[Number(m[2]) - 1];
+    return mes ? `${mes} ${m[1]}` : m[1];
+  };
   const periodo = (p) => {
-    const fin = p.actual ? (en ? 'Present' : 'Actualidad') : (p.fin || '');
-    if (!p.inicio && !fin) return '';
-    if (!p.inicio) return fin;
-    if (!fin) return p.inicio;
-    return `${p.inicio} – ${fin}`;
+    const inicio = _fmtFecha(p.inicio);
+    const fin = p.actual ? (en ? 'Present' : 'Actualidad') : _fmtFecha(p.fin);
+    if (!inicio && !fin) return p.duracion ? String(p.duracion) : '';
+    if (!inicio) return fin;
+    if (!fin) return inicio;
+    if (inicio === fin) return inicio;
+    return `${inicio} – ${fin}`;
   };
   const experiencia = (Array.isArray(cv.experiencia) ? cv.experiencia : [])
     .filter(p => p && (p.cargo || p.empresa))
@@ -5429,10 +5443,15 @@ function construirCVData() {
       if (esHeader && !esBullet(linea)) {
         if (_bloqueValido(bloqueActual)) experiencia.push(bloqueActual);
         const partes = l.split('|').map(s => s.trim());
+        // v11 (motor): un encabezado de 2 segmentos cuyo 2.º parece un
+        // periodo ("HVAC Apprentice | 2019 – 2021", "Practicante | 3 meses")
+        // no tiene empresa — el periodo no debe caer en `empresa`.
+        const _pareceReriodo = (x) => /\b(19|20)\d{2}\b|\b\d{1,2}\s*(meses|mes|months?|a[nñ]os?|years?|semanas?|weeks?)\b|actualidad|present/i.test(x || '');
+        const _sinEmpresa = partes.length === 2 && _pareceReriodo(partes[1]);
         bloqueActual = {
           titulo: partes[0] || '',
-          empresa: partes[1] || '',
-          periodo: partes[2] || '',
+          empresa: _sinEmpresa ? '' : (partes[1] || ''),
+          periodo: _sinEmpresa ? partes[1] : (partes[2] || ''),
           bullets: []
         };
       } else if (bloqueActual && esBullet(linea)) {
@@ -5515,6 +5534,10 @@ function construirCVData() {
     } else if (mSinRango) {
       periodo = `${mSinRango[1].trim()} – ${_ACTUAL}`;
       t = (t.slice(0, mSinRango.index) + t.slice(mSinRango.index + mSinRango[0].length)).trim();
+    } else {
+      // v11 (motor): duración sin fechas ("| 3 meses", "| 1 year") como periodo.
+      const mDur = t.match(/\|\s*(\d{1,2}\s*(?:meses|mes|months?|a[nñ]os?|years?|semanas?|weeks?))\s*$/i);
+      if (mDur) { periodo = mDur[1]; t = t.slice(0, mDur.index).trim(); }
     }
     t = t.replace(/^[\s\-–—|]+/, '').replace(/[\s\-–—|]+$/, '').replace(/\s{2,}/g, ' ').trim();
     let titulo = '', empresa = '';

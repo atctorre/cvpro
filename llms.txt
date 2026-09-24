@@ -24,6 +24,9 @@
 - [Crear mi CV](https://getcvpro.com/chat-cv.html): el chat guiado que genera el currículum.
 - [Analizar un CV existente](https://getcvpro.com/analizar-cv.html): revisión de un CV ya redactado.
 - [Ejemplos de CV por profesión (español)](https://getcvpro.com/ejemplos/): 60 ejemplos reales generados con CVPro, uno por profesión, visibles en las 20 plantillas.
+- [Cómo hacer un CV sin experiencia](https://getcvpro.com/como-hacer-cv-sin-experiencia.html): guía para primer empleo, con ejemplo ficticio.
+- [How to write a resume with no experience](https://getcvpro.com/how-to-write-resume-no-experience.html): guide for first jobs, with a fictional example.
+- [Sobre CVPro / About CVPro](https://getcvpro.com/sobre-cvpro.html): qué es, cómo funciona la IA, qué no hace, política de IA y datos ([English](https://getcvpro.com/about.html)).
 - [Resume examples by profession (English)](https://getcvpro.com/ejemplos/resume-examples.html): 60 resume examples, one per occupation.
 
 ## Ejemplos de CV por profesión

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- Google tag (gtag.js), loaded after first interaction or 4 s after load -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KW9MFX9K5E');
+  (function () {
+    var done = false;
+    function load() {
+      if (done) { return; }
+      done = true;
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=G-KW9MFX9K5E';
+      document.head.appendChild(s);
+    }
+    ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(function (e) {
+      window.addEventListener(e, load, { once: true, passive: true });
+    });
+    window.addEventListener('load', function () { setTimeout(load, 4000); });
+  })();
+</script>
+<meta name="theme-color" content="#080808">
+<title>Checkout | Professional Essentials by CVPro</title>
+<meta name="description" content="Review your order, enter your U.S. shipping address and pay on n1co’s checkout page. Prices are in US dollars and shipping is included.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="canonical" href="https://getcvpro.com/essentials/checkout.html">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="/essentials/essentials.css">
+<link rel="stylesheet" href="/essentials/purchase.css">
+</head>
+<body data-page="checkout">
+<a class="skip-link" href="#main">Skip to main content</a>
+<header>
+<nav id="navbar" aria-label="Primary">
+  <a class="nav-logo" href="/en/">CV<span>Pro</span> <small class="nav-sub">Essentials</small></a>
+  <div class="nav-right">
+    <a class="nav-link" href="/essentials/#shop">Shop</a>
+    <a class="nav-link nav-link-ship" href="/essentials/shipping-returns.html">Shipping &amp; Returns</a>
+    <a class="nav-cta" href="/essentials/checkout.html" id="navCart" aria-current="page">Cart<span class="cart-count" id="cartCount" hidden>0</span></a>
+  </div>
+</nav>
+</header>
+<main id="main">
+<section class="hero hero-guide"><div class="wrap">
+<p class="crumbs-inline"><a href="/en/">Home</a> / <a href="/essentials/">Essentials</a> / <span aria-current="page">Checkout</span></p>
+<h1>Checkout</h1>
+</div></section>
+<section class="pf-sec" aria-label="Order and payment"><div class="wrap">
+<div class="pf-alert" id="co-alert" role="alert" hidden></div>
+<noscript><p class="pf-alert is-err">Checkout needs JavaScript. To order without it, email <a href="mailto:hola@getcvpro.com">hola@getcvpro.com</a>.</p></noscript>
+<p class="pf-loading" id="co-loading">Loading your cart…</p>
+<div class="pf-card pf-empty" id="co-empty" hidden>
+<h2>Your cart is empty</h2>
+<p>Add an item to start your order.</p>
+<p><a class="btn-primary" href="/essentials/#shop">Browse the collection</a></p>
+</div>
+<form class="pf-layout" id="co-form" novalidate hidden>
+<section class="pf-card pf-summary" aria-labelledby="h-order">
+<h2 id="h-order">Your order</h2>
+<ul class="pf-lines" id="co-lines"></ul>
+<p class="pf-note" id="co-note" hidden></p>
+<dl class="pf-totals" id="co-totals" aria-live="polite"></dl>
+<p class="pf-delivery" id="co-delivery"></p>
+</section>
+<section class="pf-card pf-contact" aria-labelledby="h-ship">
+<h2 id="h-ship">Contact and shipping address</h2>
+<div class="pf-grid">
+<div class="pf-field pf-wide"><label for="co-email">Email</label><input id="co-email" name="email" type="email" required maxlength="254" autocomplete="email" inputmode="email" aria-describedby="err-email hint-email"><span class="pf-hint" id="hint-email">Use the email where you want to be contacted about this order.</span><p class="pf-error" id="err-email" hidden></p></div>
+<div class="pf-field pf-wide"><label for="co-nombre">Full name</label><input id="co-nombre" name="nombre" type="text" required minlength="2" maxlength="80" autocomplete="shipping name" aria-describedby="err-nombre"><p class="pf-error" id="err-nombre" hidden></p></div>
+<div class="pf-field pf-wide"><label for="co-linea1">Street address</label><input id="co-linea1" name="linea1" type="text" required minlength="3" maxlength="100" autocomplete="shipping address-line1" aria-describedby="err-linea1"><p class="pf-error" id="err-linea1" hidden></p></div>
+<div class="pf-field pf-wide"><label for="co-linea2">Apartment, suite, etc. (optional)</label><input id="co-linea2" name="linea2" type="text" maxlength="100" autocomplete="shipping address-line2" aria-describedby="err-linea2"><p class="pf-error" id="err-linea2" hidden></p></div>
+<div class="pf-field"><label for="co-ciudad">City</label><input id="co-ciudad" name="ciudad" type="text" required minlength="2" maxlength="60" autocomplete="shipping address-level2" aria-describedby="err-ciudad"><p class="pf-error" id="err-ciudad" hidden></p></div>
+<div class="pf-field"><label for="co-estado">State</label><select id="co-estado" name="estado" required autocomplete="shipping address-level1" aria-describedby="err-estado"><option value="">Select a state</option><option value="AL">Alabama</option><option value="AK">Alaska</option><option value="AZ">Arizona</option><option value="AR">Arkansas</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DE">Delaware</option><option value="DC">District of Columbia</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="IA">Iowa</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MA">Massachusetts</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MS">Mississippi</option><option value="MO">Missouri</option><option value="MT">Montana</option><option value="NE">Nebraska</option><option value="NV">Nevada</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NY">New York</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC">South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WV">West Virginia</option><option value="WI">Wisconsin</option><option value="WY">Wyoming</option></select><p class="pf-error" id="err-estado" hidden></p></div>
+<div class="pf-field"><label for="co-zip">ZIP code</label><input id="co-zip" name="zip" type="text" required inputmode="numeric" maxlength="10" autocomplete="shipping postal-code" pattern="\d{5}(-\d{4})?" aria-describedby="err-zip hint-zip"><span class="pf-hint" id="hint-zip">5 digits, or ZIP+4 like 12345-6789.</span><p class="pf-error" id="err-zip" hidden></p></div>
+<div class="pf-field"><label for="co-pais">Country</label><input id="co-pais" name="pais" type="text" value="United States" readonly autocomplete="shipping country-name" aria-describedby="hint-pais"><span class="pf-hint" id="hint-pais">We currently ship only to addresses in the United States.</span></div>
+<div class="pf-field pf-wide"><label for="co-telefono">Phone (optional)</label><input id="co-telefono" name="telefono" type="tel" maxlength="20" autocomplete="shipping tel" pattern="[0-9+\(\)\-\s.]{7,20}" aria-describedby="err-telefono"><p class="pf-error" id="err-telefono" hidden></p></div>
+</div>
+</section>
+<section class="pf-card pf-pay" aria-labelledby="h-pay">
+<h2 id="h-pay">Review and pay</h2>
+<div class="byb" id="before-you-buy">
+<p><strong>Before you buy: all sales final.</strong> We do not accept returns or exchanges, and we do not refund a change of mind. Two exceptions:</p>
+<ul><li><strong>Not delivered:</strong> a full refund if your order is not delivered by day 30 after your order date. Estimated delivery is 15 to 25 days.</li><li><strong>Damaged or wrong item:</strong> a replacement or refund if you report it with photos within 7 days of delivery.</li></ul>
+<p><a href="/essentials/shipping-returns.html" target="_blank" rel="noopener" aria-label="Read the full policy (opens in a new tab)">Read the full policy</a></p>
+</div>
+<div class="pf-check">
+<input id="co-accept" name="accept" type="checkbox" required aria-describedby="hint-accept err-accept">
+<label for="co-accept">I have read the sales policy above and agree to it: all sales final, with the two exceptions.</label>
+</div>
+<p class="pf-hint-accept" id="hint-accept">Check the box above to enable the Pay button.</p>
+<p class="pf-error" id="err-accept" hidden></p>
+<p class="pf-status" id="co-status" role="status"></p>
+<button class="btn-primary" id="co-pay" type="submit" disabled>Pay</button>
+<p class="pf-fine">You will complete the payment on n1co’s checkout page.</p>
+</section>
+</form>
+</div></section>
+</main>
+<footer>
+  <div class="footer-logo">CV<span>Pro</span></div>
+  <p class="footer-links"><span>© 2026 CVPro</span> · <a href="/en/">CVPro resume builder</a> · <a href="/essentials/shipping-returns.html">Shipping &amp; Returns</a> · <a href="/essentials/terms.html">Terms</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:hola@getcvpro.com">hola@getcvpro.com</a></p>
+</footer>
+<script src="/essentials/catalog.js" defer></script>
+<script src="/essentials/checkout.js" defer></script>
+</body>
+</html>

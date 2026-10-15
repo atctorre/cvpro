@@ -1,0 +1,107 @@
+/* CVPro Essentials: estilos de las paginas de compra (checkout.html, thanks.html) y legales (terms.html, shipping-returns.html).
+   Se carga DESPUES de essentials.css y solo usa sus tokens (var(--...)), sus familias (Syne, Inter) y sus breakpoints (600 y 768):
+   no define colores ni fuentes propios. Prefijos propios (pf-, ts-) para no chocar con las clases de essentials.css.
+   Tarea 13: el bloque .byb ("Before you buy") y las listas numeradas (.sec ol) pasaron a essentials.css, porque las fichas de
+   producto y las guias los usan y no cargan este archivo. */
+
+/* ── LAYOUT DE COMPRA: resumen, datos y pago; en escritorio datos a la izquierda y resumen + pago a la derecha ── */
+.pf-sec{padding:8px 0 56px;min-height:85vh}  /* el pie queda bajo el pliegue mientras JS pinta la pagina: sin layout shift del pie */
+.pf-layout{display:grid;gap:20px;grid-template-columns:minmax(0,1fr);align-items:start}
+.pf-card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;padding:20px}
+.pf-card h2{font-size:1.15rem;margin:0 0 14px}
+@media(min-width:768px){
+  .pf-layout{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-areas:"contact summary" "contact pay";grid-template-rows:auto 1fr}
+  .pf-contact{grid-area:contact}
+  .pf-summary{grid-area:summary}
+  .pf-pay{grid-area:pay}
+}
+.pf-alert{margin:0 0 20px;padding:14px 16px;border:1px solid var(--card-border);border-left:4px solid var(--yellow);border-radius:10px;background:var(--card);color:var(--white);font-size:1rem;line-height:1.6}
+.pf-alert.is-err{border-left-color:var(--err)}
+.pf-alert[hidden],.pf-empty[hidden],.pf-layout[hidden],.pf-loading[hidden]{display:none}
+.pf-loading{color:var(--muted);font-size:0.95rem}
+.pf-empty{max-width:560px}
+.pf-empty h2{margin-bottom:8px}
+
+/* ── RESUMEN DEL PEDIDO ── */
+.pf-lines{list-style:none;display:grid;gap:14px;margin:0 0 14px;padding:0}
+.pf-line{display:grid;grid-template-columns:72px minmax(0,1fr);grid-template-areas:"thumb info" "thumb ctrl";gap:4px 14px;align-items:start;padding-bottom:14px;border-bottom:1px solid var(--card-border)}
+.pf-thumb{grid-area:thumb;display:block;width:72px;height:72px;border-radius:10px;object-fit:cover;background:var(--gray)}
+.pf-info{grid-area:info;min-width:0}
+.pf-name{font-weight:600;font-size:1rem;line-height:1.35;color:var(--white)}
+.pf-name a{color:var(--white);text-decoration:none}
+.pf-name a:hover{color:var(--yellow)}
+.pf-opt{display:block;margin-top:2px;color:var(--muted);font-size:0.88rem}
+.pf-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 10px;margin-top:4px;min-height:1.7rem}
+.pf-amt{font-family:'Syne',sans-serif;font-weight:800;color:var(--yellow);font-size:1.05rem;white-space:nowrap}
+.pf-ctrl{grid-area:ctrl;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;color:var(--muted);font-size:0.88rem}
+.pf-ctrl label{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:0.88rem;font-weight:500}
+.pf-ctrl select{width:auto;min-height:44px;padding:8px 12px}
+.pf-unit{color:var(--muted);font-size:0.84rem}
+.pf-remove{background:transparent;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer;font-family:inherit;font-size:0.88rem;min-height:44px;padding:0 6px}
+.pf-remove:hover{color:var(--white)}
+.pf-line .pf-error{grid-column:1/-1}
+.pf-note{margin:0 0 12px;color:var(--muted);font-size:0.88rem;line-height:1.5}
+.pf-note[hidden]{display:none}
+.pf-totals{display:grid;gap:8px;margin:0;min-height:7.2rem;align-content:start}
+.pf-row{display:flex;justify-content:space-between;gap:12px;margin:0;color:var(--white);font-size:1rem}
+.pf-row dt,.pf-row dd{margin:0}
+.pf-row.is-total{margin-top:2px;padding-top:12px;border-top:1px solid var(--card-border);font-weight:700;color:var(--white)}
+.pf-row.is-total dd{font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;color:var(--yellow)}
+.pf-muted{margin:0;color:var(--muted);font-size:0.95rem}
+.pf-delivery{margin:12px 0 0;color:var(--muted);font-size:0.88rem;line-height:1.5;min-height:3.96rem}  /* 3 lineas reservadas: el texto llega con la cotizacion */
+.pf-retry{margin-top:8px}
+
+/* ── FORMULARIO ── */
+.pf-grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:600px){.pf-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pf-wide{grid-column:1/-1}}
+.pf-field label{margin-bottom:6px}
+.pf-hint{display:block;margin-top:6px;color:var(--muted);font-size:0.8rem;line-height:1.45}
+.pf-error{margin:6px 0 0;color:var(--err);font-size:0.88rem;line-height:1.45}
+.pf-error[hidden]{display:none}
+input[aria-invalid="true"],select[aria-invalid="true"]{border-color:var(--err)}
+
+/* ── ACEPTACION OBLIGATORIA Y BOTON DE PAGO ── */
+.pf-check{display:flex;gap:12px;align-items:flex-start;margin:0 0 6px}
+.pf-check input{width:24px;height:24px;flex-shrink:0;margin-top:3px;accent-color:var(--yellow)}
+.pf-check label{margin:0;padding:2px 0;color:var(--white);font-size:1rem;font-weight:500;letter-spacing:0;line-height:1.5}
+.pf-hint-accept{margin:0 0 12px;padding-left:36px;color:var(--muted);font-size:0.84rem;line-height:1.45}
+.pf-hint-accept[hidden]{display:none}
+.pf-pay .pf-error{margin:0 0 12px;padding-left:36px}
+.pf-status{min-height:1.4em;margin:0 0 12px;color:var(--muted);font-size:0.92rem;line-height:1.5}
+.pf-status.is-err{color:var(--err)}
+.pf-status.is-ok{color:var(--ok)}
+.pf-pay .btn-primary{width:100%}
+.pf-fine{margin:12px 0 0;color:var(--muted);font-size:0.84rem;line-height:1.5;text-align:center}
+
+/* ── THANKS: estado del pedido ── */
+.ts-wrap{padding:8px 0 56px;min-height:85vh}
+.ts-card{max-width:720px}
+.ts-card h2{font-size:1.35rem;margin:0 0 8px}
+.ts-card h3{margin:22px 0 10px}
+.ts-spinner{width:34px;height:34px;margin:0 0 14px;border:3px solid var(--card-border);border-top-color:var(--yellow);border-radius:50%;animation:ts-spin 0.8s linear infinite}
+@keyframes ts-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ts-spinner{animation-duration:2.5s}}
+.ts-ref{display:inline-block;margin:0 0 4px;padding:6px 12px;border:1px solid var(--card-border);border-radius:8px;background:var(--gray);font-variant-numeric:tabular-nums;font-size:1.05rem;font-weight:700;letter-spacing:0.06em;color:var(--white);word-break:break-all}
+.ts-items{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:10px}
+.ts-item{display:flex;justify-content:space-between;gap:16px;padding-bottom:10px;border-bottom:1px solid var(--card-border);color:var(--white);font-size:1rem}
+.ts-item span:last-child{font-family:'Syne',sans-serif;font-weight:800;color:var(--yellow);white-space:nowrap}
+.ts-item small{display:block;color:var(--muted);font-size:0.88rem}
+.ts-list{list-style:none;margin:0 0 14px;padding:0}
+.ts-list li{position:relative;padding-left:22px;margin:0 0 8px;color:var(--white);font-size:1rem;line-height:1.6}
+.ts-list li::before{content:'\203A';position:absolute;left:5px;color:var(--yellow);font-weight:800}
+.ts-actions{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0 0}
+.ts-actions a,.ts-actions button{text-decoration:none}
+.ts-proof{display:grid;gap:12px;max-width:420px;margin:14px 0 0}
+.ts-policy{margin-top:28px}
+.ts-policy[hidden]{display:none}
+.ts-policy h2{font-size:1.15rem}
+
+/* ── PAGINAS LEGALES (terms, shipping-returns): subtitulos de la politica (las listas numeradas estan en essentials.css) ── */
+.sec h3{margin-top:28px}
+.sec h2+h3{margin-top:14px}
+/* H1 de shipping-returns: en Syne ocupa 2 lineas en movil y con la tipografia de reserva solo 1; se reservan 2 para que el cambio de fuente no empuje el contenido */
+@media(max-width:599px){.h1-2l{min-height:2.4em}}
+.policy-meta{margin:0 0 18px;color:var(--muted);font-size:0.9rem}
+.policy-meta+.byb{margin-top:6px}
+.sec .byb ul{max-width:none}
+.sec .byb li{font-size:1rem}

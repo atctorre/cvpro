@@ -3,6 +3,7 @@
 - `npm test` — todo (motor v2 + cliente). Sin dependencias: solo Node ≥ 20.
 - `supabase/functions/generar-cv/tests/validador.test.mjs` — 95 casos del validador determinista del motor v2.
 - `tests/cliente/cliente.test.mjs` — 30 casos de la lógica pura de `chat-cv.html`, extraída del monolito por nombre con `tests/cliente/extraer.mjs` (sin navegador).
+- `npm run test:essentials` — 68 pruebas del backend de `/essentials/` (funciones `essentials-pago` y `essentials-confirmar`, migración). Necesita Node ≥ 22.13 y corre en su propio job de `tests.yml`; ver `tests/essentials/README.md` y `docs/ESSENTIALS.md`. `npm test` no las incluye.
 - `supabase/functions/generar-cv/tests/verificar_deploy.py <respuesta_get_edge_function.json> <carpeta>` — compara byte a byte lo desplegado con los `.deploy` locales (ver `DEPLOY.md`).
 - `supabase/functions/generar-cv/tests/personas.json` — 13 personas de regresión contra producción.
 

@@ -1,0 +1,250 @@
+/* CVPro Essentials: hoja de estilos compartida de /essentials/ (Tarea 13: sin dialogo de carrito; el carrito y el pago viven en checkout.html).
+   Tokens y familias tipograficas de index.html (spec-tecnica §3): Syne (titulos, precios) e Inter (cuerpo).
+   Breakpoints reutilizados de index.html: 600px y 768px. Sin .reveal ni contenido oculto hasta que JS lo muestre. */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#080808;
+  --black2:#0f0f0f;
+  --yellow:#FFD000;
+  --yellow2:#FFC200;
+  --white:#ffffff;
+  --gray:#111111;
+  --gray2:#1a1a1a;
+  --gl:#666;
+  --gl2:#444;
+  --green:#00D68F;
+  --border:#1e1e1e;
+}
+:root{
+  --ok:#7dd3a8;
+  --card:#141414;
+  --card-border:#222;
+  --muted:#9a9a9a;
+  --muted2:#8a8a8a;
+  --err:#ff4444;
+  --nav-h:64px;
+}
+html{scroll-behavior:smooth;scroll-padding-top:84px;-webkit-text-size-adjust:100%}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--white);line-height:1.6;padding-top:var(--nav-h);min-height:100vh}
+img{max-width:100%;height:auto}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip-link{position:absolute;left:12px;top:-64px;z-index:400;background:var(--yellow);color:var(--black);font-weight:700;padding:10px 18px;border-radius:50px;text-decoration:none}
+.skip-link:focus{top:12px}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+/* ── NAV (variante A de index.html, con sub-marca) ── */
+#navbar{position:fixed;top:0;left:0;right:0;z-index:300;display:flex;align-items:center;justify-content:space-between;padding:8px 6%;min-height:var(--nav-h);background:rgba(8,8,8,0.92);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.04)}
+.nav-logo{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:900;color:var(--yellow);letter-spacing:-0.5px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;min-height:44px}
+.nav-logo span{color:var(--white)}
+.nav-sub{font-family:'Inter',sans-serif;font-size:0.62rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.nav-right{display:flex;align-items:center;gap:6px}
+.nav-link{color:var(--muted);font-size:0.84rem;text-decoration:none;padding:12px 10px;transition:color 0.2s}
+.nav-link:hover{color:var(--white)}
+.nav-cta{display:inline-flex;align-items:center;background:var(--yellow);color:var(--black);font-family:inherit;font-weight:700;font-size:0.82rem;padding:10px 20px;min-height:44px;border-radius:50px;border:0;cursor:pointer;text-decoration:none;transition:all 0.2s;letter-spacing:0.2px}
+.nav-cta:hover{background:var(--yellow2);transform:scale(1.04)}
+.cart-count{display:inline-block;margin-left:8px;background:var(--black);color:var(--yellow);border-radius:50px;min-width:20px;padding:0 6px;font-size:0.72rem;line-height:20px;text-align:center}
+.cart-count[hidden]{display:none}
+@media(max-width:600px){.nav-link-ship{display:none}.nav-logo{font-size:1.15rem}}
+
+/* ── TIPOGRAFIA ── */
+h1,h2,h3{font-family:'Syne',sans-serif;line-height:1.2}
+h1{font-weight:800;letter-spacing:-0.5px;font-size:clamp(1.7rem,4.6vw,2.7rem)}
+h2{font-weight:800;letter-spacing:-0.5px;font-size:clamp(1.35rem,3vw,1.9rem);margin-bottom:18px}
+h3{font-weight:700;font-size:1.05rem;color:var(--yellow);margin:26px 0 10px}
+p{color:rgba(255,255,255,0.78);font-size:0.98rem;line-height:1.72;margin-bottom:14px}
+strong{color:var(--white);font-weight:600}
+.note,.updated{color:var(--muted);font-size:0.84rem}
+.wrap{max-width:1100px;margin:0 auto;padding:0 6%}
+.wrap.narrow{max-width:860px}
+
+/* ── HERO ── */
+.hero{position:relative;text-align:center;padding:56px 0 48px;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(255,208,0,0.06) 0%,transparent 65%);pointer-events:none}
+.hero .wrap{position:relative}
+.hero h1{max-width:820px;margin:0 auto}
+.hero-sub{max-width:640px;margin:18px auto 0;font-size:1.02rem;font-weight:300}
+.hero .note{margin-top:18px}
+.hero-guide{text-align:left;padding:40px 0 20px}
+.hero-guide h1{margin:0}
+/*H1-RESERVA-INICIO*/
+/* CLS: el H1 de cada guia es largo y con la tipografia de reserva ocupa menos lineas que con Syne; al cargar Syne todo el contenido bajaba (CLS 0.26).
+   Se reserva la altura con el numero de lineas que ocupa con Syne a cada ancho (medido en Chromium, tramos de 4 px). Si cambia el titulo de una guia,
+   hay que volver a medirlo (herramientas/README: "Reserva de altura de los H1 de las guias"). */
+.h1-guide-1,.h1-guide-2{min-height:calc(var(--h1-lines,1) * 1.2em)}
+.h1-guide-1{--h1-lines:5}
+@media(max-width:471px){.h1-guide-1{--h1-lines:6}}
+@media(max-width:427px){.h1-guide-1{--h1-lines:7}}
+@media(max-width:371px){.h1-guide-1{--h1-lines:8}}
+@media(max-width:359px){.h1-guide-1{--h1-lines:9}}
+@media(max-width:331px){.h1-guide-1{--h1-lines:10}}
+.h1-guide-2{--h1-lines:6}
+@media(min-width:372px){.h1-guide-2{--h1-lines:5}}
+@media(min-width:436px){.h1-guide-2{--h1-lines:4}}
+@media(min-width:556px){.h1-guide-2{--h1-lines:3}}
+@media(min-width:908px){.h1-guide-2{--h1-lines:4}}
+/*H1-RESERVA-FIN*/
+.hero-guide .hero-sub{margin:18px 0 0;max-width:760px}
+.hero-guide .hero-sub+.hero-sub{margin-top:10px}
+.crumbs-inline,.crumbs p{font-size:0.8rem;color:var(--muted);margin:0 0 14px}
+.crumbs-inline a,.crumbs a{color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+.crumbs{padding-top:18px}
+
+/* ── BOTONES (radio 50px, igual que index.html) ── */
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:0}
+.hero-actions{justify-content:center;margin-top:30px}
+.btn-primary,.btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:inherit;font-weight:700;font-size:0.95rem;padding:14px 28px;min-height:48px;border-radius:50px;text-decoration:none;cursor:pointer;transition:all 0.25s;touch-action:manipulation}
+.btn-primary{background:var(--yellow);color:var(--black);border:none;box-shadow:0 0 0 0 rgba(255,208,0,0.4)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(255,208,0,0.3)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-secondary{background:transparent;color:var(--white);font-weight:500;border:1px solid rgba(255,255,255,0.28)}
+.btn-secondary:hover{border-color:rgba(255,255,255,0.5);background:rgba(255,255,255,0.05)}
+
+/* ── SECCIONES ── */
+.sec{padding:52px 0;border-top:1px solid var(--border)}
+.sec p,.sec ul{max-width:760px}
+.sec .table-wrap,.sec .grid{max-width:none}
+.sec ul{list-style:none;margin:0 0 14px}
+.sec li{position:relative;padding-left:22px;margin-bottom:12px;color:rgba(255,255,255,0.78);font-size:0.96rem;line-height:1.68}
+.sec li::before{content:'\203A';position:absolute;left:5px;color:var(--yellow);font-weight:800}
+.sec p a,.sec li a,.updated a{color:var(--yellow);text-decoration:underline;text-underline-offset:3px}
+.sec .cta-row a{text-decoration:none}
+.sec .cta-row a.btn-primary{color:var(--black)}
+.sec .cta-row a.btn-secondary{color:var(--white)}
+.sec-benefits ul{display:grid;gap:4px 40px}
+@media(min-width:768px){.sec-benefits ul{max-width:none;grid-template-columns:1fr 1fr}}
+
+/* ── TABLAS ── */
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;margin:18px 0}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:0.88rem}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:top;color:rgba(255,255,255,0.82);line-height:1.5}
+thead th{background:var(--gray2);color:var(--white);font-weight:600;white-space:nowrap}
+tbody th{font-weight:600;color:var(--white);background:var(--black2)}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+td a,th a{color:var(--yellow);text-decoration:underline;text-underline-offset:3px}
+.table-wrap.t3 table{min-width:0}
+.table-wrap.t3 td{overflow-wrap:anywhere}
+.table-wrap.t3 thead th{white-space:normal}
+@media (max-width:600px){
+  /* especificaciones apiladas: nombre, valor y nota en un bloque por fila (sin scroll horizontal) */
+  .table-wrap.t3 table,.table-wrap.t3 tbody{display:block}
+  .table-wrap.t3 thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+  .table-wrap.t3 tr{display:block;padding:12px 14px;border-bottom:1px solid var(--border)}
+  .table-wrap.t3 tbody tr:last-child{border-bottom:0}
+  .table-wrap.t3 tbody th{display:block;padding:0 0 3px;border:0;background:none;color:var(--white)}
+  .table-wrap.t3 td{display:block;padding:0;border:0}
+  .table-wrap.t3 td:empty{display:none}
+  .table-wrap.t3 td+td{margin-top:4px;font-size:0.8rem;color:#9a9a9a}
+}
+
+/* ── FAQ (details sin JS, patron de how-to-write-resume-no-experience.html) ── */
+.faq{max-width:760px}
+.faq details{border-top:1px solid var(--border)}
+.faq details:last-child{border-bottom:1px solid var(--border)}
+.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:16px 0;min-height:48px;font-weight:500;font-size:0.95rem}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';color:var(--yellow);font-weight:800;font-size:1.2rem;flex-shrink:0}
+.faq details[open] summary::after{content:'\2212'}
+.faq details p{margin:0 0 18px;max-width:none;font-size:0.92rem}
+
+/* ── TARJETAS DE PRODUCTO (landing) ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;list-style:none;margin:28px 0 0}
+.sec .grid li{padding:0;margin:0}
+.sec .grid li::before{content:none}
+.card{background:var(--card);border:1px solid var(--card-border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.card-media{display:block;background:var(--gray)}
+.card-media img{display:block;width:100%;height:auto;aspect-ratio:1/1;object-fit:cover}
+.card-body{display:flex;flex-direction:column;gap:6px;padding:18px 18px 20px;flex:1}
+.card h3{margin:0;font-size:1.05rem}
+.sec .card a{text-decoration:none}
+.card h3 a{color:var(--white)}
+.card h3 a:hover{color:var(--yellow)}
+.card p{margin:0;font-size:0.9rem;line-height:1.6}
+.card-foot{margin-top:auto !important;padding-top:12px;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex-wrap:wrap}
+.card-foot .sep{color:var(--muted);font-size:0.9rem}
+.card .btn-secondary{padding:10px 20px;min-height:44px;font-size:0.85rem}
+.price,.price-line [data-price]{font-family:'Syne',sans-serif;font-weight:800;color:var(--yellow)}
+.price{font-size:1.15rem}
+
+/* ── FICHA DE PRODUCTO ── */
+.pdp-grid{display:grid;gap:28px;padding-top:12px;padding-bottom:40px}
+.gallery{display:flex;align-items:flex-start;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:14px}
+.slide{flex:0 0 88%;scroll-snap-align:start;border-radius:14px;overflow:hidden;background:var(--gray)}
+.slide:only-child{flex-basis:100%}
+.slide img{display:block;width:100%;height:auto}  /* proporcion natural de cada foto (atributos width/height): sin recorte forzado */
+.img-note{margin:10px 0 0;font-size:0.78rem;color:var(--muted);line-height:1.5}
+.img-note+.img-note{margin-top:4px}
+.buy h1{font-size:clamp(1.5rem,3.4vw,2.1rem)}
+.lead{margin-top:14px}
+.price-line{margin-top:6px;color:var(--white);font-size:0.95rem}
+.buy-form{display:grid;gap:14px;margin-top:18px;max-width:520px}
+.field-qty select{max-width:120px}
+.sel-price{margin:0;font-size:0.92rem;color:var(--muted)}
+.sel-price strong{font-family:'Syne',sans-serif;font-size:1.4rem;color:var(--yellow);font-weight:800}
+.buy-actions{margin-top:2px}
+.buy .byb{margin:2px 0 0}
+.buy-actions .btn-primary,.buy-actions .btn-secondary{flex:1 1 150px}
+.buy-status{min-height:1.4em;margin:0;font-size:0.88rem;color:var(--ok)}
+.buy-status:empty{min-height:0}
+.buy-status.err{color:var(--err)}
+@media(min-width:768px){
+  .pdp-grid{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:48px;align-items:start}
+  .gallery{display:grid;grid-template-columns:1fr 1fr;overflow:visible}
+  .slide{flex:none}
+  .slide:first-child{grid-column:1/-1}
+}
+
+/* ── CTA FIJO EN MOVIL (solo ficha) ── */
+.sticky-buy{display:none}
+@media(max-width:767px){
+  .sticky-buy{position:fixed;left:0;right:0;bottom:0;z-index:250;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 6% calc(10px + env(safe-area-inset-bottom));background:rgba(8,8,8,0.96);border-top:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(16px)}
+  .sticky-buy ~ footer{margin-bottom:96px}
+}
+.sticky-info{display:flex;flex-direction:column;min-width:0}
+.sticky-row{display:flex;align-items:baseline;gap:10px;min-width:0}
+.sticky-name{font-size:0.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sticky-price{font-family:'Syne',sans-serif;font-weight:800;color:var(--yellow);font-size:1.15rem;flex-shrink:0}
+.sticky-buy .btn-primary{flex-shrink:0;white-space:nowrap;padding:12px 24px}
+.sticky-policy{display:inline-block;align-self:flex-start;padding:4px 0;font-size:0.8rem;color:var(--yellow);text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+
+/* ── FORMULARIOS ── */
+label{display:block;font-size:0.8rem;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:0.3px}
+select,input[type=text],input[type=email],input[type=tel]{width:100%;background:var(--gray);color:var(--white);border:1px solid rgba(255,255,255,0.28);border-radius:10px;padding:12px 14px;min-height:48px;font-family:inherit;font-size:1rem}
+select option{background:var(--gray);color:var(--white)}
+input[readonly]{color:var(--muted)}
+input:user-invalid,select:user-invalid{border-color:var(--err)}
+
+/* ── DIVULGACION "BEFORE YOU BUY" (contenido-v2 §0.7): misma o mayor letra que el cuerpo (1rem = 16 px), contraste AA ──
+   La usan las fichas (dentro de la caja de compra, bajo los botones), el checkout, thanks y las paginas legales. */
+.byb{margin:0 0 16px;padding:16px 18px;border:1px solid var(--card-border);border-left:4px solid var(--yellow);border-radius:10px;background:var(--gray);max-width:none}
+.byb p{max-width:none;margin:0 0 10px;color:var(--white);font-size:1rem;line-height:1.6}
+.byb p:last-child{margin-bottom:0}
+.byb ul{list-style:none;max-width:none;margin:0 0 10px;padding:0}
+.byb li{position:relative;padding-left:22px;margin:0 0 8px;color:var(--white);font-size:1rem;line-height:1.6}
+.byb li:last-child{margin-bottom:0}
+.byb li::before{content:'\203A';position:absolute;left:5px;color:var(--yellow);font-weight:800}
+.byb a{color:var(--yellow);text-decoration:underline;text-underline-offset:3px}
+
+/* ── LISTAS NUMERADAS (guias y paginas legales) ── */
+.sec ol{list-style:none;counter-reset:step;margin:0 0 14px;max-width:760px}
+.sec ol li{counter-increment:step}
+.sec ol li::before{content:counter(step) '.';left:0;color:var(--yellow);font-weight:800}
+
+/* ── GUIAS Y RELACIONADOS ── */
+.related-nav{padding:8px 0 56px}
+.related-nav p{margin-bottom:12px}
+.related-nav ul{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0}
+.related-nav a{display:inline-block;background:var(--card);border:1px solid var(--card-border);color:var(--white);font-size:0.85rem;padding:12px 16px;border-radius:50px;text-decoration:none;transition:all 0.2s}
+.related-nav a:hover{border-color:var(--yellow);color:var(--yellow)}
+
+/* ── FOOTER (variante A de index.html) ── */
+footer{background:var(--gray);border-top:1px solid var(--border);padding:32px 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.footer-logo{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:900;color:var(--yellow)}
+.footer-logo span{color:var(--white)}
+footer p{margin:0;color:var(--muted2);font-size:0.78rem}
+.footer-links{display:flex;flex-wrap:wrap;align-items:center}
+.footer-links span{padding:12px 6px 12px 0}
+footer a{display:inline-block;color:var(--muted2);text-decoration:none;padding:12px 6px;transition:color 0.2s}
+footer a:hover{color:var(--white)}
+
+@media (pointer:coarse){button,.btn-primary,.btn-secondary,.nav-cta,summary{min-height:44px;touch-action:manipulation}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none !important}}

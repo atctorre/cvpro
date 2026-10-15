@@ -11,3 +11,15 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: npm test
+  # Backend y migracion de /essentials/ (docs/ESSENTIALS.md). Job aparte para no mezclar sus fallos con los de `npm test`.
+  # Necesita Node >= 22.13 (module.stripTypeScriptTypes para cargar las Edge Functions .ts); `22` resuelve a la ultima 22.x.
+  # Sin dependencias ni red: n1co y Supabase estan simulados. Se omiten 3 pruebas que piden recursos externos
+  # (catalogo.json interno y un PostgreSQL desechable); ver tests/essentials/README.md.
+  essentials:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node --version
+      - run: npm run test:essentials

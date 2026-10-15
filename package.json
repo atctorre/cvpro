@@ -7,6 +7,8 @@
     "test": "node supabase/functions/generar-cv/tests/validador.test.mjs && node tests/cliente/cliente.test.mjs",
     "test:motor": "node supabase/functions/generar-cv/tests/validador.test.mjs",
     "test:cliente": "node tests/cliente/cliente.test.mjs",
+    "test:essentials": "node --test \"tests/essentials/*.test.mjs\"",
+    "test:todo": "npm test && npm run test:essentials",
     "minify:motor": "cd supabase/functions/generar-cv && npx terser validador.mjs --module --compress --mangle --format max_line_len=400 -o validador.mjs.deploy && npx terser lexico.mjs --module --compress --mangle --format max_line_len=400 -o lexico.mjs.deploy && npx terser serializar.mjs --module --compress --mangle --format max_line_len=400 -o serializar.mjs.deploy"
   },
   "engines": { "node": ">=20" }

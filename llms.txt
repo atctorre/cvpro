@@ -28,6 +28,7 @@
 - [How to write a resume with no experience](https://getcvpro.com/how-to-write-resume-no-experience.html): guide for first jobs, with a fictional example.
 - [Sobre CVPro / About CVPro](https://getcvpro.com/sobre-cvpro.html): qué es, cómo funciona la IA, qué no hace, política de IA y datos ([English](https://getcvpro.com/about.html)).
 - [Resume examples by profession (English)](https://getcvpro.com/ejemplos/resume-examples.html): 60 resume examples, one per occupation.
+- [CVPro Essentials (U.S. store, English)](https://getcvpro.com/essentials/): leather bags and accessories for U.S. customers; a store separate from the resume builder.
 
 ## Ejemplos de CV por profesión
 
@@ -38,6 +39,32 @@ Cada ejemplo muestra un currículum completo para una profesión concreta (perfi
 - Los ejemplos son ilustrativos: los datos y las personas representadas son ficticios.
 - La IA no inventa experiencia, títulos, empresas ni certificaciones; solo reformula lo que el usuario proporciona.
 - El CV se puede recuperar en cualquier dispositivo con un código de recuperación, sin crear cuenta ni contraseña.
+
+## CVPro Essentials (U.S. store, English)
+
+Professional Essentials by CVPro is a separate store section at https://getcvpro.com/essentials/, written in English for customers in the United States. It is not part of the resume builder. The items are fulfilled by overseas suppliers, and every specification on the product pages is stated by the seller and marked as seller-stated.
+
+- [Collection](https://getcvpro.com/essentials/): five leather items with delivery and sales terms.
+- [17-Inch Leather Laptop Bag and Briefcase](https://getcvpro.com/essentials/leather-briefcase-17-inch.html): $217.03.
+- [15-Inch Leather Briefcase](https://getcvpro.com/essentials/leather-briefcase-15-inch.html): $204.97.
+- [Leather Card Holder with RFID Blocking Feature](https://getcvpro.com/essentials/leather-card-holder.html): $77.50.
+- [Leather Travel Duffel Bag, Sizes L and XL](https://getcvpro.com/essentials/leather-travel-duffel.html): from $195.19.
+- [Vintage Leather Duffel Bag](https://getcvpro.com/essentials/leather-vintage-duffel.html): from $213.60.
+- [How to choose a laptop briefcase](https://getcvpro.com/essentials/guides/how-to-choose-a-laptop-briefcase.html): buying guide.
+- [Gifts for him: how to choose for a man who works in an office](https://getcvpro.com/essentials/guides/gifts-for-men-who-work-in-an-office.html): buying guide with order-by dates.
+- [Shipping and returns](https://getcvpro.com/essentials/shipping-returns.html): delivery and sales policy, all sales final with two exceptions.
+- [Terms of sale](https://getcvpro.com/essentials/terms.html): seller, payment through n1co and the sales policy.
+
+Verifiable facts about the store (copied from the shipping and returns page):
+
+- Estimated delivery: 15 to 25 days from the date you place your order, to addresses in the United States.
+- Shipping cost: included in the price shown. Prices are in US dollars.
+- Where it comes from: the listing states Mainland China / CN / Guangdong as the origin. Orders are fulfilled by an overseas supplier and shipped internationally, which is why delivery takes this long. We do not keep stock in the United States.
+- Tracking: available.
+- All sales final: we do not accept returns or exchanges, and we do not refund a change of mind, including the wrong size, color or fit when the item matches its listing. Check the specs before you pay.
+- Exception 1, not delivered: if your order is not delivered by day 30 after your order date, you can request a full refund. Day 1 is the day after you order; day 30 is the 25-day end of the estimate plus a five-day margin.
+- Exception 2, damaged or wrong item: if an item arrives damaged or defective, is not the item you ordered, or is materially different from its listing, report it with photos within 7 days of the delivery date shown in the tracking. We replace it or refund you, at your choice; a replacement depends on availability. You do not need to send the item back.
+- There are no customer reviews yet, and no ratings are shown.
 
 ## Contacto
 
